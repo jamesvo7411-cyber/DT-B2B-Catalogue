@@ -1,0 +1,69 @@
+/**
+ * Reads an uploaded image File and downscales gently only if huge (> 1600px)
+ * so high-resolution print quality is preserved while keeping browser storage responsive.
+ */
+export function readImageFileAsDataUrl(file: File, maxDimension = 1600): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
+    reader.onload = () => {
+      const rawUrl = String(reader.result || '');
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        if (width <= maxDimension && height <= maxDimension) {
+          resolve(rawUrl);
+          return;
+        }
+        const scale = Math.min(maxDimension / width, maxDimension / height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(rawUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.88));
+      };
+      img.onerror = () => resolve(rawUrl);
+      img.src = rawUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+export interface ParsedVideo {
+  type: 'youtube' | 'vimeo' | 'direct' | 'none';
+  embedUrl: string;
+}
+
+export function parseVideoUrl(url: string): ParsedVideo {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return { type: 'none', embedUrl: '' };
+  }
+
+  // YouTube
+  const ytMatch = trimmed.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: 'youtube',
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`,
+    };
+  }
+
+  // Vimeo
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: 'vimeo',
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+    };
+  }
+
+  return { type: 'direct', embedUrl: trimmed };
+}

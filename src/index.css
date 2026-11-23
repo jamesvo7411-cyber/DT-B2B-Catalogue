@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Monochrome Gallery Palette with Switchable Subtle Metallic Finishes */
+:root,
+[data-metallic="platinum"] {
+  --metallic: #7E858C;
+  --metallic-strong: #5E656C;
+  --metallic-soft: #B8BFC6;
+  --metallic-hairline: #D7DCE0;
+  --metallic-tint: #F6F7F8;
+  --metallic-gradient: linear-gradient(135deg, #D5DADF 0%, #8E959C 48%, #C4CACF 100%);
+}
+
+[data-metallic="champagne"] {
+  --metallic: #93836A;
+  --metallic-strong: #73644E;
+  --metallic-soft: #C6BA9F;
+  --metallic-hairline: #DFD8CA;
+  --metallic-tint: #F9F8F5;
+  --metallic-gradient: linear-gradient(135deg, #DFD6C5 0%, #9A8A70 48%, #CEC3AF 100%);
+}
+
+[data-metallic="graphite"] {
+  --metallic: #4A4E52;
+  --metallic-strong: #2C2F33;
+  --metallic-soft: #8A8F95;
+  --metallic-hairline: #CFD2D5;
+  --metallic-tint: #F4F5F6;
+  --metallic-gradient: linear-gradient(135deg, #B5B9BD 0%, #52565B 48%, #8F9499 100%);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #FFFFFF;
+    color: #0A0A0A;
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+}
+
+.metallic-rule {
+  background: var(--metallic-gradient);
+}
+
+.metallic-text {
+  color: var(--metallic-strong);
+}
+
+.metallic-border {
+  border-color: var(--metallic-hairline);
+}
+
+.metallic-frame-tick {
+  border-color: var(--metallic-soft);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Editorial architectural blank plate grid texture — whisper subtle */
+.plate-blueprint-bg {
+  background-color: #FAFAFA;
+  background-image:
+    linear-gradient(to right, rgba(10, 10, 10, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(10, 10, 10, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Book Spine & Physical Gutter Shading (Verso Right Edge | Recto Left Edge) */
+.spine-verso-shadow {
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.075) 0%,
+    rgba(0, 0, 0, 0.03) 14px,
+    rgba(0, 0, 0, 0.008) 34px,
+    transparent 64px
+  );
+}
+
+.spine-recto-shadow {
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.085) 0%,
+    rgba(0, 0, 0, 0.032) 14px,
+    rgba(0, 0, 0, 0.008) 34px,
+    transparent 64px
+  );
+}
+
+.book-spine-crease {
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(255, 255, 255, 0.7) 45%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(255, 255, 255, 0.45) 58%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+}
+
+/* Smooth reduced-motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   HIGH-RESOLUTION FLAT LANDSCAPE PRINT & PDF EXPORT STYLESHEET
+   Strips all curl/3D transforms and enforces clean binding/safe margins.
+   ========================================================================== */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #0A0A0A !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only-root {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    perspective: none !important;
+    clip-path: none !important;
+  }
+
+  .print-sheet {
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 98vh;
+    overflow: visible !important;
+    transform: none !important;
+    perspective: none !important;
+    clip-path: none !important;
+  }
+
+  .print-sheet:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
