@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Maximize2, Upload, Replace } from 'lucide-react';
-import type { MediaSlot, MediaSlotKey } from '../types/catalogue';
+import { Crop, Maximize2, RotateCcw, Upload, Replace } from 'lucide-react';
+import type { ImageCrop, MediaSlot, MediaSlotKey } from '../types/catalogue';
 import { STAGE_LABELS } from '../data/garments';
-import { readImageFileAsDataUrl } from '../utils/media';
+import { imageCropStyle, normalizeImageCrop, readImageFileAsDataUrl } from '../utils/media';
 
 interface MediaPlateProps {
   slotKey: MediaSlotKey;
@@ -10,9 +10,12 @@ interface MediaPlateProps {
   aspectClass: string;
   titleLabel: string;
   editMode: boolean;
+  interactive?: boolean;
   showBlankGuides?: boolean;
   compact?: boolean;
+  imageOverlay?: React.ReactNode;
   onReplaceFile?: (slotKey: MediaSlotKey, dataUrl: string) => void;
+  onUpdateCrop?: (slotKey: MediaSlotKey, crop: ImageCrop) => void;
   onInspect?: (slot: MediaSlot, titleLabel: string) => void;
   onOpenEditor?: (slotKey: MediaSlotKey) => void;
 }
@@ -23,22 +26,89 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   aspectClass,
   titleLabel,
   editMode,
+  interactive = true,
   showBlankGuides = true,
   compact = false,
+  imageOverlay,
   onReplaceFile,
+  onUpdateCrop,
   onInspect,
   onOpenEditor,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    width: number;
+    height: number;
+    crop: ImageCrop;
+  } | null>(null);
+  const cropDraftRef = useRef(normalizeImageCrop(slot.crop));
   const [isDragging, setIsDragging] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [cropMode, setCropMode] = useState(false);
+  const [cropDraft, setCropDraft] = useState(() => normalizeImageCrop(slot.crop));
 
   useEffect(() => {
     setImgError(false);
   }, [slot.url]);
 
+  useEffect(() => {
+    const crop = normalizeImageCrop(slot.crop);
+    cropDraftRef.current = crop;
+    setCropDraft(crop);
+  }, [slot.crop]);
+
+  useEffect(() => {
+    if (!editMode) setCropMode(false);
+  }, [editMode]);
+
   const hasImage = Boolean(slot.url && !imgError);
   const isSessionLocal = slot.isSessionDrop || slot.url.startsWith('data:');
+
+  const setDraft = (crop: ImageCrop) => {
+    const normalized = normalizeImageCrop(crop);
+    cropDraftRef.current = normalized;
+    setCropDraft(normalized);
+  };
+
+  const commitCrop = () => {
+    onUpdateCrop?.(slotKey, cropDraftRef.current);
+  };
+
+  const handleCropPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || !hasImage) return;
+    if (event.target instanceof HTMLElement && event.target.closest('[data-crop-controls]')) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      width: bounds.width,
+      height: bounds.height,
+      crop: cropDraftRef.current,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleCropPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    setDraft({
+      scale: drag.crop.scale,
+      x: drag.crop.x + ((event.clientX - drag.clientX) / drag.width) * (100 / drag.crop.scale),
+      y: drag.crop.y + ((event.clientY - drag.clientY) / drag.height) * (100 / drag.crop.scale),
+    });
+  };
+
+  const handleCropPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    commitCrop();
+  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0 || !onReplaceFile) return;
@@ -60,6 +130,8 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   };
 
   const handlePlateClick = () => {
+    if (!interactive) return;
+    if (cropMode) return;
     if (hasImage && !editMode && onInspect) {
       onInspect(slot, titleLabel);
       return;
@@ -74,64 +146,59 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   return (
     <figure className="flex flex-col">
       <div
-        role="button"
-        tabIndex={0}
-        onClick={handlePlateClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handlePlateClick();
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (!isDragging) setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        aria-label={
-          hasImage
-            ? editMode
-              ? `Replace ${titleLabel} image`
-              : `Inspect ${titleLabel} image`
-            : `Drop or upload image for ${titleLabel}`
+        role="group"
+        aria-label={titleLabel}
+        onDragOver={
+          interactive
+            ? (e) => {
+                e.preventDefault();
+                if (!isDragging) setIsDragging(true);
+              }
+            : undefined
         }
-        className={`group relative w-full overflow-hidden border transition-colors duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A] ${aspectClass} ${
+        onDragLeave={interactive ? () => setIsDragging(false) : undefined}
+        onDrop={interactive ? handleDrop : undefined}
+        className={`group relative w-full overflow-hidden transition-colors duration-200 ${
+          interactive
+            ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]'
+            : 'cursor-default'
+        } ${aspectClass} ${
           isDragging
-            ? 'border-[#0A0A0A] bg-[#F2F2F2]'
+            ? 'bg-[#F2F2F2] ring-2 ring-[#0A0A0A]'
             : hasImage
-              ? 'border-[#E5E5E5] bg-[#FAFAFA]'
-              : 'border-[#E5E5E5] plate-blueprint-bg hover:border-[var(--metallic)]'
+              ? 'bg-[#F5F4F0]'
+              : 'plate-blueprint-bg'
         }`}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            handleFiles(e.target.files);
-            e.target.value = '';
-          }}
-        />
+        {interactive && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                handleFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
 
-        {/* Subtle metallic architectural corner registration ticks */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-2.5 left-2.5 h-2.5 w-2.5 border-t border-l metallic-frame-tick z-10"
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-2.5 right-2.5 h-2.5 w-2.5 border-t border-r metallic-frame-tick z-10"
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-2.5 left-2.5 h-2.5 w-2.5 border-b border-l metallic-frame-tick z-10"
-        />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-2.5 right-2.5 h-2.5 w-2.5 border-b border-r metallic-frame-tick z-10"
-        />
+            <button
+              type="button"
+              onClick={handlePlateClick}
+              aria-label={
+                hasImage
+                  ? editMode
+                    ? `Replace ${titleLabel} image`
+                    : `Inspect ${titleLabel} image`
+                  : `Drop or upload image for ${titleLabel}`
+              }
+              className="absolute inset-0 z-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-[#0A0A0A]"
+            >
+              <span className="sr-only">{titleLabel}</span>
+            </button>
+          </>
+        )}
 
         {hasImage ? (
           <>
@@ -142,31 +209,20 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
               decoding="async"
               referrerPolicy="no-referrer"
               onError={() => setImgError(true)}
-              className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.015]"
+              style={imageCropStyle(cropMode ? cropDraft : slot.crop)}
+              className={`h-full w-full object-cover ${cropMode ? 'transition-none' : 'transition-transform duration-300 ease-out'}`}
             />
-            {/* Measured hover affordance bar */}
-            <div className="no-print pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/75 via-black/40 to-transparent px-4 py-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <span className="text-xs font-medium text-white tracking-wide">
-                {editMode ? 'Drop or click to replace asset' : 'Inspect macro detail (drop to replace)'}
-              </span>
-              {editMode ? (
-                <Replace className="h-3.5 w-3.5 text-white" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5 text-white" />
-              )}
-            </div>
           </>
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center px-5 text-center">
-            {/* Whisper-thin architectural crosshair */}
             <div
               aria-hidden="true"
-              className="mb-3 flex h-8 w-8 items-center justify-center"
+              className="mb-3 flex h-8 w-8 items-center justify-center text-[#9A9892]"
             >
               <span className="relative block h-6 w-6">
-                <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[var(--metallic-hairline)]" />
-                <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[var(--metallic-hairline)]" />
-                <span className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 border border-[var(--metallic-soft)] bg-white" />
+                <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#C9C6BF]" />
+                <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#C9C6BF]" />
+                <span className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 border border-[#A9A69E] bg-white" />
               </span>
             </div>
 
@@ -190,11 +246,116 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
               </>
             )}
 
-            <div className="no-print mt-4 inline-flex items-center gap-1.5 border-b border-transparent pb-0.5 text-[11px] font-medium text-[#525252] transition-colors duration-200 group-hover:border-[#0A0A0A] group-hover:text-[#0A0A0A]">
-              <Upload className="h-3 w-3" />
-              <span>{isDragging ? 'Release to preview in session' : 'Drop or click to place image'}</span>
-            </div>
+            {interactive && (
+              <div className="no-print mt-4 inline-flex items-center gap-1.5 border-b border-transparent pb-0.5 text-[11px] font-medium text-[#525252] transition-colors duration-200 group-hover:border-[#0A0A0A] group-hover:text-[#0A0A0A]">
+                <Upload className="h-3 w-3" />
+                <span>{isDragging ? 'Release to preview in session' : 'Drop or click to place image'}</span>
+              </div>
+            )}
           </div>
+        )}
+
+        {imageOverlay && (
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t px-4 pb-4 pt-12 ${
+              hasImage ? 'from-black/70 to-transparent text-white' : 'from-white/95 to-transparent text-[#0A0A0A]'
+            }`}
+          >
+            {imageOverlay}
+          </div>
+        )}
+
+        {editMode && hasImage && (
+          <div className="no-print absolute right-2 top-2 z-20">
+            {!cropMode ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDraft(normalizeImageCrop(slot.crop));
+                  setCropMode(true);
+                }}
+                aria-label={`Adjust crop for ${titleLabel}`}
+                className="inline-flex items-center gap-1.5 bg-white/95 px-2.5 py-1.5 text-[10px] font-medium text-[#252421] shadow-sm transition-colors hover:bg-white"
+              >
+                <Crop className="h-3 w-3" />
+                <span>Reframe</span>
+              </button>
+            ) : (
+              <div
+                className="flex items-center gap-2 bg-white/95 p-2 text-[#252421] shadow-md"
+                data-crop-controls
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <label className="flex items-center gap-2">
+                  <span className="font-mono text-[9px]">ZOOM</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.01"
+                    value={cropDraft.scale}
+                    aria-label={`Zoom ${titleLabel} image`}
+                    onChange={(event) =>
+                      setDraft({ ...cropDraftRef.current, scale: Number(event.target.value) })
+                    }
+                    onPointerUp={commitCrop}
+                    onKeyUp={commitCrop}
+                    onBlur={commitCrop}
+                    className="w-20 accent-[#22211F]"
+                  />
+                  <span className="w-8 font-mono text-[9px] tabular-nums">
+                    {cropDraft.scale.toFixed(1)}×
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft({ scale: 1, x: 0, y: 0 });
+                    onUpdateCrop?.(slotKey, { scale: 1, x: 0, y: 0 });
+                  }}
+                  aria-label={`Reset crop for ${titleLabel}`}
+                  className="p-1 hover:bg-[#F0EFEC]"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    commitCrop();
+                    setCropMode(false);
+                  }}
+                  className="px-1.5 py-1 text-[9px] font-semibold hover:bg-[#F0EFEC]"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {interactive && hasImage && !cropMode && (
+          <div className="no-print pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between bg-gradient-to-t from-black/55 to-transparent px-3 pb-2.5 pt-6 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <span className="text-[10px] font-medium text-white">
+              {editMode ? 'Drop or click to replace' : 'Inspect image'}
+            </span>
+            {editMode ? (
+              <Replace className="h-3 w-3 text-white" />
+            ) : (
+              <Maximize2 className="h-3 w-3 text-white" />
+            )}
+          </div>
+        )}
+
+        {cropMode && (
+          <div
+            className="no-print absolute inset-0 z-[15] touch-none cursor-grab active:cursor-grabbing"
+            onPointerDown={handleCropPointerDown}
+            onPointerMove={handleCropPointerMove}
+            onPointerUp={handleCropPointerEnd}
+            onPointerCancel={handleCropPointerEnd}
+          />
         )}
       </div>
 

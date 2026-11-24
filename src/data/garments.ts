@@ -6,14 +6,15 @@ import type {
   GarmentItem,
   MediaSlotKey,
 } from '../types/catalogue';
+import { getExpectedImageFile, PRODUCT_ASSETS } from './productAssets';
 
 export const BRAND_LOGO_PATH = '/assets/aistudio/image_d4ceae1f.png';
 
 export const DEFAULT_CATALOGUE_META: CatalogueMetadata = {
-  season: 'DOT / DT Apparel — B2B Landscape Catalogue',
+  season: 'Dream Tomorrow (DT) — B2B Landscape Catalogue',
   edition: 'CM · OEM · ODM Capability & 43-Style Line Book',
   subtitle:
-    'A modular monochrome B2B lookbook and technical specification portfolio for Dream Tomorrow (DOT / DT Apparel), built for CM, OEM, and ODM wholesale buyers and leadership review.',
+    'A modular monochrome B2B lookbook and technical specification portfolio for Dream Tomorrow (DT), built for CM, OEM, and ODM wholesale buyers and leadership review.',
   presentationNote:
     'Visual frames are initialized as architectural blank plates mapped to each real style code and swatchbook fabric roll. Drag and drop local images onto any slot to preview live in-browser (session-only unless saved to project assets or exported).',
   contactEmail: 'wholesale@dreamtomorrow.studio',
@@ -1165,8 +1166,7 @@ function getCraftDetails(row: RawProductRow): {
 
 function createBlankMedia(
   index: number,
-  row: RawProductRow,
-  craft: ReturnType<typeof getCraftDetails>
+  row: RawProductRow
 ): Record<MediaSlotKey, GarmentItem['media'][MediaSlotKey]> {
   const num = String(index).padStart(2, '0');
   return {
@@ -1174,36 +1174,36 @@ function createBlankMedia(
       url: '',
       stage: 'blank',
       caption: `Fig. ${num}.A — ${row.sku} Primary Silhouette`,
-      aspectLabel: '3:4 Portrait Plate',
-      note: `${row.gender}'s (${row.genderCode}) full-length editorial shot`,
+      aspectLabel: '5:4 Image',
+      note: '',
     },
     pocket: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.B — Pocket & Placket Construction Detail`,
-      aspectLabel: '4:3 Macro Plate',
-      note: craft.pocketConstruction,
+      caption: `Fig. ${num}.B — Detail 01`,
+      aspectLabel: '4:3 Image',
+      note: '',
     },
     seam: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.C — Inner Seam & Binding`,
-      aspectLabel: '4:3 Macro Plate',
-      note: `${craft.seamFinish} (${craft.stitchDensity})`,
+      caption: `Fig. ${num}.C — Detail 02`,
+      aspectLabel: '4:3 Image',
+      note: '',
     },
     swatch: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.D — ${row.fabricCode} Texture Swatch`,
-      aspectLabel: '1:1 Textile Plate',
-      note: `${row.fabricCode} · ${row.weightGsm} · ${row.fabricWidth}`,
+      caption: `Fig. ${num}.D — Fabric image`,
+      aspectLabel: '1:1 Image',
+      note: '',
     },
     custom: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.E — Custom Fit / Label / Trim Note`,
-      aspectLabel: '4:3 Custom Slot',
-      note: 'Optional B2B care label, hardware, or fit-session photo',
+      caption: `Fig. ${num}.E — Detail 03`,
+      aspectLabel: '4:3 Image',
+      note: '',
     },
   };
 }
@@ -1242,11 +1242,42 @@ export function createInitialGarments(): GarmentItem[] {
     const num = idx + 1;
     const craft = getCraftDetails(row);
     const slug = row.sku.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const assetMapping = PRODUCT_ASSETS[row.sku];
+    const expectedHeroFile = assetMapping
+      ? getExpectedImageFile(assetMapping.sourceImage)
+      : undefined;
+    const media = createBlankMedia(num, row);
+
+    if (assetMapping?.heroFile) {
+      media.hero = {
+        ...media.hero,
+        url: `/catalogue-media/${encodeURIComponent(assetMapping.heroFile)}`,
+        stage: 'studio-final',
+        caption: `${media.hero.caption} · ${assetMapping.heroFile}`,
+        note: `Local image file: ${assetMapping.heroFile}`,
+      };
+    } else if (expectedHeroFile) {
+      media.hero.note = `Expected local image file: ${expectedHeroFile} (not found in the image folder; drop it here when available).`;
+    }
+
+    const detailSlots: MediaSlotKey[] = ['pocket', 'seam', 'swatch'];
+    assetMapping?.followingFiles?.forEach((fileName, fileIndex) => {
+      const slotKey = detailSlots[fileIndex];
+      if (!slotKey) return;
+      media[slotKey] = {
+        ...media[slotKey],
+        url: `/catalogue-media/${encodeURIComponent(fileName)}`,
+        stage: 'studio-final',
+        caption: `${media[slotKey].caption} · Best guess · ${fileName}`,
+        note: `Best-guess detail from the next shoot image in sequence: ${fileName}. Please verify; drop another image to replace.`,
+      };
+    });
+
     return {
       id: `garment-${String(num).padStart(2, '0')}`,
       index: num,
       sku: row.sku,
-      title: row.title,
+      title: assetMapping?.title ?? `${row.title}*`,
       gender: row.gender,
       genderCode: row.genderCode,
       productGroupVi: row.productGroupVi,
@@ -1258,7 +1289,9 @@ export function createInitialGarments(): GarmentItem[] {
       colorCount: row.colorCount,
       colorways: row.colorways,
       dataFlags: row.dataFlags,
-      productUrl: `https://dreamtomorrow.studio/b2b/line-sheet/${slug}`,
+      productUrl:
+        assetMapping?.productUrl ??
+        `https://dreamtomorrow.studio/b2b/line-sheet/${slug}`,
       videoUrl: '',
       videoTitle: `${row.sku} Drape & Movement Study`,
       specs: {
@@ -1276,7 +1309,7 @@ export function createInitialGarments(): GarmentItem[] {
         leadTime: '4 – 6 Weeks Ex-Factory (Placeholder)',
         wholesaleRef: 'CM / OEM / ODM Quote',
       },
-      media: createBlankMedia(num, row, craft),
+      media,
     };
   });
 }

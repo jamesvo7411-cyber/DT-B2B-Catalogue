@@ -10,9 +10,11 @@ import {
   Printer,
   SlidersHorizontal,
 } from 'lucide-react';
-import type { GarmentItem, MediaSlot, MediaSlotKey } from '../types/catalogue';
+import type { GarmentItem, ImageCrop, MediaSlot, MediaSlotKey } from '../types/catalogue';
 import { MediaPlate } from './MediaPlate';
 import { ColorSwatchList } from './ColorSwatchList';
+import { ProductSpecStrip } from './ProductSpecStrip';
+import { conciseSourceNote } from '../utils/productDisplay';
 
 export type SpreadLeafSide = 'full' | 'verso' | 'recto';
 
@@ -20,6 +22,7 @@ interface GarmentSpreadProps {
   garment: GarmentItem;
   allGarments: GarmentItem[];
   editMode: boolean;
+  classicMode?: boolean;
   isShortlisted: boolean;
   embeddedInFlipbook?: boolean;
   side?: SpreadLeafSide;
@@ -30,6 +33,7 @@ interface GarmentSpreadProps {
   onJumpToIndex: (index: number) => void;
   onToggleShortlist: (id: string) => void;
   onReplaceFile: (garmentId: string, slotKey: MediaSlotKey, dataUrl: string) => void;
+  onUpdateCrop: (garmentId: string, slotKey: MediaSlotKey, crop: ImageCrop) => void;
   onInspectMedia: (slot: MediaSlot, titleLabel: string, garmentTitle: string) => void;
   onOpenEditor: (focusSlot?: MediaSlotKey) => void;
   onOpenVideo: (garment: GarmentItem) => void;
@@ -40,6 +44,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   garment,
   allGarments,
   editMode,
+  classicMode = false,
   isShortlisted,
   embeddedInFlipbook = false,
   side = 'full',
@@ -50,90 +55,141 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   onJumpToIndex,
   onToggleShortlist,
   onReplaceFile,
+  onUpdateCrop,
   onInspectMedia,
   onOpenEditor,
   onOpenVideo,
   onExportCurrentPdf,
 }) => {
-  const totalCount = allGarments.length;
   const paddedNumber = String(garment.index).padStart(2, '0');
-  const paddedTotal = String(totalCount).padStart(2, '0');
+  const paddedTotal = String(allGarments.length).padStart(2, '0');
   const versoPage = String(garment.index * 2 - 1).padStart(2, '0');
   const rectoPage = String(garment.index * 2).padStart(2, '0');
-
-  const populatedCount = (['hero', 'pocket', 'seam', 'swatch', 'custom'] as MediaSlotKey[]).filter(
-    (k) => Boolean(garment.media[k]?.url)
-  ).length;
-
+  const mediaKeys: MediaSlotKey[] = ['hero', 'pocket', 'seam', 'swatch', 'custom'];
+  const populatedCount = mediaKeys.filter((key) => Boolean(garment.media[key]?.url)).length;
   const fabricSiblings = allGarments.filter(
-    (g) =>
-      g.id !== garment.id &&
-      g.specs.fabricRollRef.toLowerCase() === garment.specs.fabricRollRef.toLowerCase()
+    (item) =>
+      item.id !== garment.id &&
+      item.specs.fabricRollRef.toLowerCase() === garment.specs.fabricRollRef.toLowerCase()
+  );
+  const sourceNote = conciseSourceNote(garment.dataFlags);
+
+  const renderMedia = (
+    slotKey: MediaSlotKey,
+    titleLabel: string,
+    aspectClass: string,
+    compact = false,
+    imageOverlay?: React.ReactNode
+  ) => (
+    <MediaPlate
+      slotKey={slotKey}
+      slot={garment.media[slotKey]}
+      aspectClass={aspectClass}
+      titleLabel={titleLabel}
+      editMode={editMode && !isPreviewLayer && !classicMode}
+      interactive={!classicMode}
+      compact={compact}
+      imageOverlay={imageOverlay}
+      onReplaceFile={
+        isPreviewLayer || classicMode
+          ? undefined
+          : (key, url) => onReplaceFile(garment.id, key, url)
+      }
+      onUpdateCrop={
+        isPreviewLayer || classicMode
+          ? undefined
+          : (key, crop) => onUpdateCrop(garment.id, key, crop)
+      }
+      onInspect={
+        isPreviewLayer || classicMode
+          ? undefined
+          : (slot, label) => onInspectMedia(slot, label, garment.title)
+      }
+      onOpenEditor={isPreviewLayer || classicMode ? undefined : (key) => onOpenEditor(key)}
+    />
   );
 
-  const noop = () => {};
-
-  /* ========================================================================
-     LEFT PAGE (VERSO): Title, 5-Col Buyer Strip, Hero + Swatch + Custom + Links
-     Asymmetric Physical Binding Margins:
-       - Outer Left Margin: pl-6 sm:pl-8 lg:pl-9
-       - Inner Spine Gutter: pr-8 sm:pr-11 lg:pr-14
-     ======================================================================== */
-  const versoLeaf = (
-    <div className="relative flex h-full min-h-[700px] flex-col justify-between bg-white py-6 pl-6 pr-8 sm:py-7 sm:pl-8 sm:pr-11 lg:py-8 lg:pl-9 lg:pr-14">
-      {/* Physical Spine Crease Shadow on Right (Binding) Edge */}
+  const leafShell = (leafSide: 'verso' | 'recto', children: React.ReactNode) => {
+    const verso = leafSide === 'verso';
+    return (
       <div
-        aria-hidden="true"
-        className="spine-verso-shadow pointer-events-none absolute inset-y-0 right-0 w-14"
-      />
-
-      {/* Optional Print Safe-Zone Guide (14mm outer / 18mm inner spine gutter) */}
-      {showSafeZones && (
+        className={`relative flex h-full min-h-[700px] flex-col bg-white py-6 sm:py-7 lg:py-8 ${
+          verso
+            ? 'pl-6 pr-8 sm:pl-8 sm:pr-11 lg:pl-9 lg:pr-14'
+            : 'pl-8 pr-6 sm:pl-11 sm:pr-8 lg:pl-14 lg:pr-9'
+        }`}
+      >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-4 bottom-4 left-4 right-8 border border-dashed border-[var(--metallic-soft)]/70"
+          className={`pointer-events-none absolute inset-y-0 w-14 ${
+            verso ? 'spine-verso-shadow right-0' : 'spine-recto-shadow left-0'
+          }`}
         />
-      )}
-
-      {/* Verso Running Header */}
-      <div className="relative z-10 mb-4 flex items-center justify-between border-b border-[#EFEFEF] pb-2.5 font-mono text-[10.5px] text-[#737373]">
-        <span>DOT / DT APPAREL</span>
-        <span>
-          {garment.gender.toUpperCase()} ({garment.genderCode.toUpperCase()}) · {garment.category.toUpperCase()}
-        </span>
+        {showSafeZones && !classicMode && (
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute top-4 bottom-4 border border-dashed border-[var(--metallic-soft)]/70 ${
+              verso ? 'left-4 right-8' : 'left-8 right-4'
+            }`}
+          />
+        )}
+        {children}
       </div>
+    );
+  };
 
-      <div className="relative z-10 flex flex-1 flex-col justify-start gap-5">
-        {/* Product Title + Concise Summary + Shortlist/Edit */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="font-sans text-xl font-semibold tracking-tight text-[#0A0A0A] sm:text-2xl lg:leading-[1.15]">
+  const versoLeaf = leafShell(
+    'verso',
+    <>
+      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] tracking-wide text-[#77756F]">
+        <span>DREAM TOMORROW</span>
+        <span className="text-right">
+          {garment.gender.toUpperCase()} · {garment.category.toUpperCase()}
+        </span>
+      </header>
+
+      <main className="relative z-10 flex flex-1 flex-col gap-4">
+        {renderMedia(
+          'hero',
+          'Primary image',
+          'aspect-[5/4]',
+          false,
+          <div className="max-w-[38ch]">
+            <p className="font-mono text-[9px] tracking-[0.16em]">
+              {garment.sku} <span className="mx-1.5 opacity-70">/</span>{' '}
+              {garment.category.toUpperCase()}
+            </p>
+            <h1 className="mt-1 font-serif text-3xl leading-[0.98] tracking-tight sm:text-4xl">
               {garment.title}
             </h1>
-            <div className="mt-2 h-px w-12 metallic-rule" />
-            <p className="mt-2 text-xs leading-relaxed text-[#404040]">
-              {garment.summary}
-            </p>
           </div>
+        )}
 
-          {embeddedInFlipbook && !isPreviewLayer && (
-            <div className="flex items-center gap-1.5 shrink-0">
+        <ProductSpecStrip item={garment} />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFEDE8] pb-3">
+          {sourceNote ? (
+            <p className="flex max-w-[65ch] items-start gap-1.5 text-[9px] leading-relaxed text-[#77756F]">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{sourceNote}</span>
+            </p>
+          ) : (
+            <span />
+          )}
+          {embeddedInFlipbook && !isPreviewLayer && !classicMode && (
+            <div className="flex shrink-0 items-center gap-3">
               <button
                 type="button"
                 onClick={() => onToggleShortlist(garment.id)}
-                className={`inline-flex items-center gap-1 border px-2 py-1 text-[10.5px] font-medium transition-colors cursor-pointer ${
-                  isShortlisted
-                    ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
-                    : 'border-[#E5E5E5] bg-white text-[#404040] hover:border-[#0A0A0A]'
-                }`}
+                className="inline-flex items-center gap-1.5 text-[10px] text-[#55534E] transition-colors hover:text-[#111]"
               >
                 {isShortlisted ? <Check className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
-                <span>{isShortlisted ? 'Saved' : 'Shortlist'}</span>
+                <span>{isShortlisted ? 'Saved' : 'Save style'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => onOpenEditor()}
-                className="inline-flex items-center gap-1 border border-[#E5E5E5] bg-white px-2 py-1 text-[10.5px] font-medium text-[#404040] hover:border-[#0A0A0A] hover:text-[#0A0A0A] cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-[10px] text-[#55534E] transition-colors hover:text-[#111]"
               >
                 <SlidersHorizontal className="h-3 w-3" />
                 <span>Edit</span>
@@ -142,305 +198,112 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
           )}
         </div>
 
-        {/* 5-Column Buyer Identity Strip (Never swapped GSM / Width) */}
-        <div className="grid grid-cols-2 gap-3 border-t border-b border-[#E5E5E5] py-2.5 sm:grid-cols-5">
-          <div>
-            <span className="block text-[9.5px] text-[#737373]">Style Code</span>
-            <span className="mt-0.5 block font-mono text-[11px] font-semibold text-[#0A0A0A]">
-              {garment.sku}
-            </span>
-          </div>
-          <div>
-            <span className="block text-[9.5px] text-[#737373]">Swatchbook</span>
-            <span className="mt-0.5 block font-mono text-[11px] font-medium text-[#0A0A0A] truncate">
-              {garment.specs.fabricRollRef}
-            </span>
-          </div>
-          <div>
-            <span className="block text-[9.5px] text-[#737373]">GSM (Weight)</span>
-            <span className="mt-0.5 block font-mono text-[11px] font-medium text-[#0A0A0A] tabular-nums">
-              {garment.specs.weightGsm}
-            </span>
-          </div>
-          <div>
-            <span className="block text-[9.5px] text-[#737373]">Width</span>
-            <span className="mt-0.5 block font-mono text-[11px] font-medium text-[#0A0A0A] tabular-nums">
-              {garment.specs.fabricWidth}
-            </span>
-          </div>
-          <div>
-            <span className="block text-[9.5px] text-[#737373]">Colors</span>
-            <span className="mt-0.5 block font-mono text-[11px] font-medium text-[#0A0A0A] tabular-nums">
-              {garment.colorCount} Shades
-            </span>
-          </div>
-        </div>
-
-        {/* Primary Silhouette + Swatch & Custom Plate */}
-        <div className="grid grid-cols-12 items-start gap-4">
-          <div className="col-span-8">
-            <MediaPlate
-              slotKey="hero"
-              slot={garment.media.hero}
-              aspectClass="aspect-[3/4]"
-              titleLabel="Primary Silhouette"
-              editMode={editMode}
-              onReplaceFile={isPreviewLayer ? noop : (k, url) => onReplaceFile(garment.id, k, url)}
-              onInspect={isPreviewLayer ? undefined : (slot, label) => onInspectMedia(slot, label, garment.title)}
-              onOpenEditor={isPreviewLayer ? undefined : (k) => onOpenEditor(k)}
-            />
-          </div>
-
-          <div className="col-span-4 flex flex-col gap-4">
-            <MediaPlate
-              slotKey="swatch"
-              slot={garment.media.swatch}
-              aspectClass="aspect-square"
-              titleLabel={`Swatch: ${garment.specs.fabricRollRef}`}
-              compact
-              editMode={editMode}
-              onReplaceFile={isPreviewLayer ? noop : (k, url) => onReplaceFile(garment.id, k, url)}
-              onInspect={isPreviewLayer ? undefined : (slot, label) => onInspectMedia(slot, label, garment.title)}
-              onOpenEditor={isPreviewLayer ? undefined : (k) => onOpenEditor(k)}
-            />
-            <MediaPlate
-              slotKey="custom"
-              slot={garment.media.custom}
-              aspectClass="aspect-[4/3]"
-              titleLabel="Fit / Trim Slot"
-              compact
-              editMode={editMode}
-              onReplaceFile={isPreviewLayer ? noop : (k, url) => onReplaceFile(garment.id, k, url)}
-              onInspect={isPreviewLayer ? undefined : (slot, label) => onInspectMedia(slot, label, garment.title)}
-              onOpenEditor={isPreviewLayer ? undefined : (k) => onOpenEditor(k)}
-            />
-
-            <div className="space-y-2 border-t border-[#EFEFEF] pt-2.5 text-[11px]">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#696761]">
+          <div className="flex items-center gap-4">
+            {garment.videoUrl && !classicMode && (
               <button
                 type="button"
                 disabled={isPreviewLayer}
                 onClick={() => onOpenVideo(garment)}
-                className="flex w-full items-center gap-1.5 text-left text-[#404040] transition-colors hover:text-[#0A0A0A] cursor-pointer"
+                className="inline-flex items-center gap-1.5 transition-colors hover:text-[#111]"
               >
-                <Film className="h-3.5 w-3.5 shrink-0 text-[var(--metallic-strong)]" />
-                <span className="truncate underline underline-offset-4 decoration-[#D4D4D4]">
-                  {garment.videoUrl ? garment.videoTitle : 'Motion Study'}
-                </span>
+                <Film className="h-3 w-3" />
+                <span>{garment.videoTitle || 'View video'}</span>
               </button>
-
+            )}
+            {garment.productUrl && (
               <a
                 href={garment.productUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 font-mono text-[10.5px] text-[#525252] transition-colors hover:text-[#0A0A0A]"
+                className="inline-flex items-center gap-1.5 transition-colors hover:text-[#111]"
               >
-                <ExternalLink className="h-3 w-3 shrink-0 text-[var(--metallic-strong)]" />
-                <span className="truncate underline underline-offset-4 decoration-[#D4D4D4]">
-                  B2B Spec Link
-                </span>
+                <ExternalLink className="h-3 w-3" />
+                <span>Product source</span>
               </a>
-            </div>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Verso Folio Footer (Outer Left Edge) */}
-      <div className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEFEF] pt-2.5 font-mono text-[10px] text-[#8A8A8A] tabular-nums">
-        <span>P. {versoPage}</span>
-        <span>PLATE {paddedNumber}.A · {garment.productGroupVi.toUpperCase()}</span>
-      </div>
-    </div>
-  );
-
-  /* ========================================================================
-     RIGHT PAGE (RECTO): Pocket & Seam Macro Plates, Notes, Colors & B2B Ledger
-     Asymmetric Physical Binding Margins:
-       - Inner Spine Gutter: pl-8 sm:pl-11 lg:pl-14
-       - Outer Right Margin: pr-6 sm:pr-8 lg:pr-9
-     ======================================================================== */
-  const rectoLeaf = (
-    <div className="relative flex h-full min-h-[700px] flex-col justify-between bg-white py-6 pl-8 pr-6 sm:py-7 sm:pl-11 sm:pr-8 lg:py-8 lg:pl-14 lg:pr-9">
-      {/* Physical Spine Crease Shadow on Left (Binding) Edge */}
-      <div
-        aria-hidden="true"
-        className="spine-recto-shadow pointer-events-none absolute inset-y-0 left-0 w-14"
-      />
-
-      {/* Optional Print Safe-Zone Guide (18mm inner spine gutter / 14mm outer) */}
-      {showSafeZones && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-4 bottom-4 left-8 right-4 border border-dashed border-[var(--metallic-soft)]/70"
-        />
-      )}
-
-      {/* Recto Running Header */}
-      <div className="relative z-10 mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#EFEFEF] pb-2.5 font-mono text-[10.5px] text-[#737373] tabular-nums">
-        <span className="font-medium text-[#0A0A0A]">
-          STYLE CODE: {garment.sku}
-        </span>
-        <span>
-          {garment.specs.fabricRollRef} · {garment.specs.cmOemOdmScope.toUpperCase()}
-        </span>
-      </div>
-
-      <div className="relative z-10 flex-1 space-y-4">
-        {/* Source Truncation Flag (Honest B2B Reporting) */}
-        {garment.dataFlags && garment.dataFlags.length > 0 && (
-          <div className="flex items-start gap-2 border border-[#D4D4D4] bg-[#FAFAFA] px-3 py-2 text-[11px] text-[#404040]">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--metallic-strong)]" />
-            <div>
-              <span className="font-medium text-[#0A0A0A]">Source Flag: </span>
-              <span>{garment.dataFlags.join(' ')}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Craftsmanship & Durability Macro Plates (Pocket + Inner Seam) */}
-        <div>
-          <div className="mb-2 flex items-baseline justify-between gap-2">
-            <h2 className="font-sans text-xs font-semibold tracking-wide text-[#0A0A0A]">
-              Craftsmanship &amp; Durability Close-Ups
-            </h2>
-            <span className="font-serif text-[11.5px] italic text-[#737373]">
-              Pocket detail &amp; internal seam construction
+          {!classicMode && (
+            <span className="font-mono text-[9px] text-[#8A8882]">
+              {populatedCount}/5 images
             </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <MediaPlate
-              slotKey="pocket"
-              slot={garment.media.pocket}
-              aspectClass="aspect-[4/3]"
-              titleLabel="Pocket & Placket Detail"
-              editMode={editMode}
-              onReplaceFile={isPreviewLayer ? noop : (k, url) => onReplaceFile(garment.id, k, url)}
-              onInspect={isPreviewLayer ? undefined : (slot, label) => onInspectMedia(slot, label, garment.title)}
-              onOpenEditor={isPreviewLayer ? undefined : (k) => onOpenEditor(k)}
-            />
-            <MediaPlate
-              slotKey="seam"
-              slot={garment.media.seam}
-              aspectClass="aspect-[4/3]"
-              titleLabel="Inner Seam & Binding"
-              editMode={editMode}
-              onReplaceFile={isPreviewLayer ? noop : (k, url) => onReplaceFile(garment.id, k, url)}
-              onInspect={isPreviewLayer ? undefined : (slot, label) => onInspectMedia(slot, label, garment.title)}
-              onOpenEditor={isPreviewLayer ? undefined : (k) => onOpenEditor(k)}
-            />
-          </div>
-        </div>
-
-        {/* Openly Typeset Description & Key Construction Features */}
-        <div className="grid grid-cols-1 gap-4 border-t border-[#EFEFEF] pt-3.5 sm:grid-cols-2">
-          <div>
-            <h3 className="font-sans text-xs font-semibold tracking-wide text-[#0A0A0A]">
-              Description &amp; Stretch / Feel
-            </h3>
-            <p className="mt-1 text-[11.5px] font-medium text-[#262626]">
-              {garment.specs.stretchFeelNote}
-            </p>
-            <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-[#404040]">
-              {garment.descriptionBullets.map((bullet, i) => (
-                <li key={i} className="flex items-start gap-1.5">
-                  <span
-                    aria-hidden="true"
-                    className="mt-1.5 h-1 w-1 shrink-0 bg-[var(--metallic-strong)]"
-                  />
-                  <span>{bullet}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-sans text-xs font-semibold tracking-wide text-[#0A0A0A]">
-              Key Construction Features
-            </h3>
-            <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-[#404040]">
-              {garment.keyFeatures.map((feat, i) => (
-                <li key={i} className="flex items-start gap-1.5">
-                  <span className="mt-0.5 shrink-0 font-mono text-[9.5px] text-[var(--metallic-strong)] tabular-nums">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span>{feat}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Readable Color Swatches & Pantone TCX References */}
-        <div className="border-t border-[#EFEFEF] pt-3">
-          <h3 className="mb-2 font-sans text-xs font-semibold tracking-wide text-[#0A0A0A]">
-            Available Colors &amp; Pantone TCX References ({garment.colorCount})
-          </h3>
-          <ColorSwatchList colorways={garment.colorways} compact />
-        </div>
-
-        {/* B2B Buyer Specification Ledger */}
-        <div className="border-t border-[#E5E5E5] pt-3">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-1 text-[11px] sm:grid-cols-2">
-            <div className="flex items-baseline justify-between gap-3 border-b border-[#F2F2F2] py-1">
-              <span className="text-[#737373]">Fabric Content</span>
-              <span className="text-right text-[#0A0A0A]">{garment.specs.composition}</span>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-[#F2F2F2] py-1">
-              <span className="text-[#737373]">Stitch Density</span>
-              <span className="font-mono text-[#0A0A0A] tabular-nums">
-                {garment.specs.stitchDensity}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-[#F2F2F2] py-1">
-              <span className="text-[#737373]">Inner Seam</span>
-              <span className="text-right text-[#0A0A0A]">{garment.specs.seamFinish}</span>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-[#F2F2F2] py-1">
-              <span className="text-[#737373]">Pocket Spec</span>
-              <span className="text-right text-[#0A0A0A]">{garment.specs.pocketConstruction}</span>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-[#F2F2F2] py-1">
-              <span className="text-[#737373]">Size / MOQ</span>
-              <span className="font-mono text-[#0A0A0A] tabular-nums">
-                {garment.specs.sizeRun} · {garment.specs.moq}
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-[#F2F2F2] py-1">
-              <span className="text-[#737373]">Lead Time</span>
-              <span className="font-mono text-[#0A0A0A] tabular-nums">
-                {garment.specs.leadTime}
-              </span>
-            </div>
-          </div>
-
-          {fabricSiblings.length > 0 && !isPreviewLayer && (
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10.5px] text-[#737373]">
-              <span>
-                Shared Roll (<span className="font-mono text-[#0A0A0A]">{garment.specs.fabricRollRef}</span>):
-              </span>
-              {fabricSiblings.map((sib, idx) => (
-                <React.Fragment key={sib.id}>
-                  {idx > 0 && <span aria-hidden="true">·</span>}
-                  <button
-                    type="button"
-                    onClick={() => onJumpToIndex(sib.index)}
-                    className="font-mono text-[#404040] underline underline-offset-4 decoration-[#D4D4D4] transition-colors hover:text-[#0A0A0A] hover:decoration-[#0A0A0A] cursor-pointer"
-                  >
-                    {sib.sku}
-                  </button>
-                </React.Fragment>
-              ))}
-            </div>
           )}
         </div>
-      </div>
+      </main>
 
-      {/* Recto Folio Footer (Outer Right Edge) */}
-      <div className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEFEF] pt-2.5 font-mono text-[10px] text-[#8A8A8A] tabular-nums">
-        <span>PLATES {paddedNumber}.B — {paddedNumber}.E</span>
+      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] text-[#8A8882] tabular-nums">
+        <span>P. {versoPage}</span>
+        <span>{paddedNumber}.A · {garment.productGroupVi.toUpperCase()}</span>
+      </footer>
+    </>
+  );
+
+  const rectoLeaf = leafShell(
+    'recto',
+    <>
+      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] tracking-wide text-[#77756F]">
+        <span>DETAILS</span>
+        <span>{garment.sku}</span>
+      </header>
+
+      <main className="relative z-10 flex flex-1 flex-col gap-4">
+        <div>
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <h2 className="font-serif text-xl tracking-tight text-[#24231F]">In close view</h2>
+            <span className="font-mono text-[8px] tracking-[0.12em] text-[#8A8882]">
+              IMAGE DETAILS
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {renderMedia('pocket', 'Detail 01', 'aspect-[4/3]')}
+            {renderMedia('seam', 'Detail 02', 'aspect-[4/3]')}
+          </div>
+        </div>
+
+        <div className="border-t border-[#EFEDE8] pt-3">
+          <h3 className="mb-2 font-mono text-[9px] tracking-[0.12em] text-[#77756F]">COLORWAYS</h3>
+          <ColorSwatchList colorways={garment.colorways} compact editorial />
+        </div>
+
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 border-t border-[#EFEDE8] pt-3">
+          <div>
+            <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
+              FABRIC IMAGE
+            </p>
+            {renderMedia('swatch', 'Fabric image', 'aspect-[4/3]')}
+          </div>
+          <div>
+            <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
+              DETAIL 03
+            </p>
+            {renderMedia('custom', 'Detail 03', 'aspect-[4/3]')}
+          </div>
+        </div>
+
+        {fabricSiblings.length > 0 && !classicMode && (
+          <div className="border-t border-[#EFEDE8] pt-2.5 text-[9px] text-[#77756F]">
+            <span>More styles in {garment.specs.fabricRollRef}: </span>
+            {fabricSiblings.map((sibling, index) => (
+              <React.Fragment key={sibling.id}>
+                {index > 0 && <span className="mx-1">·</span>}
+                <button
+                  type="button"
+                  onClick={() => onJumpToIndex(sibling.index)}
+                  className="font-mono text-[#33322F] underline decoration-[#D4D1CA] underline-offset-2"
+                >
+                  {sibling.sku}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] text-[#8A8882] tabular-nums">
+        <span>{paddedNumber}.B–E</span>
         <span>P. {rectoPage}</span>
-      </div>
-    </div>
+      </footer>
+    </>
   );
 
   if (side === 'verso') return versoLeaf;
@@ -451,21 +314,16 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
       {!embeddedInFlipbook && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onPrev}
-              className="inline-flex items-center gap-1.5 py-1 font-medium text-[#525252] transition-colors hover:text-[#0A0A0A] whitespace-nowrap shrink-0 cursor-pointer"
-            >
+            <button type="button" onClick={onPrev} className="inline-flex items-center gap-1.5 text-[#55534E] hover:text-[#111]">
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Prev Spread</span>
+              <span>Previous</span>
             </button>
-
-            <label className="flex items-center gap-1.5 font-mono text-xs text-[#0A0A0A] tabular-nums">
+            <label className="flex items-center gap-1.5 font-mono text-xs text-[#24231F]">
               <span className="sr-only">Jump to style code</span>
               <select
                 value={garment.index}
-                onChange={(e) => onJumpToIndex(Number(e.target.value))}
-                className="border border-[#E5E5E5] bg-white px-2.5 py-1 font-mono text-xs text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none cursor-pointer"
+                onChange={(event) => onJumpToIndex(Number(event.target.value))}
+                className="bg-white py-1 font-mono text-xs text-[#24231F] focus:outline-none"
               >
                 {allGarments.map((item) => (
                   <option key={item.id} value={item.index}>
@@ -473,60 +331,41 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
                   </option>
                 ))}
               </select>
-              <span className="text-[#737373]">of {paddedTotal}</span>
+              <span className="text-[#77756F]">of {paddedTotal}</span>
             </label>
-
-            <button
-              type="button"
-              onClick={onNext}
-              className="inline-flex items-center gap-1.5 py-1 font-medium text-[#525252] transition-colors hover:text-[#0A0A0A] whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <span>Next Spread</span>
+            <button type="button" onClick={onNext} className="inline-flex items-center gap-1.5 text-[#55534E] hover:text-[#111]">
+              <span>Next</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-mono text-[11px] text-[#737373] tabular-nums mr-1">
-              {populatedCount}/5 Plates Placed
-            </span>
-
+          <div className="flex flex-wrap items-center gap-4">
+            {!classicMode && (
+              <span className="font-mono text-[10px] text-[#77756F]">
+                {populatedCount}/5 images
+              </span>
+            )}
             <button
               type="button"
               onClick={() => onToggleShortlist(garment.id)}
-              className={`inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                isShortlisted
-                  ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
-                  : 'border-[#E5E5E5] bg-white text-[#404040] hover:border-[#0A0A0A] hover:text-[#0A0A0A]'
-              }`}
+              className="inline-flex items-center gap-1.5 text-xs text-[#55534E] hover:text-[#111]"
             >
               {isShortlisted ? <Check className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
-              <span>{isShortlisted ? 'Shortlisted' : 'Shortlist'}</span>
+              <span>{isShortlisted ? 'Saved' : 'Save style'}</span>
             </button>
-
-            <button
-              type="button"
-              onClick={() => onOpenEditor()}
-              className="inline-flex items-center gap-1.5 border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-medium text-[#404040] transition-colors hover:border-[#0A0A0A] hover:text-[#0A0A0A] whitespace-nowrap shrink-0 cursor-pointer"
-            >
+            <button type="button" onClick={() => onOpenEditor()} className="inline-flex items-center gap-1.5 text-xs text-[#55534E] hover:text-[#111]">
               <SlidersHorizontal className="h-3 w-3" />
-              <span>Edit Spread</span>
+              <span>Edit</span>
             </button>
-
-            <button
-              type="button"
-              onClick={onExportCurrentPdf}
-              className="inline-flex items-center gap-1.5 border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-medium text-[#404040] transition-colors hover:border-[#0A0A0A] hover:text-[#0A0A0A] whitespace-nowrap shrink-0 cursor-pointer"
-            >
+            <button type="button" onClick={onExportCurrentPdf} className="inline-flex items-center gap-1.5 text-xs text-[#55534E] hover:text-[#111]">
               <Printer className="h-3 w-3" />
-              <span>Export Spread PDF</span>
+              <span>Export PDF</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* SYMMETRIC 50/50 TWO-PAGE SPREAD */}
-      <div className="relative grid grid-cols-1 border border-[#E2E2E2] bg-white lg:grid-cols-2">
+      <div className="relative grid grid-cols-1 bg-white lg:grid-cols-2">
         {versoLeaf}
         {rectoLeaf}
         <div

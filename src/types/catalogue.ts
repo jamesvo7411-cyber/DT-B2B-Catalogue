@@ -13,6 +13,12 @@ export type AssetStage = 'blank' | 'ai-concept' | 'studio-final';
 
 export type MetallicTheme = 'platinum' | 'champagne' | 'graphite';
 
+export interface ImageCrop {
+  scale: number;
+  x: number;
+  y: number;
+}
+
 export type CatalogueSection = 'flipbook' | 'fabrics' | 'index' | 'print';
 
 export type PrintOrientation = 'landscape' | 'portrait';
@@ -26,6 +32,7 @@ export interface MediaSlot {
   aspectLabel: string;
   note: string;
   isSessionDrop?: boolean;
+  crop?: ImageCrop;
 }
 
 export interface GarmentSpecs {

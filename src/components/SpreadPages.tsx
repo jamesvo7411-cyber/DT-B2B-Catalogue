@@ -10,6 +10,7 @@ import {
 import type {
   CatalogueMetadata,
   GarmentItem,
+  ImageCrop,
   MediaSlot,
   MediaSlotKey,
   MetallicTheme,
@@ -32,6 +33,7 @@ export interface SpreadPagesProps {
   meta: CatalogueMetadata;
   metallicTheme: MetallicTheme;
   editMode: boolean;
+  classicMode: boolean;
   shortlist: string[];
   coverCustomImage: string;
   showSafeZones?: boolean;
@@ -41,6 +43,7 @@ export interface SpreadPagesProps {
   onChangeMetallicTheme: (theme: MetallicTheme) => void;
   onDropCoverImage: (dataUrl: string) => void;
   onReplaceFile: (garmentId: string, slotKey: MediaSlotKey, dataUrl: string) => void;
+  onUpdateCrop: (garmentId: string, slotKey: MediaSlotKey, crop: ImageCrop) => void;
   onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
   onToggleShortlist: (id: string) => void;
   onInspectMedia: (slot: MediaSlot, titleLabel: string, garmentTitle: string) => void;
@@ -125,6 +128,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   meta,
   metallicTheme,
   editMode,
+  classicMode,
   shortlist,
   coverCustomImage,
   showSafeZones = false,
@@ -134,6 +138,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   onChangeMetallicTheme,
   onDropCoverImage,
   onReplaceFile,
+  onUpdateCrop,
   onReplaceFabricSwatch,
   onToggleShortlist,
   onInspectMedia,
@@ -147,13 +152,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
 }) => {
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [coverDragging, setCoverDragging] = useState(false);
+  const showGuides = Boolean(showSafeZones && !classicMode);
 
   const productOffset = 6; // 0=Cover, 1=TOC, 2..5=Swatches (4 spreads), 6..48=43 Products, 49=Asset/Data
   const menItems = garments.filter((g) => g.gender === 'Men');
   const womenItems = garments.filter((g) => g.gender === 'Women');
 
   const handleCoverDropFiles = async (files: FileList | null) => {
-    if (isPreviewLayer || !files || files.length === 0) return;
+    if (isPreviewLayer || classicMode || !files || files.length === 0) return;
     const file = files[0];
     if (!file.type.startsWith('image/')) return;
     const dataUrl = await readImageFileAsDataUrl(file);
@@ -182,8 +188,8 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     const coverVerso = (
       <LeafShell
         side="verso"
-        showSafeZones={showSafeZones}
-        headerLeft="DOT / DT APPAREL · DREAM TOMORROW"
+        showSafeZones={showGuides}
+        headerLeft="DREAM TOMORROW · DT"
         headerRight="CM · OEM · ODM B2B PORTFOLIO"
         footerLeft="SPREAD 01A"
         footerRight="B2B LINE MONOGRAPH"
@@ -216,13 +222,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
           </div>
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#EFEFEF] pt-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mr-1 text-[11px] text-[#737373]">Accent:</span>
-              {METALLIC_THEMES.map((theme) => (
+            {!classicMode && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[11px] text-[#737373]">Accent:</span>
+                {METALLIC_THEMES.map((theme) => (
                 <button
                   key={theme.id}
                   type="button"
-                  disabled={isPreviewLayer}
+                  disabled={isPreviewLayer || classicMode}
                   onClick={() => onChangeMetallicTheme(theme.id)}
                   className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-medium cursor-pointer ${
                     metallicTheme === theme.id
@@ -237,10 +244,11 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   />
                   <span>{theme.label}</span>
                 </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {!isPreviewLayer && (
+            {!isPreviewLayer && !classicMode && (
               <button
                 type="button"
                 onClick={() => onGoToPage(1)}
@@ -259,7 +267,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       <LeafShell
         side="recto"
         bgClass="bg-[#FCFCFC]"
-        showSafeZones={showSafeZones}
+        showSafeZones={showGuides}
         headerLeft="COVER FOLIO"
         headerRight="43 STYLES · 15 FABRICS"
         footerLeft="PRINT-READY SPINE MARGIN"
@@ -267,11 +275,11 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       >
         <div className="flex flex-1 flex-col justify-between gap-5">
           <div
-            role={isPreviewLayer ? undefined : 'button'}
-            tabIndex={isPreviewLayer ? undefined : 0}
-            onClick={isPreviewLayer ? undefined : () => coverInputRef.current?.click()}
+            role={isPreviewLayer || classicMode ? undefined : 'button'}
+            tabIndex={isPreviewLayer || classicMode ? undefined : 0}
+            onClick={isPreviewLayer || classicMode ? undefined : () => coverInputRef.current?.click()}
             onKeyDown={
-              isPreviewLayer
+              isPreviewLayer || classicMode
                 ? undefined
                 : (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -281,16 +289,16 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   }
             }
             onDragOver={
-              isPreviewLayer
+              isPreviewLayer || classicMode
                 ? undefined
                 : (e) => {
                     e.preventDefault();
                     setCoverDragging(true);
                   }
             }
-            onDragLeave={isPreviewLayer ? undefined : () => setCoverDragging(false)}
+            onDragLeave={isPreviewLayer || classicMode ? undefined : () => setCoverDragging(false)}
             onDrop={
-              isPreviewLayer
+              isPreviewLayer || classicMode
                 ? undefined
                 : (e) => {
                     e.preventDefault();
@@ -299,14 +307,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   }
             }
             className={`group relative flex min-h-[400px] flex-1 flex-col items-center justify-center overflow-hidden border p-6 text-center transition-colors ${
-              isPreviewLayer ? '' : 'cursor-pointer'
+              isPreviewLayer || classicMode ? '' : 'cursor-pointer'
             } ${
               coverDragging
                 ? 'border-[#0A0A0A] bg-[#F2F2F2]'
                 : 'border-[#E5E5E5] bg-white hover:border-[var(--metallic)]'
             }`}
           >
-            {!isPreviewLayer && (
+            {!isPreviewLayer && !classicMode && (
               <input
                 ref={coverInputRef}
                 type="file"
@@ -326,9 +334,11 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   alt="Dream Tomorrow Custom Cover"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                <div className="relative z-10 bg-white/90 px-4 py-2 text-xs font-medium text-[#0A0A0A]">
-                  Session Cover Preview · Drop image to replace
-                </div>
+                {!classicMode && (
+                  <div className="relative z-10 bg-white/90 px-4 py-2 text-xs font-medium text-[#0A0A0A]">
+                    Session Cover Preview · Drop image to replace
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -341,9 +351,9 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 <p className="mt-4 font-serif text-lg italic text-[#404040]">
                   Knitwear &amp; Woven Manufacturing Monograph
                 </p>
-                <p className="mt-2 font-mono text-[11px] text-[#737373]">
+                {!classicMode && <p className="mt-2 font-mono text-[11px] text-[#737373]">
                   Drop cover campaign image here (optional)
-                </p>
+                </p>}
               </>
             )}
           </div>
@@ -380,35 +390,50 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     const tocVerso = (
       <LeafShell
         side="verso"
-        showSafeZones={showSafeZones}
-        headerLeft="TABLE OF CONTENTS"
-        headerRight="PORTFOLIO CHAPTERS"
+        showSafeZones={showGuides}
+        headerLeft="THE COLLECTION"
+        headerRight={`${garments.length} STYLES · 5 CHAPTERS`}
         footerLeft="P. 02A"
-        footerRight="MEN'S DIVISION (NAM)"
+        footerRight="DREAM TOMORROW"
       >
         <div>
-          <h2 className="font-sans text-lg font-semibold tracking-tight text-[#0A0A0A]">
-            Catalogue Architecture
-          </h2>
-          <div className="mt-3 divide-y divide-[#EFEFEF] border-t border-b border-[#E5E5E5] text-[11.5px]">
+          <div className="mb-4">
+            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--metallic-strong)]">
+              A guide to the pieces
+            </p>
+            <h2 className="mt-1 font-serif text-3xl font-normal leading-none tracking-tight text-[#171715]">
+              Find your next favourite.
+            </h2>
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 border-y border-[#EAE8E3] py-2 text-[9px] text-[#77736D]">
             <button
               type="button"
-              disabled={isPreviewLayer}
+              disabled={isPreviewLayer || classicMode}
               onClick={() => onGoToPage(0)}
-              className="flex w-full items-center justify-between py-2 text-left hover:bg-[#FAFAFA] cursor-pointer"
+              className="transition-colors hover:text-[#171715] cursor-pointer"
             >
-              <span>01. Cover &amp; CM / OEM / ODM Capabilities</span>
-              <span className="font-mono text-[#737373]">Spread 01</span>
+              The introduction <span className="ml-1 font-mono">01</span>
             </button>
             <button
               type="button"
-              disabled={isPreviewLayer}
+              disabled={isPreviewLayer || classicMode}
               onClick={() => onGoToPage(2)}
-              className="flex w-full items-center justify-between py-2 text-left hover:bg-[#FAFAFA] cursor-pointer"
+              className="transition-colors hover:text-[#171715] cursor-pointer"
             >
-              <span>02. Fabric &amp; Color Swatch Program (15 Rolls)</span>
-              <span className="font-mono text-[#737373]">Spreads 03–06</span>
+              Fabrics &amp; colour <span className="ml-1 font-mono">03–06</span>
             </button>
+            <button
+              type="button"
+              disabled={isPreviewLayer || classicMode}
+              onClick={() => onGoToPage(totalSpreads - 1)}
+              className="transition-colors hover:text-[#171715] cursor-pointer"
+            >
+              Production notes <span className="ml-1 font-mono">{totalSpreads}</span>
+            </button>
+          </div>
+
+          <div className="divide-y divide-[#EEECE7]">
             {CATEGORIES.map((c) => {
               const firstInCat = garments.find((g) => g.category === c.name);
               const startNum = productOffset + Number(c.range.split(' ')[0]);
@@ -417,48 +442,44 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 <button
                   key={c.name}
                   type="button"
-                  disabled={isPreviewLayer}
+                  disabled={isPreviewLayer || classicMode}
                   onClick={() => firstInCat && onGoToPage(productOffset + firstInCat.index - 1)}
-                  className="flex w-full items-center justify-between py-2 text-left hover:bg-[#FAFAFA] cursor-pointer"
+                  className="group flex w-full items-center justify-between gap-3 py-2 text-left transition-colors hover:bg-[#F8F7F4] cursor-pointer"
                 >
-                  <span>
-                    Ch. {c.numeral}. {c.name} ({c.count} styles)
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="font-serif text-xl italic text-[var(--metallic-strong)]">{c.numeral}</span>
+                    <span className="truncate text-[11px] font-medium text-[#292824]">{c.name}</span>
+                    <span className="shrink-0 text-[9px] text-[#8A877F]">{c.count} styles</span>
                   </span>
-                  <span className="font-mono text-[#737373]">
-                    Spreads {String(startNum).padStart(2, '0')}–{String(endNum).padStart(2, '0')}
+                  <span className="shrink-0 font-mono text-[9px] text-[#8A877F] group-hover:text-[#171715]">
+                    {String(startNum).padStart(2, '0')}–{String(endNum).padStart(2, '0')}
                   </span>
                 </button>
               );
             })}
-            <button
-              type="button"
-              disabled={isPreviewLayer}
-              onClick={() => onGoToPage(totalSpreads - 1)}
-              className="flex w-full items-center justify-between py-2 text-left hover:bg-[#FAFAFA] cursor-pointer"
-            >
-              <span>03. Print Specs, Compression &amp; CSV / JSON Swap</span>
-              <span className="font-mono text-[#737373]">Spread {totalSpreads}</span>
-            </button>
           </div>
 
-          <h3 className="mt-5 font-sans text-xs font-semibold tracking-wide text-[#0A0A0A]">
-            Men&apos;s Division (Nam — {menItems.length} Styles)
-          </h3>
-          <div className="mt-2 divide-y divide-[#F2F2F2] border-t border-b border-[#EFEFEF]">
+          <div className="mt-4 border-t border-[#EAE8E3] pt-3">
+            <h3 className="mb-1.5 flex items-baseline justify-between gap-2">
+              <span className="font-serif text-xl text-[#171715]">Men&apos;s line</span>
+              <span className="text-[9px] uppercase tracking-[0.14em] text-[#8A877F]">
+                Nam · {menItems.length} styles
+              </span>
+            </h3>
             {menItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                disabled={isPreviewLayer}
+                disabled={isPreviewLayer || classicMode}
                 onClick={() => onGoToPage(productOffset + item.index - 1)}
-                className="flex w-full items-baseline justify-between gap-2 py-1 text-left text-[10.5px] hover:bg-[#FAFAFA] cursor-pointer"
+                className="flex w-full items-baseline justify-between gap-2 border-b border-[#F2F0EB] py-1 text-left text-[10px] transition-colors hover:bg-[#F8F7F4] cursor-pointer"
               >
-                <span className="truncate">
-                  <span className="mr-2 font-mono font-medium text-[#0A0A0A]">{item.sku}</span>
-                  <span className="text-[#404040]">{item.title}</span>
+                <span className="flex min-w-0 items-baseline gap-2 truncate">
+                  <span className="font-mono text-[9px] text-[#8A877F]">{String(item.index).padStart(2, '0')}</span>
+                  <span className="font-medium text-[#292824]">{item.title}</span>
                 </span>
-                <span className="shrink-0 font-mono text-[10px] text-[#737373] tabular-nums">
-                  {item.specs.fabricRollRef} · Sp.{String(productOffset + item.index).padStart(2, '0')}
+                <span className="shrink-0 font-mono text-[9px] text-[#8A877F] tabular-nums">
+                  p. {String(productOffset + item.index).padStart(2, '0')}
                 </span>
               </button>
             ))}
@@ -470,31 +491,39 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     const tocRecto = (
       <LeafShell
         side="recto"
-        showSafeZones={showSafeZones}
-        headerLeft="INDEX DIRECTORY"
-        headerRight="WOMEN'S LINE (NỮ)"
-        footerLeft="DOT / DT APPAREL"
+        showSafeZones={showGuides}
+        headerLeft="THE COLLECTION"
+        headerRight="WOMEN'S LINE"
+        footerLeft="DREAM TOMORROW · DT"
         footerRight="P. 02B"
       >
-        <div>
-          <h3 className="font-sans text-xs font-semibold tracking-wide text-[#0A0A0A]">
-            Women&apos;s Division (Nữ — {womenItems.length} Styles)
-          </h3>
-          <div className="mt-2.5 divide-y divide-[#F2F2F2] border-t border-b border-[#EFEFEF]">
+        <div className="flex h-full flex-col">
+          <div className="mb-5 border-b border-[#EAE8E3] pb-4">
+            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--metallic-strong)]">
+              The women&apos;s edit
+            </p>
+            <h3 className="mt-1 font-serif text-4xl font-normal leading-none tracking-tight text-[#171715]">
+              Women&apos;s line<span className="text-[var(--metallic-strong)]">.</span>
+            </h3>
+            <p className="mt-2 text-[10px] leading-relaxed text-[#77736D]">
+              {womenItems.length} styles to browse. Choose a piece to turn straight to its story.
+            </p>
+          </div>
+          <div className="divide-y divide-[#EEECE7] border-t border-[#EAE8E3]">
             {womenItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                disabled={isPreviewLayer}
+                disabled={isPreviewLayer || classicMode}
                 onClick={() => onGoToPage(productOffset + item.index - 1)}
-                className="flex w-full items-baseline justify-between gap-2 py-1.5 text-left text-[10.5px] hover:bg-[#FAFAFA] cursor-pointer"
+                className="flex w-full items-baseline justify-between gap-3 py-2.5 text-left text-[11px] transition-colors hover:bg-[#F8F7F4] cursor-pointer"
               >
-                <span className="truncate">
-                  <span className="mr-2 font-mono font-medium text-[#0A0A0A]">{item.sku}</span>
-                  <span className="text-[#404040]">{item.title}</span>
+                <span className="flex min-w-0 items-baseline gap-3 truncate">
+                  <span className="font-mono text-[9px] text-[#8A877F]">{String(item.index).padStart(2, '0')}</span>
+                  <span className="font-serif text-xs leading-tight text-[#292824]">{item.title}</span>
                 </span>
-                <span className="shrink-0 font-mono text-[10px] text-[#737373] tabular-nums">
-                  {item.specs.fabricRollRef} · Sp.{String(productOffset + item.index).padStart(2, '0')}
+                <span className="shrink-0 font-mono text-[9px] text-[#8A877F] tabular-nums">
+                  p. {String(productOffset + item.index).padStart(2, '0')}
                 </span>
               </button>
             ))}
@@ -516,7 +545,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     const swatchVerso = (
       <LeafShell
         side="verso"
-        showSafeZones={showSafeZones}
+        showSafeZones={showGuides}
         headerLeft={`FABRIC & COLOR SWATCHES · PART ${swatchSpreadNum}/4`}
         headerRight="LEFT LEAF (VERSO)"
         footerLeft={`P. 0${swatchSpreadNum + 2}A`}
@@ -527,14 +556,15 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             <h2 className="font-sans text-lg font-semibold tracking-tight text-[#0A0A0A]">
               Swatchbook Textiles &amp; Pantone TCX Palette
             </h2>
-            <p className="mt-0.5 font-serif text-xs italic text-[#737373]">
+            {!classicMode && <p className="mt-0.5 font-serif text-xs italic text-[#737373]">
               Drop 1:1 fabric scans onto any tile to propagate across linked styles
-            </p>
+            </p>}
           </div>
           <FabricSwatchBoard
             garments={garments}
             onReplaceFabricSwatch={onReplaceFabricSwatch}
             onSelectStyleIndex={(idx) => onGoToPage(productOffset + idx - 1)}
+            interactive={!classicMode}
             sliceRange={[baseRollIdx, baseRollIdx + 2]}
             embeddedInFlipbook
             compactLeaf
@@ -547,7 +577,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     const swatchRecto = (
       <LeafShell
         side="recto"
-        showSafeZones={showSafeZones}
+        showSafeZones={showGuides}
         headerLeft="PANTONE TCX & ROLL WIDTH SPECS"
         headerRight="RIGHT LEAF (RECTO)"
         footerLeft="GSM & WIDTH SEPARATED"
@@ -558,6 +588,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             garments={garments}
             onReplaceFabricSwatch={onReplaceFabricSwatch}
             onSelectStyleIndex={(idx) => onGoToPage(productOffset + idx - 1)}
+            interactive={!classicMode}
             sliceRange={[baseRollIdx + 2, baseRollIdx + 4]}
             embeddedInFlipbook
             compactLeaf
@@ -591,16 +622,18 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         garment={product}
         allGarments={garments}
         editMode={editMode}
+        classicMode={classicMode}
         isShortlisted={shortlist.includes(product.id)}
         embeddedInFlipbook
         side={side}
-        showSafeZones={showSafeZones}
+        showSafeZones={showGuides}
         isPreviewLayer={isPreviewLayer}
         onPrev={() => onGoToPage(pageIndex <= 0 ? totalSpreads - 1 : pageIndex - 1)}
         onNext={() => onGoToPage(pageIndex >= totalSpreads - 1 ? 0 : pageIndex + 1)}
         onJumpToIndex={(idx) => onGoToPage(productOffset + idx - 1)}
         onToggleShortlist={onToggleShortlist}
         onReplaceFile={onReplaceFile}
+        onUpdateCrop={onUpdateCrop}
         onInspectMedia={onInspectMedia}
         onOpenEditor={(focusSlot) => onOpenEditor(product.index, focusSlot)}
         onOpenVideo={onOpenVideo}
@@ -615,7 +648,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   const backVerso = (
     <LeafShell
       side="verso"
-      showSafeZones={showSafeZones}
+      showSafeZones={showGuides}
       headerLeft="ASSET & PRINT PRODUCTION SPECS"
       headerRight="STATIC / PRE-PRESS READY"
       footerLeft={`P. ${totalSpreads}A`}
@@ -671,12 +704,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
           </div>
         </div>
 
-        <div className="space-y-2.5 border-t border-[#EFEFEF] pt-3 text-[11.5px]">
-          <p className="font-semibold text-[#0A0A0A]">Session Drag-and-Drop vs. Saved Project Assets</p>
-          <p className="text-[#525252]">
-            Images dragged onto any product or swatch plate preview immediately in the browser and carry through to <strong>Print / Export PDF</strong>, remaining scoped to your browser session until committed to project assets or exported via CSV/JSON.
-          </p>
-        </div>
+        {!classicMode && (
+          <div className="space-y-2.5 border-t border-[#EFEFEF] pt-3 text-[11.5px]">
+            <p className="font-semibold text-[#0A0A0A]">Session Drag-and-Drop vs. Saved Project Assets</p>
+            <p className="text-[#525252]">
+              Images dragged onto any product or swatch plate preview immediately in the browser and carry through to <strong>Print / Export PDF</strong>, remaining scoped to your browser session until committed to project assets or exported via CSV/JSON.
+            </p>
+          </div>
+        )}
       </div>
     </LeafShell>
   );
@@ -684,14 +719,26 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   const backRecto = (
     <LeafShell
       side="recto"
-      showSafeZones={showSafeZones}
-      headerLeft="STRUCTURED DATA SWAP"
-      headerRight="CSV / JSON MANIFEST"
+      showSafeZones={showGuides}
+      headerLeft={classicMode ? 'DREAM TOMORROW · DT' : 'STRUCTURED DATA SWAP'}
+      headerRight={classicMode ? meta.edition : 'CSV / JSON MANIFEST'}
       footerLeft="FLAT @MEDIA PRINT READY"
       footerRight={`P. ${totalSpreads}B`}
     >
       <div className="flex flex-1 flex-col justify-between">
-        <div className="space-y-5">
+        {classicMode ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <img src={BRAND_LOGO_PATH} alt="DT" className="h-20 w-auto object-contain" />
+            <p className="mt-5 font-serif text-2xl tracking-tight text-[#24231F]">
+              Dream Tomorrow
+            </p>
+            <p className="mt-2 font-mono text-[10px] tracking-wide text-[#77756F]">
+              {meta.edition}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-5">
           <div>
             <div className="flex items-center gap-2 text-[var(--metallic-strong)]">
               <FileSpreadsheet className="h-4 w-4" />
@@ -701,14 +748,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               Import &amp; Export Line Sheet Data
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-[#525252]">
-              Download the structured CSV or JSON blueprint containing all 43 DOT styles (with separated <span className="font-mono">weightGsm</span> and <span className="font-mono">fabricWidth</span> columns, image URL paths, and <span className="font-mono">dataFlags</span>), update in Sheets/Excel, and re-import to refresh all 50 spreads.
+              Download the structured CSV or JSON blueprint containing all 43 Dream Tomorrow styles (with separated <span className="font-mono">weightGsm</span> and <span className="font-mono">fabricWidth</span> columns, image URL paths, and <span className="font-mono">dataFlags</span>), update in Sheets/Excel, and re-import to refresh all 50 spreads.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               type="button"
-              disabled={isPreviewLayer}
+              disabled={isPreviewLayer || classicMode}
               onClick={onExportCsv}
               className="inline-flex items-center justify-center gap-2 border border-[#0A0A0A] bg-[#0A0A0A] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#262626] cursor-pointer"
             >
@@ -717,7 +764,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             </button>
             <button
               type="button"
-              disabled={isPreviewLayer}
+              disabled={isPreviewLayer || classicMode}
               onClick={onTriggerImportCsv}
               className="inline-flex items-center justify-center gap-2 border border-[#0A0A0A] bg-white px-4 py-2.5 text-xs font-medium text-[#0A0A0A] hover:bg-[#FAFAFA] cursor-pointer"
             >
@@ -726,7 +773,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             </button>
             <button
               type="button"
-              disabled={isPreviewLayer}
+              disabled={isPreviewLayer || classicMode}
               onClick={onExportJson}
               className="inline-flex items-center justify-center gap-2 border border-[#E5E5E5] bg-white px-4 py-2.5 text-xs font-medium text-[#404040] hover:border-[#0A0A0A] hover:text-[#0A0A0A] cursor-pointer"
             >
@@ -735,7 +782,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             </button>
             <button
               type="button"
-              disabled={isPreviewLayer}
+              disabled={isPreviewLayer || classicMode}
               onClick={onTriggerImportJson}
               className="inline-flex items-center justify-center gap-2 border border-[#E5E5E5] bg-white px-4 py-2.5 text-xs font-medium text-[#404040] hover:border-[#0A0A0A] hover:text-[#0A0A0A] cursor-pointer"
             >
@@ -748,6 +795,8 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         <div className="mt-6 border-t border-[#EFEFEF] pt-4 font-mono text-[10px] leading-relaxed text-[#737373]">
           SKU Naming: <span className="text-[#0A0A0A]">SKU_hero.webp</span>, <span className="text-[#0A0A0A]">SKU_pocket.webp</span>, <span className="text-[#0A0A0A]">SKU_seam.webp</span>, <span className="text-[#0A0A0A]">swatch_CODE.webp</span> · Flat @media print mode strips all page-curl transforms.
         </div>
+          </>
+        )}
       </div>
     </LeafShell>
   );

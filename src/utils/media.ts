@@ -1,3 +1,6 @@
+import type { CSSProperties } from 'react';
+import type { ImageCrop } from '../types/catalogue';
+
 /**
  * Reads an uploaded image File and downscales gently only if huge (> 1600px)
  * so high-resolution print quality is preserved while keeping browser storage responsive.
@@ -66,4 +69,33 @@ export function parseVideoUrl(url: string): ParsedVideo {
   }
 
   return { type: 'direct', embedUrl: trimmed };
+}
+
+export function normalizeImageCrop(crop?: Partial<ImageCrop>): ImageCrop {
+  const rawScale = crop?.scale;
+  const scale =
+    typeof rawScale === 'number' && Number.isFinite(rawScale)
+      ? Math.min(3, Math.max(1, rawScale))
+      : 1;
+  const maxPan = (50 * (scale - 1)) / scale;
+  const rawX = crop?.x;
+  const rawY = crop?.y;
+  const x =
+    typeof rawX === 'number' && Number.isFinite(rawX)
+      ? Math.min(maxPan, Math.max(-maxPan, rawX))
+      : 0;
+  const y =
+    typeof rawY === 'number' && Number.isFinite(rawY)
+      ? Math.min(maxPan, Math.max(-maxPan, rawY))
+      : 0;
+
+  return { scale, x, y };
+}
+
+export function imageCropStyle(crop?: Partial<ImageCrop>): CSSProperties {
+  const normalized = normalizeImageCrop(crop);
+  return {
+    transform: `translate(${normalized.x}%, ${normalized.y}%) scale(${normalized.scale})`,
+    transformOrigin: 'center center',
+  };
 }

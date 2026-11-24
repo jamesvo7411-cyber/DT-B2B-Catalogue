@@ -9,6 +9,7 @@ interface FabricSwatchBoardProps {
   garments: GarmentItem[];
   onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
   onSelectStyleIndex: (index: number) => void;
+  interactive?: boolean;
   sliceRange?: [number, number];
   embeddedInFlipbook?: boolean;
   compactLeaf?: boolean;
@@ -18,8 +19,9 @@ interface FabricSwatchBoardProps {
 const FabricSwatchTile: React.FC<{
   program: FabricSwatchProgram;
   onDropImage: (dataUrl: string) => void;
+  interactive?: boolean;
   isPreviewLayer?: boolean;
-}> = ({ program, onDropImage, isPreviewLayer = false }) => {
+}> = ({ program, onDropImage, interactive = true, isPreviewLayer = false }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -31,7 +33,7 @@ const FabricSwatchTile: React.FC<{
   const hasImage = Boolean(program.swatchImageUrl && !imgError);
 
   const handleFiles = async (files: FileList | null) => {
-    if (isPreviewLayer || !files || files.length === 0) return;
+    if (!interactive || isPreviewLayer || !files || files.length === 0) return;
     const file = files[0];
     if (!file.type.startsWith('image/')) return;
     const dataUrl = await readImageFileAsDataUrl(file);
@@ -41,11 +43,11 @@ const FabricSwatchTile: React.FC<{
 
   return (
     <div
-      role={isPreviewLayer ? undefined : 'button'}
-      tabIndex={isPreviewLayer ? undefined : 0}
-      onClick={isPreviewLayer ? undefined : () => inputRef.current?.click()}
+      role={isPreviewLayer || !interactive ? undefined : 'button'}
+      tabIndex={isPreviewLayer || !interactive ? undefined : 0}
+      onClick={isPreviewLayer || !interactive ? undefined : () => inputRef.current?.click()}
       onKeyDown={
-        isPreviewLayer
+        isPreviewLayer || !interactive
           ? undefined
           : (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -55,16 +57,16 @@ const FabricSwatchTile: React.FC<{
             }
       }
       onDragOver={
-        isPreviewLayer
+        isPreviewLayer || !interactive
           ? undefined
           : (e) => {
               e.preventDefault();
               setDragging(true);
             }
       }
-      onDragLeave={isPreviewLayer ? undefined : () => setDragging(false)}
+      onDragLeave={isPreviewLayer || !interactive ? undefined : () => setDragging(false)}
       onDrop={
-        isPreviewLayer
+        isPreviewLayer || !interactive
           ? undefined
           : (e) => {
               e.preventDefault();
@@ -73,16 +75,16 @@ const FabricSwatchTile: React.FC<{
             }
       }
       className={`group relative aspect-square w-full overflow-hidden border transition-colors ${
-        isPreviewLayer ? '' : 'cursor-pointer'
+        isPreviewLayer || !interactive ? '' : 'cursor-pointer'
       } ${
         dragging
           ? 'border-[#0A0A0A] bg-[#F2F2F2]'
           : hasImage
             ? 'border-[#E5E5E5] bg-[#FAFAFA]'
-            : 'border-[#E5E5E5] plate-blueprint-bg hover:border-[var(--metallic)]'
+            : `border-[#E5E5E5] plate-blueprint-bg ${interactive ? 'hover:border-[var(--metallic)]' : ''}`
       }`}
     >
-      {!isPreviewLayer && (
+      {!isPreviewLayer && interactive && (
         <input
           ref={inputRef}
           type="file"
@@ -109,22 +111,26 @@ const FabricSwatchTile: React.FC<{
             decoding="async"
             referrerPolicy="no-referrer"
             onError={() => setImgError(true)}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className={`h-full w-full object-cover ${
+              interactive ? 'transition-transform duration-300 group-hover:scale-[1.03]' : ''
+            }`}
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 opacity-0 transition-opacity group-hover:opacity-100">
-            <span className="text-[11px] font-medium text-white">
-              {program.isSessionDrop ? 'Session Drop · Replace' : 'Drop to Replace Swatch'}
-            </span>
-          </div>
+          {interactive && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="text-[11px] font-medium text-white">
+                {program.isSessionDrop ? 'Session Drop · Replace' : 'Drop to Replace Swatch'}
+              </span>
+            </div>
+          )}
         </>
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center px-3 text-center">
-          <Upload className="h-4 w-4 text-[var(--metallic-strong)]" />
+          {interactive && <Upload className="h-4 w-4 text-[var(--metallic-strong)]" />}
           <p className="mt-1.5 font-mono text-[10px] font-medium text-[#0A0A0A]">
             {program.fabricCode}
           </p>
           <p className="mt-0.5 text-[9.5px] text-[#737373]">
-            Drop 1:1 scan
+            {interactive ? 'Drop 1:1 scan' : 'No image linked'}
           </p>
         </div>
       )}
@@ -136,6 +142,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
   garments,
   onReplaceFabricSwatch,
   onSelectStyleIndex,
+  interactive = true,
   sliceRange,
   embeddedInFlipbook = false,
   compactLeaf = false,
@@ -176,6 +183,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                   <FabricSwatchTile
                     program={prog}
                     isPreviewLayer={isPreviewLayer}
+                    interactive={interactive}
                     onDropImage={(dataUrl) => onReplaceFabricSwatch(prog.fabricCode, dataUrl)}
                   />
                 </div>
@@ -233,7 +241,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                       <button
                         key={sku}
                         type="button"
-                        disabled={isPreviewLayer}
+                        disabled={isPreviewLayer || !interactive}
                         onClick={() => onSelectStyleIndex(prog.linkedIndices[idx])}
                         className="font-mono text-[#0A0A0A] underline underline-offset-2 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] cursor-pointer"
                       >
@@ -255,6 +263,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                 <FabricSwatchTile
                   program={prog}
                   isPreviewLayer={isPreviewLayer}
+                  interactive={interactive}
                   onDropImage={(dataUrl) => onReplaceFabricSwatch(prog.fabricCode, dataUrl)}
                 />
               </div>
@@ -308,7 +317,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     <button
                       key={sku}
                       type="button"
-                      disabled={isPreviewLayer}
+                      disabled={isPreviewLayer || !interactive}
                       onClick={() => onSelectStyleIndex(prog.linkedIndices[idx])}
                       className="inline-flex items-center gap-0.5 font-mono text-[#0A0A0A] underline underline-offset-4 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] cursor-pointer"
                     >

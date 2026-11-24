@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,6 +13,7 @@ import {
 import type {
   CatalogueMetadata,
   GarmentItem,
+  ImageCrop,
   MediaSlot,
   MediaSlotKey,
   MetallicTheme,
@@ -28,6 +29,7 @@ interface FlipbookStageProps {
   metallicTheme: MetallicTheme;
   bookPage: number; // 0..49 (50 total spreads)
   editMode: boolean;
+  classicMode: boolean;
   shortlist: string[];
   coverCustomImage: string;
   showSafeZones: boolean;
@@ -38,6 +40,7 @@ interface FlipbookStageProps {
   onToggleSafeZones: () => void;
   onDropCoverImage: (dataUrl: string) => void;
   onReplaceFile: (garmentId: string, slotKey: MediaSlotKey, dataUrl: string) => void;
+  onUpdateCrop: (garmentId: string, slotKey: MediaSlotKey, crop: ImageCrop) => void;
   onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
   onToggleShortlist: (id: string) => void;
   onInspectMedia: (slot: MediaSlot, titleLabel: string, garmentTitle: string) => void;
@@ -59,6 +62,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
   metallicTheme,
   bookPage,
   editMode,
+  classicMode,
   shortlist,
   coverCustomImage,
   showSafeZones,
@@ -69,6 +73,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
   onToggleSafeZones,
   onDropCoverImage,
   onReplaceFile,
+  onUpdateCrop,
   onReplaceFabricSwatch,
   onToggleShortlist,
   onInspectMedia,
@@ -86,6 +91,13 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
 
   const [zoom, setZoom] = useState<number>(1);
   const [thumbnailView, setThumbnailView] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (classicMode) {
+      setZoom(1);
+      setThumbnailView(false);
+    }
+  }, [classicMode]);
 
   const fabricPrograms = buildFabricSwatchPrograms(garments);
 
@@ -122,7 +134,8 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
         garments={garments}
         meta={meta}
         metallicTheme={metallicTheme}
-        editMode={editMode}
+        editMode={editMode && !classicMode}
+        classicMode={classicMode}
         shortlist={shortlist}
         coverCustomImage={coverCustomImage}
         showSafeZones={showSafeZones}
@@ -132,6 +145,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
         onChangeMetallicTheme={onChangeMetallicTheme}
         onDropCoverImage={onDropCoverImage}
         onReplaceFile={onReplaceFile}
+        onUpdateCrop={onUpdateCrop}
         onReplaceFabricSwatch={onReplaceFabricSwatch}
         onToggleShortlist={onToggleShortlist}
         onInspectMedia={onInspectMedia}
@@ -150,6 +164,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
       meta,
       metallicTheme,
       editMode,
+      classicMode,
       shortlist,
       coverCustomImage,
       showSafeZones,
@@ -157,6 +172,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
       onChangeMetallicTheme,
       onDropCoverImage,
       onReplaceFile,
+      onUpdateCrop,
       onReplaceFabricSwatch,
       onToggleShortlist,
       onInspectMedia,
@@ -172,13 +188,20 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
 
   return (
     <section
-      aria-label="Interactive Diagonal Page-Curl Landscape Flipbook"
-      className="mx-auto max-w-[1380px] px-4 py-6 sm:px-6 lg:px-10 lg:py-7"
+      aria-label={
+        classicMode
+          ? 'Classic print-style catalogue spread'
+          : 'Interactive Diagonal Page-Curl Landscape Flipbook'
+      }
+      className={`mx-auto max-w-[1380px] px-4 sm:px-6 lg:px-10 ${
+        classicMode ? 'py-1 lg:py-2' : 'py-6 lg:py-7'
+      }`}
     >
       {/* ====================================================================
           TOP FLIPBOOK CONTROL BAR (PREV/NEXT + JUMP + ZOOM + THUMBNAILS + GUIDES)
           ==================================================================== */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-4 text-xs">
+      {!classicMode && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-4 text-xs">
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
@@ -225,7 +248,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
             <span>Next</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
-        </div>
+          </div>
 
         {/* Section Quick Jump + Thumbnail Grid + Zoom + Binding Safe-Zone Guides + Print */}
         <div className="flex flex-wrap items-center gap-2">
@@ -369,11 +392,12 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           </button>
         </div>
       </div>
+      )}
 
       {/* ====================================================================
           THUMBNAIL GRID VIEW OR DIAGONAL PAGE-CURL FLIPBOOK STAGE
           ==================================================================== */}
-      {thumbnailView ? (
+      {!classicMode && thumbnailView ? (
         <div className="border border-[#E5E5E5] bg-[#FAFAFA] p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-3">
             <div>
@@ -422,7 +446,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
                       <div className="spine-verso-shadow pointer-events-none absolute inset-y-0 right-0 w-2" />
                       {i === 0 ? (
                         <span className="font-sans text-[9px] font-semibold text-[#0A0A0A] text-center">
-                          DOT / DT
+                          DREAM TOMORROW
                         </span>
                       ) : i === 1 ? (
                         <span className="font-mono text-[8px] text-[#525252]">TOC · NAM</span>
@@ -513,6 +537,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           bookPage={bookPage}
           totalSpreads={totalSpreads}
           zoom={zoom}
+          classicMode={classicMode}
           turnRequest={turnRequest}
           onCommitPage={onChangeBookPage}
           renderSpread={renderSpread}
@@ -522,7 +547,8 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
       {/* ====================================================================
           DIRECT BOOK TURN HINT & BOTTOM 50-SPREAD SPINE SCRUBBER
           ==================================================================== */}
-      <div className="mt-5 border-t border-[#E5E5E5] pt-4">
+      {!classicMode && (
+        <div className="mt-5 border-t border-[#E5E5E5] pt-4">
         <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#737373]">
           <span>
             Spine Scrubber — <span className="font-mono text-[#0A0A0A]">{getSpreadLabel(bookPage)}</span>
@@ -555,6 +581,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           })}
         </div>
       </div>
+      )}
     </section>
   );
 };

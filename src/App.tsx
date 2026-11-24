@@ -4,11 +4,12 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, RotateCcw, Upload } from 'lucide-react';
+import { ChevronDown, Download, RotateCcw, Upload } from 'lucide-react';
 import type {
   CatalogueSection,
   GarmentCategory,
   GarmentItem,
+  ImageCrop,
   MediaSlot,
   MediaSlotKey,
   MetallicTheme,
@@ -36,6 +37,7 @@ import {
 } from './components/MediaModals';
 
 const STORAGE_KEY = 'dream-tomorrow-catalogue-v3';
+type CatalogueViewMode = 'interactive' | 'classic';
 
 interface SavedState {
   garments: GarmentItem[];
@@ -52,31 +54,48 @@ function loadSavedState(): SavedState | null {
     if (!Array.isArray(parsed.garments) || parsed.garments.length === 0) {
       return null;
     }
-    const hydratedGarments: GarmentItem[] = parsed.garments.map((g, idx) => ({
-      ...g,
-      descriptionBullets:
-        Array.isArray(g.descriptionBullets) && g.descriptionBullets.length > 0
-          ? g.descriptionBullets
-          : buildDefaultDescriptionBullets(g.specs),
-      keyFeatures:
-        Array.isArray(g.keyFeatures) && g.keyFeatures.length > 0
-          ? g.keyFeatures
-          : buildDefaultKeyFeatures(g.specs),
-      colorways:
-        Array.isArray(g.colorways) && g.colorways.length > 0
-          ? g.colorways
-          : [...DEFAULT_COLORWAYS],
-      media: {
-        ...g.media,
-        custom: g.media.custom ?? {
-          url: '',
-          stage: 'blank',
-          caption: `Fig. ${String(idx + 1).padStart(2, '0')}.E — Custom Fit / Label / Trim Note`,
-          aspectLabel: '4:3 Custom Slot',
-          note: 'Optional B2B care label, hardware, or fit-session photo',
+    const savedById = new Map(parsed.garments.map((garment) => [garment.id, garment]));
+    const hydratedGarments: GarmentItem[] = createInitialGarments().map((defaults) => {
+      const saved = savedById.get(defaults.id);
+      if (!saved) return defaults;
+      const savedCustom = saved.media?.custom;
+      const isLegacyCustomPlaceholder =
+        savedCustom &&
+        !savedCustom.url &&
+        savedCustom.caption ===
+          `Fig. ${String(defaults.index).padStart(2, '0')}.E — Custom Fit / Label / Trim Note` &&
+        savedCustom.note === 'Optional B2B care label, hardware, or fit-session photo';
+
+      return {
+        ...defaults,
+        ...saved,
+        title: defaults.title,
+        productUrl: defaults.productUrl,
+        descriptionBullets:
+          Array.isArray(saved.descriptionBullets) && saved.descriptionBullets.length > 0
+            ? saved.descriptionBullets
+            : buildDefaultDescriptionBullets(saved.specs),
+        keyFeatures:
+          Array.isArray(saved.keyFeatures) && saved.keyFeatures.length > 0
+            ? saved.keyFeatures
+            : buildDefaultKeyFeatures(saved.specs),
+        colorways:
+          Array.isArray(saved.colorways) && saved.colorways.length > 0
+            ? saved.colorways
+            : [...DEFAULT_COLORWAYS],
+        media: {
+          ...defaults.media,
+          ...saved.media,
+          hero: saved.media?.hero?.url ? saved.media.hero : defaults.media.hero,
+          pocket: saved.media?.pocket?.url ? saved.media.pocket : defaults.media.pocket,
+          seam: saved.media?.seam?.url ? saved.media.seam : defaults.media.seam,
+          swatch: saved.media?.swatch?.url ? saved.media.swatch : defaults.media.swatch,
+          custom: isLegacyCustomPlaceholder
+            ? defaults.media.custom
+            : savedCustom ?? defaults.media.custom,
         },
-      },
-    }));
+      };
+    });
     return {
       garments: hydratedGarments,
       metallicTheme: parsed.metallicTheme ?? 'platinum',
@@ -105,10 +124,12 @@ export default function App() {
   );
 
   const [section, setSection] = useState<CatalogueSection>('flipbook');
+  const [viewMode, setViewMode] = useState<CatalogueViewMode>('interactive');
   const [bookPage, setBookPage] = useState<number>(0); // 0=Cover, 1=TOC, 2..5=Swatches, 6..48=43 Products, 49=Print Specs & Data
   const [turnRequest, setTurnRequest] = useState<{ dir: 'next' | 'prev'; nonce: number } | null>(null);
   const [activeCategory, setActiveCategory] = useState<GarmentCategory | 'All'>('All');
   const [editMode, setEditMode] = useState<boolean>(false);
+  const isClassicMode = viewMode === 'classic' && section === 'flipbook';
 
   const [editorState, setEditorState] = useState<{
     garmentIndex: number;
@@ -171,7 +192,14 @@ export default function App() {
 
   // Keyboard navigation in Diagonal Page-Curl Flipbook mode
   useEffect(() => {
-    if (section !== 'flipbook' || editorState || lightboxItem || videoGarmentId || exportModalOpen) {
+    if (
+      section !== 'flipbook' ||
+      viewMode === 'classic' ||
+      editorState ||
+      lightboxItem ||
+      videoGarmentId ||
+      exportModalOpen
+    ) {
       return;
     }
     const handleKey = (e: KeyboardEvent) => {
@@ -185,7 +213,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [section, editorState, lightboxItem, videoGarmentId, exportModalOpen]);
+  }, [section, viewMode, editorState, lightboxItem, videoGarmentId, exportModalOpen]);
 
   const activeProductIndex =
     bookPage >= 6 && bookPage < 6 + garments.length ? bookPage - 5 : 1;
@@ -229,6 +257,7 @@ export default function App() {
             [slotKey]: {
               ...g.media[slotKey],
               url: dataUrl,
+              crop: undefined,
               isSessionDrop: true,
               stage: currentStage === 'blank' ? 'ai-concept' : currentStage,
             },
@@ -236,7 +265,23 @@ export default function App() {
         };
       })
     );
-    showToast('Session image placed — active in browser & PDF export until saved to project assets.');
+    showToast('Image saved in this browser and included in PDF export. Export JSON to back it up.');
+  };
+
+  const handleUpdateCrop = (garmentId: string, slotKey: MediaSlotKey, crop: ImageCrop) => {
+    setGarments((prev) =>
+      prev.map((garment) =>
+        garment.id === garmentId
+          ? {
+              ...garment,
+              media: {
+                ...garment.media,
+                [slotKey]: { ...garment.media[slotKey], crop },
+              },
+            }
+          : garment
+      )
+    );
   };
 
   const handleReplaceFabricSwatch = (fabricCode: string, dataUrl: string) => {
@@ -251,6 +296,7 @@ export default function App() {
             swatch: {
               ...g.media.swatch,
               url: dataUrl,
+              crop: undefined,
               isSessionDrop: true,
               stage: currentStage === 'blank' ? 'ai-concept' : currentStage,
             },
@@ -258,7 +304,7 @@ export default function App() {
         };
       })
     );
-    showToast(`Swatch ${fabricCode} updated across all linked styles for this session.`);
+    showToast(`Swatch ${fabricCode} saved across linked styles in this browser.`);
   };
 
   const handleSaveVideo = (garmentId: string, videoUrl: string, videoTitle: string) => {
@@ -277,7 +323,7 @@ export default function App() {
   const handleExportJson = () => {
     const payload = JSON.stringify(
       {
-        brand: 'Dream Tomorrow (DOT / DT Apparel)',
+        brand: 'Dream Tomorrow (DT)',
         exportedAt: new Date().toISOString(),
         metallicTheme,
         shortlist,
@@ -293,7 +339,7 @@ export default function App() {
     link.download = 'dot-b2b-catalogue-manifest.json';
     link.click();
     URL.revokeObjectURL(url);
-    showToast('Catalogue manifest exported as JSON.');
+    showToast('Catalogue manifest exported as JSON, including saved image crops.');
   };
 
   const handleImportJson = (file: File | undefined) => {
@@ -359,7 +405,7 @@ export default function App() {
     } catch {
       // ignore
     }
-    showToast('Catalogue reset to clean 43-style DOT template.');
+    showToast('Catalogue reset to clean 43-style DT template.');
   };
 
   const handleExecutePrint = () => {
@@ -380,6 +426,51 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleViewModeChange = (mode: CatalogueViewMode) => {
+    setViewMode(mode);
+    if (mode === 'classic') {
+      setSection('flipbook');
+      setEditMode(false);
+      setEditorState(null);
+      setLightboxItem(null);
+      setVideoGarmentId(null);
+      setExportModalOpen(false);
+    }
+  };
+
+  const viewModeToggle = (
+    <div
+      role="group"
+      aria-label="Catalogue viewing mode"
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-[#E8E6E0] bg-[#F8F7F4] p-1"
+    >
+      <button
+        type="button"
+        aria-pressed={viewMode === 'interactive'}
+        onClick={() => handleViewModeChange('interactive')}
+        className={`rounded-full px-2.5 py-1.5 text-[10px] font-medium transition-colors sm:px-3 sm:text-[11px] ${
+          viewMode === 'interactive'
+            ? 'bg-white text-[#24231F] shadow-sm'
+            : 'text-[#77756F] hover:text-[#24231F]'
+        }`}
+      >
+        Interactive
+      </button>
+      <button
+        type="button"
+        aria-pressed={viewMode === 'classic'}
+        onClick={() => handleViewModeChange('classic')}
+        className={`rounded-full px-2.5 py-1.5 text-[10px] font-medium transition-colors sm:px-3 sm:text-[11px] ${
+          viewMode === 'classic'
+            ? 'bg-white text-[#24231F] shadow-sm'
+            : 'text-[#77756F] hover:text-[#24231F]'
+        }`}
+      >
+        Classic (Print)
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-white text-[#0A0A0A]">
       {/* Dynamic @page print orientation rule */}
@@ -391,7 +482,7 @@ export default function App() {
       <div className="no-print flex min-h-screen flex-col">
         {/* TOP BAR CONTRACT: Strictly 1 row, 3 zones separated by gap-8 */}
         <header className="sticky top-0 z-30 border-b border-[#E5E5E5] bg-white/95 backdrop-blur-xs">
-          <div className="mx-auto flex h-16 max-w-[1380px] items-center justify-between gap-8 px-6 lg:px-10">
+          <div className="mx-auto flex h-16 max-w-[1380px] items-center justify-between gap-3 px-4 sm:px-6 lg:gap-8 lg:px-10">
             {/* Zone 1: Single-line Brand Wordmark */}
             <button
               type="button"
@@ -399,28 +490,29 @@ export default function App() {
                 setBookPage(0);
                 navigateSection('flipbook');
               }}
-              className="flex items-center gap-3 text-left whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A]"
+              className="flex items-center gap-2 text-left whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0A0A0A] sm:gap-3"
             >
               <img
                 src={BRAND_LOGO_PATH}
                 alt="DT"
                 className="h-6 w-auto object-contain"
               />
-              <span className="font-sans text-base font-semibold tracking-tight text-[#0A0A0A] whitespace-nowrap shrink-0">
+              <span className="font-sans text-sm font-semibold tracking-tight text-[#0A0A0A] whitespace-nowrap shrink-0 sm:text-base">
                 Dream Tomorrow
               </span>
             </button>
 
             {/* Zone 2: 4 Clean Single-Line Navigation Links */}
-            <nav
-              aria-label="Catalogue navigation"
-              className="hidden md:flex items-center gap-7 text-xs font-medium text-[#525252]"
-            >
+            {!isClassicMode && (
+              <nav
+                aria-label="Catalogue navigation"
+                className="hidden md:flex items-center gap-7 text-xs font-medium text-[#525252]"
+              >
               {(
                 [
                   { id: 'flipbook', label: 'Flipbook' },
                   { id: 'fabrics', label: 'Fabrics' },
-                  { id: 'index', label: `Index (${garments.length})` },
+                  { id: 'index', label: 'Collection' },
                   { id: 'print', label: 'Print Sheet' },
                 ] as const
               ).map((navItem) => {
@@ -440,30 +532,35 @@ export default function App() {
                   </button>
                 );
               })}
-            </nav>
+              </nav>
+            )}
 
-            {/* Zone 3: 1 Primary CTA Action */}
-            <div className="flex items-center shrink-0">
-              <button
-                type="button"
-                onClick={() => setExportModalOpen(true)}
-                className="bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white transition-colors duration-200 hover:bg-[#262626] whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Print / Export PDF
-              </button>
+            <div className="flex items-center gap-2 shrink-0 sm:gap-3">
+              {viewModeToggle}
+              {!isClassicMode && (
+                <button
+                  type="button"
+                  onClick={() => setExportModalOpen(true)}
+                  className="hidden bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white transition-colors duration-200 hover:bg-[#262626] whitespace-nowrap shrink-0 cursor-pointer xl:block"
+                >
+                  Print / Export PDF
+                </button>
+              )}
             </div>
           </div>
 
           {/* Mobile Single-Row Nav Strip */}
           <nav
             aria-label="Mobile catalogue navigation"
-            className="flex items-center justify-around border-t border-[#F0F0F0] px-4 py-2 text-xs font-medium md:hidden"
+            className={`items-center justify-around border-t border-[#F0F0F0] px-4 py-2 text-xs font-medium md:hidden ${
+              isClassicMode ? 'hidden' : 'flex'
+            }`}
           >
             {(
               [
                 { id: 'flipbook', label: 'Flipbook' },
                 { id: 'fabrics', label: 'Fabrics' },
-                { id: 'index', label: `Index (${garments.length})` },
+                { id: 'index', label: 'Collection' },
                 { id: 'print', label: 'Print' },
               ] as const
             ).map((navItem) => (
@@ -483,9 +580,15 @@ export default function App() {
           </nav>
         </header>
 
-        {/* SUBTLE STUDIO TOOLBAR (Session Drop Notice + Finish + CSV/JSON Data Swap) */}
-        <div className="border-b border-[#F0F0F0] bg-[#FCFCFC]">
-          <div className="mx-auto flex max-w-[1380px] flex-wrap items-center justify-between gap-4 px-6 py-2 text-[11px] lg:px-10">
+        <details className={`${isClassicMode ? 'hidden ' : ''}group border-b border-[#F0F0F0] bg-[#FCFCFC]`}>
+          <summary className="mx-auto flex max-w-[1380px] cursor-pointer list-none items-center justify-between gap-4 px-6 py-2.5 text-xs text-[#66645F] lg:px-10">
+            <span className="font-medium text-[#292824]">Make it yours</span>
+            <span className="inline-flex items-center gap-2">
+              <span>Edit styles, finishes &amp; files</span>
+              <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+            </span>
+          </summary>
+          <div className="mx-auto flex max-w-[1380px] flex-wrap items-center justify-between gap-4 px-6 py-2 text-[11px] group-open:border-t group-open:border-[#F0F0F0] lg:px-10">
             <div className="flex flex-wrap items-center gap-4 text-[#525252]">
               <span className="text-[#737373]">Finish:</span>
               <div className="flex items-center gap-3">
@@ -511,7 +614,7 @@ export default function App() {
               </div>
               <span aria-hidden="true" className="hidden lg:inline text-[#DCDCDC]">|</span>
               <span className="hidden lg:inline text-[#737373]">
-                Local image drops preview in current session &amp; PDF export unless saved to project assets
+                Image drops &amp; crops save in this browser; export JSON for a portable backup
               </span>
             </div>
 
@@ -583,7 +686,7 @@ export default function App() {
               />
             </div>
           </div>
-        </div>
+        </details>
 
         {/* MAIN VIEWPORT CONTENT */}
         <main className="flex-1">
@@ -592,6 +695,7 @@ export default function App() {
               garments={garments}
               meta={DEFAULT_CATALOGUE_META}
               metallicTheme={metallicTheme}
+              classicMode={isClassicMode}
               bookPage={bookPage}
               editMode={editMode}
               shortlist={shortlist}
@@ -611,6 +715,7 @@ export default function App() {
                 showToast('Session cover image updated for this browser & PDF export.');
               }}
               onReplaceFile={handleReplaceFile}
+              onUpdateCrop={handleUpdateCrop}
               onReplaceFabricSwatch={handleReplaceFabricSwatch}
               onToggleShortlist={handleToggleShortlist}
               onInspectMedia={(slot, titleLabel, garmentTitle) =>
@@ -677,7 +782,7 @@ export default function App() {
         </main>
 
         {/* QUIET MONOCHROME EDITORIAL FOOTER */}
-        <footer className="mt-12 border-t border-[#E5E5E5] bg-white">
+        <footer className={`${isClassicMode ? 'hidden' : 'mt-12 border-t border-[#E5E5E5] bg-white'}`}>
           <div className="mx-auto flex max-w-[1380px] flex-col justify-between gap-4 px-6 py-8 text-xs text-[#737373] sm:flex-row sm:items-center lg:px-10">
             <div className="flex items-center gap-3">
               <img
@@ -686,7 +791,7 @@ export default function App() {
                 className="h-4 w-auto object-contain"
               />
               <span className="font-sans text-xs font-semibold text-[#0A0A0A]">
-                Dream Tomorrow (DOT / DT Apparel)
+                Dream Tomorrow · DT
               </span>
               <span aria-hidden="true">·</span>
               <span>CM · OEM · ODM B2B Landscape Catalogue</span>
@@ -760,7 +865,7 @@ export default function App() {
       />
 
       {/* Subtle Monochrome Feedback Toast */}
-      {toastMessage && (
+      {toastMessage && !isClassicMode && (
         <div
           role="status"
           aria-live="polite"

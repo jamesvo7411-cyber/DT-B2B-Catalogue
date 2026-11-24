@@ -15,6 +15,7 @@ interface PageCurlBookProps {
   bookPage: number;
   totalSpreads: number;
   zoom: number;
+  classicMode: boolean;
   turnRequest: TurnRequest | null;
   onCommitPage: (nextPage: number) => void;
   renderSpread: (
@@ -121,6 +122,7 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
   bookPage,
   totalSpreads,
   zoom,
+  classicMode,
   turnRequest,
   onCommitPage,
   renderSpread,
@@ -138,6 +140,12 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
   useEffect(() => {
     curlRef.current = curl;
   }, [curl]);
+
+  useEffect(() => {
+    if (!classicMode) return;
+    curlRef.current = null;
+    setCurl(null);
+  }, [classicMode]);
 
   // Measure live unscaled book width & height
   useEffect(() => {
@@ -171,6 +179,8 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
           ? totalSpreads - 1
           : bookPage - 1;
 
+    if (classicMode) return;
+
     if (!isDesktopSpread) {
       onCommitPage(targetPage);
       return;
@@ -196,7 +206,7 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
       animDuration: 460,
       commitOnFinish: true,
     });
-  }, [turnRequest, bookPage, totalSpreads, isDesktopSpread, bookSize, onCommitPage]);
+  }, [turnRequest, bookPage, totalSpreads, isDesktopSpread, bookSize, classicMode, onCommitPage]);
 
   // 60fps animation & spring smoothing loop
   useEffect(() => {
@@ -510,7 +520,7 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
     };
   }, [curl, isDesktopSpread, bookSize]);
 
-  const cornerHitZones = isDesktopSpread
+  const cornerHitZones = isDesktopSpread && !classicMode
     ? [
         { side: 'right' as const, cornerY: bookSize.h, pos: 'bottom-0 right-0', label: 'Drag or click bottom-right corner to turn forward' },
         { side: 'right' as const, cornerY: 0, pos: 'top-0 right-0', label: 'Drag or click top-right corner to turn forward' },
@@ -553,15 +563,22 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
         {/* Physical Open-Book Frame */}
         <div
           ref={bookRef}
-          className={`relative border border-[#DEDEDE] bg-white shadow-[0_12px_36px_rgba(0,0,0,0.06)] ${
-            curl?.mode === 'dragging' ? 'cursor-grabbing select-none' : ''
+          className={`relative bg-white ${
+            classicMode
+              ? ''
+              : 'border border-[#DEDEDE] shadow-[0_12px_36px_rgba(0,0,0,0.06)]'
+          } ${!classicMode && curl?.mode === 'dragging' ? 'cursor-grabbing select-none' : ''
           }`}
         >
           {/* Architectural outer frame corner registration ticks */}
-          <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -left-1.5 z-40 h-3 w-3 border-t border-l metallic-frame-tick" />
-          <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -right-1.5 z-40 h-3 w-3 border-t border-r metallic-frame-tick" />
-          <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -left-1.5 z-40 h-3 w-3 border-b border-l metallic-frame-tick" />
-          <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -right-1.5 z-40 h-3 w-3 border-b border-r metallic-frame-tick" />
+          {!classicMode && (
+            <>
+              <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -left-1.5 z-40 h-3 w-3 border-t border-l metallic-frame-tick" />
+              <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -right-1.5 z-40 h-3 w-3 border-t border-r metallic-frame-tick" />
+              <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -left-1.5 z-40 h-3 w-3 border-b border-l metallic-frame-tick" />
+              <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -right-1.5 z-40 h-3 w-3 border-b border-r metallic-frame-tick" />
+            </>
+          )}
 
           {/* ================================================================
               PERSISTENT TWO-PAGE SPREAD (ZERO UNMOUNTING ON HOVER/DRAG)

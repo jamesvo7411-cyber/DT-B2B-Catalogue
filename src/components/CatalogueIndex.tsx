@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowUpRight,
   Bookmark,
   Check,
   ExternalLink,
@@ -39,30 +38,42 @@ const IndexHeroImage: React.FC<{ item: GarmentItem }> = ({ item }) => {
 
   if (item.media.hero.url && !imgError) {
     return (
-      <img
-        src={item.media.hero.url}
-        alt={`${item.sku} ${item.title}`}
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-        onError={() => setImgError(true)}
-        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-      />
+      <>
+        <img
+          src={item.media.hero.url}
+          alt={`${item.sku} ${item.title}`}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setImgError(true)}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/60 via-black/15 to-transparent px-5 pb-5 pt-16">
+          <span className="font-serif text-2xl italic text-white">{item.category}</span>
+          <span className="font-mono text-[10px] tracking-wider text-white/85">
+            {String(item.index).padStart(2, '0')}
+          </span>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="plate-blueprint-bg flex h-full w-full flex-col items-center justify-center px-6 text-center">
-      <span className="font-mono text-xs tracking-widest text-[var(--metallic-strong)] tabular-nums">
-        {item.sku}
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#F5F4F0]">
+      <span aria-hidden="true" className="font-serif text-[clamp(9rem,20vw,16rem)] leading-none text-[#E8E6E0]">
+        {String(item.index).padStart(2, '0')}
       </span>
-      <span className="mt-3 h-px w-8 metallic-rule" />
-      <span className="mt-3 font-sans text-sm font-medium text-[#262626]">
-        {item.specs.fabricRollRef}
-      </span>
-      <span className="mt-1 font-mono text-[11px] text-[#8A8A8A]">
-        {item.specs.weightGsm} · {item.colorCount} Colors
-      </span>
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-5">
+        {item.media.hero.note.startsWith('Expected local image file:') && (
+          <span className="absolute bottom-14 left-5 right-5 truncate text-left font-mono text-[9px] text-[#77736D]">
+            {item.media.hero.note}
+          </span>
+        )}
+        <span className="font-serif text-2xl italic text-[#363636]">{item.category}</span>
+        <span className="font-mono text-[10px] tracking-wider text-[#77736D]">
+          {item.specs.fabricRollRef}
+        </span>
+      </div>
     </div>
   );
 };
@@ -115,104 +126,93 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
     });
   }, [garments, activeCategory, genderFilter, fabricFilter, search, stageFilter, shortlistOnly, shortlist]);
 
-  const totalPlates = garments.length * 4;
-  const placedPlates = garments.reduce(
-    (sum, g) => sum + SLOT_KEYS.filter((k) => Boolean(g.media[k].url)).length,
-    0
-  );
-
   const menCount = garments.filter((g) => g.gender === 'Men').length;
   const womenCount = garments.filter((g) => g.gender === 'Women').length;
 
   return (
-    <section aria-label="43-Style Collection Index" className="mx-auto max-w-[1360px] px-6 py-10 lg:px-10 lg:py-14">
-      {/* Section Header */}
-      <div className="flex flex-col justify-between gap-6 border-b border-[#E5E5E5] pb-8 md:flex-row md:items-end">
-        <div>
-          <p className="font-mono text-xs tracking-wider text-[var(--metallic-strong)]">
-            Complete Portfolio Index · DOT Line Sheet
-          </p>
-          <h1 className="mt-2 font-sans text-3xl font-semibold tracking-tight text-[#0A0A0A] sm:text-4xl">
-            {garments.length} Apparel Architecture
-          </h1>
-          <p className="mt-2 max-w-[64ch] text-sm text-[#525252]">
-            Filter by gender line, garment category, or swatchbook fabric roll. Select any style to inspect its facing two-page catalogue spread.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-6 text-xs text-[#525252]">
-          <div>
-            <span className="block text-[11px] text-[#737373]">Total Styles</span>
-            <span className="font-mono text-sm text-[#0A0A0A] tabular-nums">
-              {garments.length} ({menCount} Men · {womenCount} Women)
-            </span>
+    <section aria-label="Collection index" className="mx-auto max-w-[1360px] px-6 py-10 lg:px-10 lg:py-14">
+      <div className="relative overflow-hidden border-b border-[#EAE8E3] pb-9 md:pb-12">
+        <div className="relative flex flex-col justify-between gap-8 md:flex-row md:items-end">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#77736D]">
+              <span aria-hidden="true" className="h-px w-6 bg-[var(--metallic)]" />
+              Dream Tomorrow · Long Xuyen, An Giang
+            </p>
+            <h1 className="mt-5 font-serif text-5xl font-normal leading-[0.95] tracking-tight text-[#171715] sm:text-6xl lg:text-7xl">
+              The collection<span className="text-[var(--metallic-strong)]">.</span>
+            </h1>
+            <p className="mt-4 max-w-[54ch] text-sm leading-6 text-[#66645F] sm:text-base">
+              Browse by category or line, then open a piece to see the full story.
+            </p>
           </div>
-          <span aria-hidden="true" className="h-7 w-px bg-[#E5E5E5]" />
-          <div>
-            <span className="block text-[11px] text-[#737373]">Visual Plates Placed</span>
-            <span className="font-mono text-sm text-[#0A0A0A] tabular-nums">
-              {placedPlates} / {totalPlates}
-            </span>
-          </div>
-          <span aria-hidden="true" className="h-7 w-px bg-[#E5E5E5]" />
-          <div>
-            <span className="block text-[11px] text-[#737373]">Sample Shortlist</span>
-            <span className="font-mono text-sm text-[#0A0A0A] tabular-nums">
-              {shortlist.length} Selected
-            </span>
+          <div className="relative flex items-center gap-5 text-xs text-[#66645F]">
+            <div>
+              <span className="block font-serif text-3xl text-[#171715]">{garments.length}</span>
+              <span>styles</span>
+            </div>
+            <span aria-hidden="true" className="h-9 w-px bg-[#E3E1DC]" />
+            <div>
+              <span className="block font-serif text-3xl text-[#171715]">{menCount} / {womenCount}</span>
+              <span>men / women</span>
+            </div>
+            <span aria-hidden="true" className="h-9 w-px bg-[#E3E1DC]" />
+            <div>
+              <span className="block font-serif text-3xl text-[#171715]">{shortlist.length}</span>
+              <span>saved</span>
+            </div>
           </div>
         </div>
+        <p className="mt-4 text-[11px] text-[#8A877F]">
+          * Product name not yet matched to the team&apos;s official name.
+        </p>
       </div>
 
-      {/* Category, Gender & Swatchbook Filter Control Bar */}
-      <div className="flex flex-col gap-4 border-b border-[#F0F0F0] py-5">
+      <div className="flex flex-col gap-5 border-b border-[#EAE8E3] py-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Category Segmented Filter */}
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => onCategoryChange('All')}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 activeCategory === 'All'
-                  ? 'bg-[#0A0A0A] text-white'
-                  : 'text-[#525252] hover:bg-[#F5F5F5] hover:text-[#0A0A0A]'
+                  ? 'border-[#171715] bg-[#171715] text-white'
+                  : 'border-[#E5E2DC] text-[#66645F] hover:border-[#AAA69D] hover:text-[#171715]'
               }`}
             >
-              All ({garments.length})
+              Everything <span className="ml-1 opacity-65">{garments.length}</span>
             </button>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.name}
                 type="button"
                 onClick={() => onCategoryChange(cat.name)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   activeCategory === cat.name
-                    ? 'bg-[#0A0A0A] text-white'
-                    : 'text-[#525252] hover:bg-[#F5F5F5] hover:text-[#0A0A0A]'
+                    ? 'border-[#171715] bg-[#171715] text-white'
+                    : 'border-[#E5E2DC] text-[#66645F] hover:border-[#AAA69D] hover:text-[#171715]'
                 }`}
               >
-                {cat.name} ({cat.count})
+                {cat.name} <span className="ml-1 opacity-65">{cat.count}</span>
               </button>
             ))}
           </div>
 
-          {/* Gender Division Toggle */}
-          <div className="flex items-center border border-[#E5E5E5] bg-white">
+          <div className="flex items-center rounded-full border border-[#E5E2DC] bg-white p-1">
             {(
               [
-                { id: 'All', label: 'All Lines' },
-                { id: 'Men', label: "Men's (Nam)" },
-                { id: 'Women', label: "Women's (Nữ)" },
+                { id: 'All', label: 'All lines' },
+                { id: 'Men', label: 'Men' },
+                { id: 'Women', label: 'Women' },
               ] as const
             ).map((gOpt) => (
               <button
                 key={gOpt.id}
                 type="button"
                 onClick={() => setGenderFilter(gOpt.id)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   genderFilter === gOpt.id
-                    ? 'bg-[#0A0A0A] text-white'
-                    : 'text-[#525252] hover:text-[#0A0A0A]'
+                    ? 'bg-[#F1F0EC] text-[#171715]'
+                    : 'text-[#77736D] hover:text-[#171715]'
                 }`}
               >
                 {gOpt.label}
@@ -221,70 +221,83 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
           </div>
         </div>
 
-        {/* Second Sub-Row: Search, Fabric Code, Stage, Shortlist, Grid/Table Toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-[#737373]" />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="relative block">
+              <span className="sr-only">Search styles</span>
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#8A877F]" />
               <input
-                type="text"
+                type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search style code, fabric, color..."
-                className="w-60 border border-[#E5E5E5] bg-white py-1.5 pr-3 pl-8 text-xs text-[#0A0A0A] placeholder:text-[#A3A3A3] focus:border-[#0A0A0A] focus:outline-none"
+                placeholder="Find a style or colour"
+                className="w-64 rounded-full border border-[#E5E2DC] bg-white py-2.5 pr-4 pl-10 text-sm text-[#171715] placeholder:text-[#A09D95] focus:border-[#77736D] focus:outline-none"
               />
-            </div>
-
-            <select
-              aria-label="Filter by swatchbook fabric code"
-              value={fabricFilter}
-              onChange={(e) => setFabricFilter(e.target.value)}
-              className="border border-[#E5E5E5] bg-white px-2.5 py-1.5 font-mono text-xs text-[#404040] focus:border-[#0A0A0A] focus:outline-none cursor-pointer"
-            >
-              <option value="All">All Swatchbook Fabrics</option>
-              {fabricCodes.map((code) => (
-                <option key={code} value={code}>
-                  {code}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Filter by asset stage"
-              value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value as 'all' | AssetStage)}
-              className="border border-[#E5E5E5] bg-white px-2.5 py-1.5 text-xs text-[#404040] focus:border-[#0A0A0A] focus:outline-none cursor-pointer"
-            >
-              <option value="all">All Asset Stages</option>
-              <option value="blank">Blank Slots</option>
-              <option value="ai-concept">AI Concept</option>
-              <option value="studio-final">Studio Final</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3">
+            </label>
             <button
               type="button"
               onClick={() => setShortlistOnly((v) => !v)}
-              className={`inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 shortlistOnly
-                  ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
-                  : 'border-[#E5E5E5] bg-white text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]'
+                  ? 'border-[#171715] bg-[#171715] text-white'
+                  : 'border-[#E5E2DC] bg-white text-[#66645F] hover:border-[#AAA69D] hover:text-[#171715]'
               }`}
             >
               <Bookmark className="h-3 w-3" />
-              <span>Shortlist ({shortlist.length})</span>
+              <span>Saved styles · {shortlist.length}</span>
             </button>
 
-            <div className="flex items-center border border-[#E5E5E5] bg-white">
+            <details className="relative">
+              <summary className="cursor-pointer list-none rounded-full border border-[#E5E2DC] px-4 py-2.5 text-xs font-medium text-[#66645F] transition-colors hover:border-[#AAA69D] hover:text-[#171715]">
+                More filters
+              </summary>
+              <div className="absolute left-0 top-full z-20 mt-2 grid min-w-64 gap-3 rounded-2xl border border-[#E5E2DC] bg-white p-4 shadow-lg">
+                <label className="grid gap-1.5 text-xs text-[#66645F]">
+                  Fabric
+                  <select
+                    aria-label="Filter by swatchbook fabric code"
+                    value={fabricFilter}
+                    onChange={(e) => setFabricFilter(e.target.value)}
+                    className="rounded-lg border border-[#E5E2DC] bg-white px-3 py-2 font-mono text-xs text-[#404040] focus:border-[#77736D] focus:outline-none cursor-pointer"
+                  >
+                    <option value="All">All fabrics</option>
+                    {fabricCodes.map((code) => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-1.5 text-xs text-[#66645F]">
+                  Image status
+                  <select
+                    aria-label="Filter by asset stage"
+                    value={stageFilter}
+                    onChange={(e) => setStageFilter(e.target.value as 'all' | AssetStage)}
+                    className="rounded-lg border border-[#E5E2DC] bg-white px-3 py-2 text-xs text-[#404040] focus:border-[#77736D] focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All image statuses</option>
+                    <option value="blank">No images yet</option>
+                    <option value="ai-concept">Concept images</option>
+                    <option value="studio-final">Studio images</option>
+                  </select>
+                </label>
+              </div>
+            </details>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#8A877F]">
+              Showing {filtered.length} of {garments.length}
+            </span>
+            <div className="flex items-center rounded-full border border-[#E5E2DC] bg-white p-1">
               <button
                 type="button"
                 onClick={() => setDisplayMode('grid')}
-                aria-label="Gallery grid view"
-                className={`p-1.5 transition-colors cursor-pointer ${
+                aria-label="Gallery view"
+                aria-pressed={displayMode === 'grid'}
+                className={`rounded-full p-2 transition-colors cursor-pointer ${
                   displayMode === 'grid'
-                    ? 'bg-[#0A0A0A] text-white'
-                    : 'text-[#525252] hover:text-[#0A0A0A]'
+                    ? 'bg-[#F1F0EC] text-[#171715]'
+                    : 'text-[#77736D] hover:text-[#171715]'
                 }`}
               >
                 <Grid2X2 className="h-3.5 w-3.5" />
@@ -292,11 +305,12 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
               <button
                 type="button"
                 onClick={() => setDisplayMode('table')}
-                aria-label="Line sheet table view"
-                className={`p-1.5 transition-colors cursor-pointer ${
+                aria-label="Detailed list view"
+                aria-pressed={displayMode === 'table'}
+                className={`rounded-full p-2 transition-colors cursor-pointer ${
                   displayMode === 'table'
-                    ? 'bg-[#0A0A0A] text-white'
-                    : 'text-[#525252] hover:text-[#0A0A0A]'
+                    ? 'bg-[#F1F0EC] text-[#171715]'
+                    : 'text-[#77736D] hover:text-[#171715]'
                 }`}
               >
                 <List className="h-3.5 w-3.5" />
@@ -308,10 +322,10 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
 
       {/* Empty Filter State */}
       {filtered.length === 0 ? (
-        <div className="my-16 border border-[#E5E5E5] py-16 text-center">
-          <p className="font-sans text-lg font-semibold text-[#0A0A0A]">No matching garments in view</p>
-          <p className="mt-2 text-xs text-[#737373]">
-            Adjust your category, gender, swatchbook fabric, or search query to display items from the {garments.length}-style archive.
+        <div className="my-16 rounded-2xl bg-[#F7F6F3] py-16 text-center">
+          <p className="font-serif text-3xl text-[#171715]">Nothing here just yet.</p>
+          <p className="mt-2 text-sm text-[#77736D]">
+            Try a different search or clear a filter to see more styles.
           </p>
           <button
             type="button"
@@ -323,90 +337,65 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
               setShortlistOnly(false);
               onCategoryChange('All');
             }}
-            className="mt-5 border border-[#0A0A0A] px-4 py-2 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white cursor-pointer"
+            className="mt-5 rounded-full border border-[#D8D5CE] px-5 py-2.5 text-xs font-medium text-[#171715] transition-colors hover:border-[#171715] cursor-pointer"
           >
-            Reset Filters
+            Clear filters
           </button>
         </div>
       ) : displayMode === 'grid' ? (
-        /* ARCHITECTURAL CONTACT SHEET GALLERY GRID */
-        <div className="mt-10 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-x-7 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item) => {
             const isShortlisted = shortlist.includes(item.id);
-            const filledCount = SLOT_KEYS.filter((k) => Boolean(item.media[k].url)).length;
 
             return (
               <article key={item.id} className="group flex flex-col">
-                {/* Primary Silhouette Frame */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onSelectGarment(item.index)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onSelectGarment(item.index);
-                    }
-                  }}
-                  className="relative aspect-[3/4] w-full overflow-hidden border border-[#E5E5E5] transition-colors duration-200 group-hover:border-[#0A0A0A] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]"
-                >
-                  {/* Subtle metallic corner ticks */}
-                  <span aria-hidden="true" className="pointer-events-none absolute top-2.5 left-2.5 h-2 w-2 border-t border-l metallic-frame-tick z-10" />
-                  <span aria-hidden="true" className="pointer-events-none absolute top-2.5 right-2.5 h-2 w-2 border-t border-r metallic-frame-tick z-10" />
-                  <span aria-hidden="true" className="pointer-events-none absolute bottom-2.5 left-2.5 h-2 w-2 border-b border-l metallic-frame-tick z-10" />
-                  <span aria-hidden="true" className="pointer-events-none absolute bottom-2.5 right-2.5 h-2 w-2 border-b border-r metallic-frame-tick z-10" />
-
-                  <IndexHeroImage item={item} />
-
-                  {/* Quick Hover Bar */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 py-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <span className="text-xs font-medium text-white">Open Catalogue Spread</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 text-white" />
-                  </div>
-                </div>
-
-                {/* Unboxed Card Metadata — Zero Pill Clutter */}
-                <div className="mt-4 flex items-baseline justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[11px] text-[#737373] min-w-0">
-                    <span className="font-mono font-medium text-[#0A0A0A] tabular-nums shrink-0">
-                      {item.sku}
-                    </span>
-                    <span aria-hidden="true">·</span>
-                    <span className="shrink-0">{item.gender}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="truncate font-mono">{item.specs.fabricRollRef}</span>
-                  </div>
-
+                <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2px] bg-[#F5F4F0] transition-shadow duration-300 group-hover:shadow-[0_12px_30px_rgba(35,32,25,0.10)]">
                   <button
                     type="button"
-                    onClick={() => onToggleShortlist(item.id)}
-                    aria-label={isShortlisted ? 'Remove from sample shortlist' : 'Add to sample shortlist'}
-                    className={`p-1 transition-colors shrink-0 cursor-pointer ${
-                      isShortlisted ? 'text-[#0A0A0A]' : 'text-[#A3A3A3] hover:text-[#0A0A0A]'
+                    onClick={() => onSelectGarment(item.index)}
+                    aria-label={`View ${item.title}`}
+                    className="absolute inset-0 block h-full w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#77736D]"
+                  >
+                    <IndexHeroImage item={item} />
+                  </button>
+                  <span className="pointer-events-none absolute left-4 top-4 z-10 rounded-full bg-white/90 px-3 py-1.5 font-mono text-[10px] tracking-wider text-[#55524C]">
+                    {item.sku}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      onToggleShortlist(item.id);
+                    }}
+                    aria-label={isShortlisted ? 'Remove from saved styles' : 'Save this style'}
+                    aria-pressed={isShortlisted}
+                    className={`absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/90 transition-colors cursor-pointer ${
+                      isShortlisted ? 'text-[#171715]' : 'text-[#77736D] hover:text-[#171715]'
                     }`}
                   >
-                    {isShortlisted ? <Check className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+                    {isShortlisted ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
                   </button>
                 </div>
 
+                <div className="mt-4 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.15em] text-[#8A877F]">
+                  <span>{item.gender}</span>
+                  <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[var(--metallic)]" />
+                  <span>{item.category}</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => onSelectGarment(item.index)}
-                  className="mt-1 text-left font-sans text-base font-semibold leading-snug tracking-tight text-[#0A0A0A] transition-colors hover:text-[var(--metallic-strong)] cursor-pointer"
+                  className="mt-1 text-left font-serif text-2xl leading-tight tracking-tight text-[#171715] transition-colors hover:text-[var(--metallic-strong)] cursor-pointer"
                 >
                   {item.title}
                 </button>
 
-                <p className="mt-1.5 text-xs text-[#666666] line-clamp-1">
-                  {item.specs.composition} · {item.specs.weightGsm}
+                <p className="mt-2 text-xs text-[#77736D] line-clamp-1">
+                  {item.specs.composition} <span aria-hidden="true">·</span> {item.specs.weightGsm}
                 </p>
 
-                {/* Minimal 4-Plate Readiness & Edit Footer */}
-                <div className="mt-3 flex items-center justify-between border-t border-[#F0F0F0] pt-2.5 text-[11px] text-[#737373]">
-                  <span className="inline-flex items-center gap-1.5 font-mono tabular-nums">
-                    <span>
-                      pp. {String(item.index * 2 - 1).padStart(2, '0')}–{String(item.index * 2).padStart(2, '0')} · {filledCount}/4 Plates
-                    </span>
+                <div className="mt-4 flex items-center justify-between border-t border-[#EAE8E3] pt-3 text-[11px] text-[#8A877F]">
+                  <span className="inline-flex items-center gap-2 tabular-nums">
+                    <span className="font-mono">pp. {String(item.index * 2 - 1).padStart(2, '0')}–{String(item.index * 2).padStart(2, '0')}</span>
                     {item.dataFlags && item.dataFlags.length > 0 && (
                       <span title={item.dataFlags[0]} className="text-[var(--metallic-strong)]">
                         <AlertTriangle className="h-3 w-3" />
@@ -416,9 +405,9 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
                   <button
                     type="button"
                     onClick={() => onEditGarment(item.index)}
-                    className="font-medium text-[#525252] underline-offset-4 hover:text-[#0A0A0A] hover:underline cursor-pointer"
+                    className="font-medium text-[#66645F] underline-offset-4 hover:text-[#171715] hover:underline cursor-pointer"
                   >
-                    Edit Spread
+                    Edit details
                   </button>
                 </div>
               </article>
