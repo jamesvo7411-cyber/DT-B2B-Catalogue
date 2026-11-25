@@ -314,10 +314,9 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
         <ProductSpecStrip
           item={garment}
           overlay
-          fabricPageLabel={fabricPageLabel}
-          onSelectFabricCode={onSelectFabricCode}
           disabled={isPreviewLayer}
           showWorkbenchNotes={!classicMode}
+          showFabricCrossReference={false}
         />
       </div>
       {classicMode && (

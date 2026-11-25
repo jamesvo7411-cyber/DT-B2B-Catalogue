@@ -141,9 +141,8 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
         <ProductSpecStrip
           item={garment}
           overlay
-          fabricPageLabel={fabricPageLabel}
-          onSelectFabricCode={onSelectFabricCode}
           showWorkbenchNotes={false}
+          showFabricCrossReference={false}
         />
       </div>
     </div>

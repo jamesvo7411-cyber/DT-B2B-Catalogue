@@ -15,6 +15,7 @@ interface ProductSpecStripProps {
   onSelectFabricCode?: (fabricCode: string) => void;
   disabled?: boolean;
   showWorkbenchNotes?: boolean;
+  showFabricCrossReference?: boolean;
 }
 
 export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
@@ -25,6 +26,7 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
   onSelectFabricCode,
   disabled = false,
   showWorkbenchNotes = false,
+  showFabricCrossReference = true,
 }) => {
   const familyName = getFabricFamilyName(item.specs.fabricRollRef);
   const compositionIsIncomplete = hasIncompleteFabricComposition(item.dataFlags);
@@ -123,7 +125,7 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
       </div>
 
       {/* Fabric Family & Cross-Reference Path */}
-      {(visibleFamilyName || visibleFabricPageLabel) && (
+      {showFabricCrossReference && (visibleFamilyName || visibleFabricPageLabel) && (
         <div
           className={`mt-1.5 flex flex-wrap items-center justify-between gap-2 border-t pt-1.5 font-mono text-[8.5px] ${
             overlay
