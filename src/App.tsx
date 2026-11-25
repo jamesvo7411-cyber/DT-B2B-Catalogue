@@ -115,16 +115,26 @@ function hydrateGarments(
       media: {
         ...defaults.media,
         ...saved.media,
-        hero: saved.media?.hero?.url ? saved.media.hero : defaults.media.hero,
-        pocket: saved.media?.pocket?.url ? saved.media.pocket : defaults.media.pocket,
-        seam: saved.media?.seam?.url ? saved.media.seam : defaults.media.seam,
-        swatch: saved.media?.swatch?.url ? saved.media.swatch : defaults.media.swatch,
+        hero: resolveSavedMediaSlot(saved.media?.hero, defaults.media.hero),
+        pocket: resolveSavedMediaSlot(saved.media?.pocket, defaults.media.pocket),
+        seam: resolveSavedMediaSlot(saved.media?.seam, defaults.media.seam),
+        swatch: resolveSavedMediaSlot(saved.media?.swatch, defaults.media.swatch),
         custom: isLegacyCustomPlaceholder
           ? defaults.media.custom
-          : savedCustom ?? defaults.media.custom,
+          : resolveSavedMediaSlot(savedCustom, defaults.media.custom),
       },
     };
   });
+}
+
+function resolveSavedMediaSlot(
+  savedSlot: MediaSlot | undefined,
+  defaultSlot: MediaSlot
+): MediaSlot {
+  if (!savedSlot?.url) return defaultSlot;
+  const isBundledCatalogueAsset =
+    savedSlot.url.startsWith('/catalogue-media/') && !savedSlot.isSessionDrop;
+  return isBundledCatalogueAsset ? defaultSlot : savedSlot;
 }
 
 function normalizeFabricColorImages(value: unknown): Record<string, string> {
@@ -182,7 +192,11 @@ export default function App() {
       garments.map((garment) => {
         const fabricCode = garment.specs.fabricRollRef;
         const familyImage = getPreferredFactoryFabricImage(fabricCode, fabricColorImages);
-        const imageUrl = familyImage?.imageUrl ?? '';
+        const hasVerifiedProductFabricImage =
+          garment.media.swatch.isFactoryFabricImage && Boolean(garment.media.swatch.url);
+        const imageUrl = hasVerifiedProductFabricImage
+          ? garment.media.swatch.url
+          : familyImage?.imageUrl ?? '';
         const isLocalImage = imageUrl.startsWith('data:');
         const stage: GarmentItem['media']['swatch']['stage'] = imageUrl
           ? isLocalImage
@@ -199,10 +213,13 @@ export default function App() {
               stage,
               caption: `${fabricCode} fabric image`,
               aspectLabel: '1:1 fabric texture',
-              note: imageUrl
-                ? `Auto-linked from the ${fabricCode} fabric library.`
-                : `No fabric image is linked to ${fabricCode} yet. Add one in the Fabric Library.`,
+              note: hasVerifiedProductFabricImage
+                ? `Verified product fabric image for ${fabricCode}.`
+                : imageUrl
+                  ? `Auto-linked from the ${fabricCode} fabric library.`
+                  : `No fabric image is linked to ${fabricCode} yet. Add one in the Fabric Library.`,
               isSessionDrop: isLocalImage,
+              isFactoryFabricImage: Boolean(imageUrl),
               crop: { scale: 1, x: 0, y: 0 },
             },
           },

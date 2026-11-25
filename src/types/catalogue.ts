@@ -33,6 +33,7 @@ export interface MediaSlot {
   aspectLabel: string;
   note: string;
   isSessionDrop?: boolean;
+  isFactoryFabricImage?: boolean;
   crop?: ImageCrop;
 }
 
