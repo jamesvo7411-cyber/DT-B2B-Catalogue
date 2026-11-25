@@ -1,6 +1,10 @@
 import React from 'react';
 import type { GarmentItem } from '../types/catalogue';
-import { displayFabricComposition } from '../utils/productDisplay';
+import {
+  displayFabricComposition,
+  getBuyerVisibleValue,
+  hasIncompleteFabricComposition,
+} from '../utils/productDisplay';
 import { getFabricFamilyName } from '../utils/catalogueOrder';
 
 interface ProductSpecStripProps {
@@ -10,6 +14,7 @@ interface ProductSpecStripProps {
   fabricPageLabel?: string;
   onSelectFabricCode?: (fabricCode: string) => void;
   disabled?: boolean;
+  showWorkbenchNotes?: boolean;
 }
 
 export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
@@ -19,8 +24,10 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
   fabricPageLabel,
   onSelectFabricCode,
   disabled = false,
+  showWorkbenchNotes = false,
 }) => {
   const familyName = getFabricFamilyName(item.specs.fabricRollRef);
+  const compositionIsIncomplete = hasIncompleteFabricComposition(item.dataFlags);
   const fields = [
     { label: 'Style Code', value: item.sku, mono: true, spanClass: '' },
     { label: 'Fabric Code', value: item.specs.fabricRollRef, mono: true, spanClass: '' },
@@ -38,7 +45,19 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
       spanClass: compact ? 'col-span-2' : 'col-span-3',
     },
     { label: 'Width', value: item.specs.fabricWidth, mono: true, spanClass: '' },
-  ];
+  ].filter(
+    (field) =>
+      showWorkbenchNotes ||
+      (getBuyerVisibleValue(field.value) &&
+        !(field.label === 'Fabric Content' && compositionIsIncomplete))
+  );
+  const visibleFamilyName = showWorkbenchNotes
+    ? familyName
+    : getBuyerVisibleValue(familyName);
+  const visibleFabricPageLabel =
+    showWorkbenchNotes || getBuyerVisibleValue(item.specs.fabricRollRef)
+      ? fabricPageLabel
+      : undefined;
 
   return (
     <div aria-label="Product specifications">
@@ -104,7 +123,7 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
       </div>
 
       {/* Fabric Family & Cross-Reference Path */}
-      {(familyName || fabricPageLabel) && (
+      {(visibleFamilyName || visibleFabricPageLabel) && (
         <div
           className={`mt-1.5 flex flex-wrap items-center justify-between gap-2 border-t pt-1.5 font-mono text-[8.5px] ${
             overlay
@@ -112,11 +131,11 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
               : 'border-[#E8E6E0] text-[#66645F]'
           }`}
         >
-          <span className="truncate">
+          {visibleFamilyName && <span className="truncate">
             <span className="uppercase tracking-[0.1em] text-[#77756F]">Fabric Family: </span>
-            <span className="font-medium text-[#111111]">{familyName}</span>
-          </span>
-          {fabricPageLabel && (
+            <span className="font-medium text-[#111111]">{visibleFamilyName}</span>
+          </span>}
+          {visibleFabricPageLabel && (
             onSelectFabricCode ? (
               <button
                 type="button"
@@ -124,11 +143,11 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
                 onClick={() => onSelectFabricCode(item.specs.fabricRollRef)}
                 className="shrink-0 font-semibold text-[#0A0A0A] underline decoration-[#6E6C65] underline-offset-2 hover:decoration-[#0A0A0A] disabled:no-underline cursor-pointer tabular-nums"
               >
-                See Fabric Library {fabricPageLabel} →
+                See Fabric Library {visibleFabricPageLabel} →
               </button>
             ) : (
               <span className="shrink-0 font-semibold text-[#0A0A0A] tabular-nums">
-                Fabric Library {fabricPageLabel}
+                Fabric Library {visibleFabricPageLabel}
               </span>
             )
           )}

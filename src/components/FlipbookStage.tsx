@@ -29,6 +29,7 @@ import {
   getActiveSectionForSpread,
   type CatalogueNavigationMap,
 } from '../utils/catalogueOrder';
+import { displayBuyerProductTitle } from '../utils/productDisplay';
 import { BookThumbIndexRail, SectionWayfinderBar } from './CatalogueNavigation';
 import { PageCurlBook } from './PageCurlBook';
 import { SpreadPages } from './SpreadPages';
@@ -153,9 +154,14 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
     }
     if (page >= productOffset && page < productOffset + orderedGarments.length) {
       const item = orderedGarments[page - productOffset];
-      return `P.${String(page + 1).padStart(2, '0')} · ${item.sku} — ${item.title}`;
+      const title = classicMode
+        ? displayBuyerProductTitle(item.title)
+        : item.title;
+      return `P.${String(page + 1).padStart(2, '0')} · ${item.sku} — ${title}`;
     }
-    return `P.${String(totalSpreads).padStart(2, '0')} · Technical Info & Print Specs`;
+    return classicMode
+      ? `P.${String(totalSpreads).padStart(2, '0')} · Contact & Colophon`
+      : `P.${String(totalSpreads).padStart(2, '0')} · Technical Info & Print Specs`;
   };
 
   const activeProduct =

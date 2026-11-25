@@ -164,7 +164,7 @@ export const SectionWayfinderBar: React.FC<SectionWayfinderBarProps> = ({
           type="button"
           onClick={onToggleDemoMode}
           aria-pressed={demoMode}
-          title="Demo Mode pushes photographed fabrics and full-image products to the top of each section for team showcase"
+          title="Demo Mode prioritizes image-complete fabric and product pages, then places pages with missing images last"
           className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[10.5px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
             demoMode
               ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'

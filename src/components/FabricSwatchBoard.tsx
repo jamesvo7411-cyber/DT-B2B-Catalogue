@@ -8,7 +8,12 @@ import {
   getFabricFamilyName,
   type CatalogueNavigationMap,
 } from '../utils/catalogueOrder';
-import { getBuyerFacingColorNote, getDisplayColorName } from '../utils/fabricDisplay';
+import { getDisplayColorName } from '../utils/fabricDisplay';
+import {
+  displayBuyerProductTitle,
+  getBuyerVisibleValue,
+  hasIncompleteFabricComposition,
+} from '../utils/productDisplay';
 import { readImageFileAsDataUrl } from '../utils/media';
 import { RunningHeader } from './CatalogueNavigation';
 import { ColorSwatchList } from './ColorSwatchList';
@@ -117,15 +122,25 @@ export const FabricColorImageTile: React.FC<{
         />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center">
-          <div
-            aria-hidden="true"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#D8D6D0] bg-white"
-          >
-            <ImagePlus className="h-5 w-5 text-[#77756F]" />
-          </div>
-          <p className="text-xs font-semibold text-[#302F2B]">
-            {imgError ? 'Image could not be loaded' : 'Swatch image not supplied'}
-          </p>
+          {interactive ? (
+            <div
+              aria-hidden="true"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-[#D8D6D0] bg-white"
+            >
+              <ImagePlus className="h-5 w-5 text-[#77756F]" />
+            </div>
+          ) : (
+            <span
+              aria-hidden="true"
+              className="h-12 w-12 rounded-full border border-black/10"
+              style={{ backgroundColor: getColorSwatchHex(color.colorName) ?? '#F3F2EF' }}
+            />
+          )}
+          {interactive && (
+            <p className="text-xs font-semibold text-[#302F2B]">
+              {imgError ? 'Image could not be loaded' : 'Swatch image not supplied'}
+            </p>
+          )}
           <p className="text-[10px] text-[#77756F]">
             {getDisplayColorName(color)} · {color.fabricCode}
           </p>
@@ -258,9 +273,9 @@ const FabricSwatchTile: React.FC<{
           <p className="mt-1.5 font-mono text-[10px] font-medium text-[#0A0A0A]">
             {program.fabricCode}
           </p>
-          <p className="mt-0.5 text-[9.5px] text-[#737373]">
-            {interactive ? 'Drop or upload swatch' : 'Image not supplied'}
-          </p>
+          {interactive && (
+            <p className="mt-0.5 text-[9.5px] text-[#737373]">Drop or upload swatch</p>
+          )}
         </div>
       )}
     </div>
@@ -347,9 +362,9 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                 Fabric &amp; Color Availability
               </h1>
               <p className="mt-2 max-w-[68ch] text-sm leading-relaxed text-[#55534E]">
-                Browse factory-listed fabric programs, shade codes, and Pantone or chart references.
-                Some English shade names are provisional, so confirm the physical swatch along with
-                current stock, MOQ, and lead time before placing an order.
+                {interactive
+                  ? 'Browse factory-listed fabric programs, shade codes, and Pantone or chart references. Some English shade names are provisional, so confirm the physical swatch along with current stock, MOQ, and lead time before placing an order.'
+                  : 'Explore our fabric programs, available shades, color references, and fabric specifications.'}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">
@@ -426,19 +441,31 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     <h2 className="mt-1 font-mono text-lg font-semibold text-[#171715]">
                       {program.fabricCode}
                     </h2>
-                    <p className="mt-1 max-w-[66ch] text-xs leading-relaxed text-[#55534E]">
-                      {program.composition}
-                    </p>
+                    {(interactive ||
+                      (getBuyerVisibleValue(program.composition) &&
+                        !hasIncompleteFabricComposition(program.dataFlags))) && (
+                      <p className="mt-1 max-w-[66ch] text-xs leading-relaxed text-[#55534E]">
+                        {getBuyerVisibleValue(program.composition) || 'Not listed'}
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs lg:min-w-[280px]">
-                    <div>
-                      <span className="block text-[10px] text-[#77756F]">Typical GSM</span>
-                      <span className="font-mono font-semibold text-[#171715]">{program.weightGsm}</span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-[#77756F]">Typical width</span>
-                      <span className="font-mono font-semibold text-[#171715]">{program.fabricWidth}</span>
-                    </div>
+                    {(interactive || getBuyerVisibleValue(program.weightGsm)) && (
+                      <div>
+                        <span className="block text-[10px] text-[#77756F]">Typical GSM</span>
+                        <span className="font-mono font-semibold text-[#171715]">
+                          {getBuyerVisibleValue(program.weightGsm) || 'Not listed'}
+                        </span>
+                      </div>
+                    )}
+                    {(interactive || getBuyerVisibleValue(program.fabricWidth)) && (
+                      <div>
+                        <span className="block text-[10px] text-[#77756F]">Typical width</span>
+                        <span className="font-mono font-semibold text-[#171715]">
+                          {getBuyerVisibleValue(program.fabricWidth) || 'Not listed'}
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <span className="block text-[10px] text-[#77756F]">Factory-listed colors</span>
                       <span className="font-mono font-semibold text-[#171715]">
@@ -475,7 +502,9 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                             <span className="font-mono font-bold">{sku}</span>{' '}
                             {styleObj && (
                               <span className="text-[#55534E] group-hover:text-[#171715]">
-                                · {styleObj.title}
+                                · {interactive
+                                  ? styleObj.title
+                                  : displayBuyerProductTitle(styleObj.title)}
                               </span>
                             )}
                           </span>
@@ -494,7 +523,6 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                 {colors.map((color) => {
                   const imageKey = getFactoryColorImageKey(program.fabricCode, color.colorName);
                   const imageUrl = fabricColorImages?.[imageKey] || color.swatchImageUrl || '';
-                  const buyerFacingColorNote = getBuyerFacingColorNote(color);
                   return (
                     <section
                       key={imageKey}
@@ -518,13 +546,15 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                           <h3 className="text-sm font-semibold leading-tight text-[#171715]">
                             {getDisplayColorName(color)}
                           </h3>
-                          {color.reference && (
+                          {(interactive || getBuyerVisibleValue(color.reference)) && (
                             <span className="shrink-0 border border-[#E5E3DE] px-1.5 py-0.5 font-mono text-[9px] text-[#55534E]">
-                              {color.reference}
+                              {getBuyerVisibleValue(color.reference) ||
+                                (interactive ? 'Not listed' : '')}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 border-t border-[#F0EFEB] pt-2">
+                        {(interactive || getBuyerVisibleValue(color.shadeCode)) && (
+                          <div className="flex items-center gap-2 border-t border-[#F0EFEB] pt-2">
                           <span
                             aria-hidden="true"
                             className="h-4 w-6 shrink-0 border border-black/10"
@@ -535,33 +565,42 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                               Factory shade code
                             </span>
                             <span className="font-mono font-medium text-[#302F2B]">
-                              {color.shadeCode || 'Not listed'}
+                              {getBuyerVisibleValue(color.shadeCode) ||
+                                (interactive ? 'Not listed' : '')}
                             </span>
                           </p>
-                        </div>
-                        {color.factoryColorName && color.factoryColorName !== color.shadeCode && (
+                          </div>
+                        )}
+                        {interactive &&
+                          color.factoryColorName &&
+                          color.factoryColorName !== color.shadeCode && (
                           <p className="truncate text-[10px] text-[#77756F]" title={color.factoryColorName}>
                             Factory label: {color.factoryColorName}
                           </p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 border-t border-[#F0EFEB] pt-2 text-[10px]">
-                          <p>
-                            <span className="block text-[9px] text-[#88857D]">Lot GSM</span>
-                            <span className="font-mono font-medium text-[#302F2B]">
-                              {color.lotWeightGsm || 'Not listed'}
-                            </span>
-                          </p>
-                          <p>
-                            <span className="block text-[9px] text-[#88857D]">Lot width</span>
-                            <span className="font-mono font-medium text-[#302F2B]">
-                              {color.lotWidth || 'Not listed'}
-                            </span>
-                          </p>
-                        </div>
-                        {!interactive && buyerFacingColorNote && (
-                          <p className="border-t border-dashed border-[#E5E3DE] pt-2 text-[9px] leading-snug text-[#6A6253]">
-                            Shade confirmation: {buyerFacingColorNote}
-                          </p>
+                        {(interactive ||
+                          getBuyerVisibleValue(color.lotWeightGsm) ||
+                          getBuyerVisibleValue(color.lotWidth)) && (
+                          <div className="grid grid-cols-2 gap-2 border-t border-[#F0EFEB] pt-2 text-[10px]">
+                            {(interactive || getBuyerVisibleValue(color.lotWeightGsm)) && (
+                              <p>
+                                <span className="block text-[9px] text-[#88857D]">Lot GSM</span>
+                                <span className="font-mono font-medium text-[#302F2B]">
+                                  {getBuyerVisibleValue(color.lotWeightGsm) ||
+                                    (interactive ? 'Not listed' : '')}
+                                </span>
+                              </p>
+                            )}
+                            {(interactive || getBuyerVisibleValue(color.lotWidth)) && (
+                              <p>
+                                <span className="block text-[9px] text-[#88857D]">Lot width</span>
+                                <span className="font-mono font-medium text-[#302F2B]">
+                                  {getBuyerVisibleValue(color.lotWidth) ||
+                                    (interactive ? 'Not listed' : '')}
+                                </span>
+                              </p>
+                            )}
+                          </div>
                         )}
                         {interactive && color.sourceNote && (
                           <p className="border-t border-dashed border-[#E5E3DE] pt-2 text-[9px] leading-snug text-[#6A6253]">
@@ -608,8 +647,16 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
       )}
 
       <div className="divide-y divide-[#E5E5E5] border-t border-b border-[#E5E5E5]">
-        {programs.map((prog) =>
-          compactLeaf ? (
+        {programs.map((prog) => {
+          const compositionIsIncomplete = hasIncompleteFabricComposition(prog.dataFlags);
+          const composition = compositionIsIncomplete
+            ? undefined
+            : getBuyerVisibleValue(prog.composition);
+          const weight = getBuyerVisibleValue(prog.weightGsm);
+          const width = getBuyerVisibleValue(prog.fabricWidth);
+          const stretchFeelNote = getBuyerVisibleValue(prog.stretchFeelNote);
+
+          return compactLeaf ? (
             <article key={prog.fabricCode} className="space-y-3 py-4">
               <div className="grid grid-cols-12 items-start gap-3.5">
                 <div className="col-span-4 max-w-[124px]">
@@ -631,33 +678,43 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 border-t border-[#F0F0F0] pt-1.5 text-[11px]">
-                    <div>
-                      <span className="block text-[9.5px] text-[#737373]">GSM (Weight)</span>
-                      <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
-                        {prog.weightGsm}
-                      </span>
+                  {(interactive || weight || width) && (
+                    <div className="grid grid-cols-2 gap-2 border-t border-[#F0F0F0] pt-1.5 text-[11px]">
+                      {(interactive || weight) && (
+                        <div>
+                          <span className="block text-[9.5px] text-[#737373]">GSM (Weight)</span>
+                          <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
+                            {weight || ''}
+                          </span>
+                        </div>
+                      )}
+                      {(interactive || width) && (
+                        <div>
+                          <span className="block text-[9.5px] text-[#737373]">Width (Typical)</span>
+                          <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
+                            {width || ''}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <span className="block text-[9.5px] text-[#737373]">Width (Typical)</span>
-                      <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
-                        {prog.fabricWidth}
-                      </span>
+                  )}
+
+                  {(interactive || composition) && (
+                    <div className="text-[11px]">
+                      <span className="text-[#737373]">Content: </span>
+                      <span className="text-[#0A0A0A]">{composition || ''}</span>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="text-[11px]">
-                    <span className="text-[#737373]">Content: </span>
-                    <span className="text-[#0A0A0A]">{prog.composition}</span>
-                  </div>
-
-                  <p className="text-[10.5px] leading-snug text-[#525252]">
-                    {prog.stretchFeelNote}
-                  </p>
+                  {(interactive || stretchFeelNote) && (
+                    <p className="text-[10.5px] leading-snug text-[#525252]">
+                      {stretchFeelNote || ''}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {prog.dataFlags.length > 0 && (
+              {interactive && prog.dataFlags.length > 0 && (
                 <div className="flex items-start gap-2 border border-[#D4D4D4] bg-[#FAFAFA] px-2.5 py-1.5 text-[10.5px] text-[#404040]">
                   <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-[var(--metallic-strong)]" />
                   <span>{prog.dataFlags[0]}</span>
@@ -681,13 +738,20 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                           onClick={() => onSelectStyleIndex(styleIndex)}
                           className="text-left text-[9px] leading-snug text-[#0A0A0A] underline underline-offset-2 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] disabled:cursor-default"
                         >
-                          {style ? `${style.title} (${sku})` : sku}
+                          {style
+                            ? `${interactive ? style.title : displayBuyerProductTitle(style.title)} (${sku})`
+                            : sku}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-                <ColorSwatchList colorways={prog.colorways} fabricCode={prog.fabricCode} compact />
+                <ColorSwatchList
+                  colorways={prog.colorways}
+                  fabricCode={prog.fabricCode}
+                  compact
+                  showPendingColorways={interactive}
+                />
               </div>
             </article>
           ) : (
@@ -716,31 +780,41 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 border-t border-[#F0F0F0] pt-2.5 text-xs">
-                  <div>
-                    <span className="block text-[10px] text-[#737373]">GSM (Weight)</span>
-                    <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
-                      {prog.weightGsm}
-                    </span>
+                {(interactive || weight || width) && (
+                  <div className="grid grid-cols-2 gap-3 border-t border-[#F0F0F0] pt-2.5 text-xs">
+                    {(interactive || weight) && (
+                      <div>
+                        <span className="block text-[10px] text-[#737373]">GSM (Weight)</span>
+                        <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
+                          {weight || ''}
+                        </span>
+                      </div>
+                    )}
+                    {(interactive || width) && (
+                      <div>
+                        <span className="block text-[10px] text-[#737373]">Width (Typical)</span>
+                        <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
+                          {width || ''}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <span className="block text-[10px] text-[#737373]">Width (Typical)</span>
-                    <span className="font-mono font-medium text-[#0A0A0A] tabular-nums">
-                      {prog.fabricWidth}
-                    </span>
+                )}
+
+                {(interactive || composition) && (
+                  <div className="text-xs">
+                    <span className="block text-[10px] text-[#737373]">Fabric Content</span>
+                    <p className="mt-0.5 text-[#0A0A0A]">{composition || ''}</p>
                   </div>
-                </div>
+                )}
 
-                <div className="text-xs">
-                  <span className="block text-[10px] text-[#737373]">Fabric Content</span>
-                  <p className="mt-0.5 text-[#0A0A0A]">{prog.composition}</p>
-                </div>
+                {(interactive || stretchFeelNote) && (
+                  <p className="text-[11px] leading-relaxed text-[#525252]">
+                    {stretchFeelNote || ''}
+                  </p>
+                )}
 
-                <p className="text-[11px] leading-relaxed text-[#525252]">
-                  {prog.stretchFeelNote}
-                </p>
-
-                {prog.dataFlags.length > 0 && (
+                {interactive && prog.dataFlags.length > 0 && (
                   <div className="flex items-start gap-2 border border-[#D4D4D4] bg-[#FAFAFA] px-2.5 py-2 text-[11px] text-[#404040]">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--metallic-strong)]" />
                     <span>{prog.dataFlags[0]}</span>
@@ -761,7 +835,11 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                         onClick={() => onSelectStyleIndex(styleIndex)}
                         className="inline-flex items-center gap-0.5 text-left text-[10px] text-[#0A0A0A] underline underline-offset-4 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] disabled:cursor-default"
                       >
-                        <span>{style ? `${style.title} (${sku})` : sku}</span>
+                        <span>
+                          {style
+                            ? `${interactive ? style.title : displayBuyerProductTitle(style.title)} (${sku})`
+                            : sku}
+                        </span>
                         <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
                       </button>
                     );
@@ -779,11 +857,16 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     Pantone TCX &amp; swatchbook shade references
                   </span>
                 </div>
-                <ColorSwatchList colorways={prog.colorways} fabricCode={prog.fabricCode} compact />
+                <ColorSwatchList
+                  colorways={prog.colorways}
+                  fabricCode={prog.fabricCode}
+                  compact
+                  showPendingColorways={interactive}
+                />
               </div>
             </article>
-          )
-        )}
+          );
+        })}
       </div>
     </div>
   );

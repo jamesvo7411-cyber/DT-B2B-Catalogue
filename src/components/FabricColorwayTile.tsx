@@ -3,6 +3,7 @@ import { getFactoryColorImageKey } from '../data/factoryFabricColors';
 import { getColorSwatchHex } from '../data/garments';
 import type { FactoryFabricColor } from '../types/catalogue';
 import { getBuyerFacingColorNote, getDisplayColorName } from '../utils/fabricDisplay';
+import { getBuyerVisibleValue } from '../utils/productDisplay';
 import { FabricColorImageTile } from './FabricSwatchBoard';
 
 interface FabricColorwayTileProps {
@@ -50,18 +51,31 @@ export const FabricColorwayTile: React.FC<FabricColorwayTileProps> = ({
             {getDisplayColorName(color)}
           </h3>
         </div>
-        <p className="mt-1 break-words font-mono text-[8.5px] font-medium leading-snug text-[#33322F]">
-          {color.reference || 'TCX not listed'}
-        </p>
-        <p className="mt-0.5 break-words font-mono text-[8.5px] leading-snug text-[#68665F]">
-          {color.shadeCode || 'Color code not listed'}
-        </p>
-        {expanded && (color.lotWeightGsm || color.lotWidth) && (
-          <p className="mt-1 font-mono text-[8.5px] text-[#55534E] tabular-nums">
-            {[color.lotWeightGsm, color.lotWidth].filter(Boolean).join(' · ')}
+        {(interactive || getBuyerVisibleValue(color.reference)) && (
+          <p className="mt-1 break-words font-mono text-[8.5px] font-medium leading-snug text-[#33322F]">
+            {getBuyerVisibleValue(color.reference) || (interactive ? 'TCX not listed' : '')}
           </p>
         )}
-        {sourceNote && (
+        {(interactive || getBuyerVisibleValue(color.shadeCode)) && (
+          <p className="mt-0.5 break-words font-mono text-[8.5px] leading-snug text-[#68665F]">
+            {getBuyerVisibleValue(color.shadeCode) ||
+              (interactive ? 'Color code not listed' : '')}
+          </p>
+        )}
+        {expanded &&
+          (interactive || getBuyerVisibleValue(color.lotWeightGsm) || getBuyerVisibleValue(color.lotWidth)) && (
+          <p className="mt-1 font-mono text-[8.5px] text-[#55534E] tabular-nums">
+            {[
+              getBuyerVisibleValue(color.lotWeightGsm) ||
+                (interactive ? 'Lot GSM not listed' : ''),
+              getBuyerVisibleValue(color.lotWidth) ||
+                (interactive ? 'Lot width not listed' : ''),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        )}
+        {interactive && sourceNote && (
           <p className={`mt-1.5 text-[8px] leading-snug text-[#68665F] ${expanded ? 'line-clamp-3' : 'line-clamp-2'}`}>
             {sourceNote}
           </p>

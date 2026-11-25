@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { GarmentItem, MediaSlot, MediaSlotKey } from '../types/catalogue';
-import { conciseSourceNote, displayMoq } from '../utils/productDisplay';
+import {
+  displayBuyerProductTitle,
+  getBuyerVisibleValue,
+} from '../utils/productDisplay';
 import {
   formatSpreadPageCode,
   getFabricFamilyName,
@@ -54,6 +57,7 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
 
   const paddedNumber = String(garment.index).padStart(2, '0');
   const [unavailableSlots, setUnavailableSlots] = useState<Partial<Record<MediaSlotKey, boolean>>>({});
+  const buyerMoq = getBuyerVisibleValue(garment.specs.moq);
 
   useEffect(() => {
     setUnavailableSlots({});
@@ -71,24 +75,16 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
     setUnavailableSlots((prev) => (prev[slotKey] ? prev : { ...prev, [slotKey]: true }));
   };
 
-  const detailSlots: { key: MediaSlotKey; label: string; hint: string }[] = [
-    {
-      key: 'pocket',
-      label: 'Detail 01',
-      hint: garment.detailHints?.pocket ?? 'Pocket & trim closeup',
-    },
-    {
-      key: 'seam',
-      label: 'Detail 02',
-      hint: garment.detailHints?.seam ?? 'Collar & seam closeup',
-    },
-    { key: 'swatch', label: 'Fabric Image', hint: `Swatch ${garment.specs.fabricRollRef}` },
-    {
-      key: 'custom',
-      label: 'Detail 03',
-      hint: garment.detailHints?.custom ?? 'Fit & construction detail',
-    },
+  const detailSlots: { key: MediaSlotKey; label: string }[] = [
+    { key: 'pocket', label: 'Detail 01' },
+    { key: 'seam', label: 'Detail 02' },
+    { key: 'swatch', label: 'Fabric Image' },
+    { key: 'custom', label: 'Detail 03' },
   ];
+  const visibleDetailSlots = detailSlots.filter(({ key }) => {
+    const slot = garment.media[key];
+    return Boolean(slot.url || slot.fallbackUrl) && !unavailableSlots[key];
+  });
   const hasHeroAsset =
     Boolean(garment.media.hero.url || garment.media.hero.fallbackUrl) &&
     !unavailableSlots.hero;
@@ -97,7 +93,10 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
       item.id !== garment.id &&
       item.specs.fabricRollRef.toLowerCase() === garment.specs.fabricRollRef.toLowerCase()
   );
-  const sourceNote = conciseSourceNote(garment.dataFlags);
+  const buyerColorways = garment.colorways.filter(
+    (color) =>
+      getBuyerVisibleValue(color) && !color.toLowerCase().includes('pending')
+  );
   const prevGarment =
     orderedGarments[(currentPos - 1 + orderedGarments.length) % orderedGarments.length] ?? garment;
   const nextGarment =
@@ -132,7 +131,7 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="font-serif text-[26px] font-normal leading-[1.04] tracking-tight text-[#0A0A0A] sm:text-[30px]">
-          {garment.title}
+          {displayBuyerProductTitle(garment.title)}
         </h1>
         <span className="shrink-0 font-mono text-[10.5px] font-semibold tracking-[0.14em] text-[#3E3C37] tabular-nums">
           {garment.sku}
@@ -144,6 +143,7 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
           overlay
           fabricPageLabel={fabricPageLabel}
           onSelectFabricCode={onSelectFabricCode}
+          showWorkbenchNotes={false}
         />
       </div>
     </div>
@@ -182,7 +182,7 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
             >
               {orderedGarments.map((item) => (
                 <option key={item.id} value={item.index}>
-                  {String(item.index).padStart(2, '0')} · {item.sku} — {item.title}
+                  {String(item.index).padStart(2, '0')} · {item.sku} — {displayBuyerProductTitle(item.title)}
                 </option>
               ))}
             </select>
@@ -224,7 +224,7 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
                 {heroTopLockup}
                 <div className="my-auto py-8 text-center">
                   <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#77756F]">
-                    Studio Hero Photography Pending
+                    {displayBuyerProductTitle(garment.title)}
                   </p>
                   <p className="mt-1 font-serif text-lg italic text-[#55534E]">
                     {garment.sku} · {garment.specs.fabricRollRef}
@@ -243,58 +243,42 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
               rightContext={`STYLE ${garment.sku}`}
             />
 
+            {visibleDetailSlots.length > 0 && (
             <section className="border-b border-[#E8E6E0] pb-4">
               <div className="mb-3 flex items-baseline justify-between gap-3">
                 <h2 className="font-serif text-[26px] font-normal leading-none tracking-tight text-[#141412]">
                   Details &amp; Craftsmanship
                 </h2>
-                <span className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[#66645F]">
-                  4 plates
-                </span>
               </div>
               <div className="grid grid-cols-2 gap-3.5">
-                {detailSlots.map(({ key, label, hint }) => {
+                {visibleDetailSlots.map(({ key, label }) => {
                   const slot = garment.media[key];
                   const hasLoadedAsset =
                     Boolean(slot.url || slot.fallbackUrl) && !unavailableSlots[key];
-                  return (
+                  return hasLoadedAsset ? (
                     <div key={key} className="min-w-0">
-                      {hasLoadedAsset ? (
-                        <MediaPlate
-                          slotKey={key}
-                          slot={slot}
-                          aspectClass="aspect-[16/10] w-full bg-[#F5F4F0]"
-                          titleLabel={`${garment.sku} ${label}`}
-                          editMode={false}
-                          compact
-                          displayScale={key === 'swatch' ? 1.65 : 1}
-                          editable={false}
-                          showBlankGuides={false}
-                          onImageUnavailable={markSlotUnavailable}
-                          onInspect={(s, lbl) => onInspectMedia(s, lbl, garment.title)}
-                        />
-                      ) : (
-                        <div className="flex aspect-[16/10] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#FAF9F5] px-3 text-center">
-                          <span aria-hidden="true" className="relative mb-1.5 block h-4 w-4">
-                            <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#C8C5BE]" />
-                            <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#C8C5BE]" />
-                          </span>
-                          <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.12em] text-[#55534E]">
-                            {label}
-                          </span>
-                          <span className="mt-0.5 text-[8.5px] leading-snug text-[#77756F]">
-                            {hint}
-                          </span>
-                        </div>
-                      )}
+                      <MediaPlate
+                        slotKey={key}
+                        slot={slot}
+                        aspectClass="aspect-[16/10] w-full bg-[#F5F4F0]"
+                        titleLabel={`${garment.sku} ${label}`}
+                        editMode={false}
+                        compact
+                        displayScale={key === 'swatch' ? 1.65 : 1}
+                        editable={false}
+                        showBlankGuides={false}
+                        onImageUnavailable={markSlotUnavailable}
+                        onInspect={(s, lbl) => onInspectMedia(s, lbl, garment.title)}
+                      />
                       <p className="mt-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-[#33322F]">
                         {label}
                       </p>
                     </div>
-                  );
+                  ) : null;
                 })}
               </div>
             </section>
+            )}
 
             <section className="border-b border-[#E8E6E0] pb-4">
               <div className="mb-2.5 flex items-baseline justify-between gap-2">
@@ -302,13 +286,14 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
                   Colorways
                 </h3>
                 <span className="font-mono text-[10px] text-[#77756F] tabular-nums">
-                  {garment.colorways.length} {garment.colorways.length === 1 ? 'shade' : 'shades'}
+                  {buyerColorways.length} {buyerColorways.length === 1 ? 'shade' : 'shades'}
                 </span>
               </div>
               <ColorSwatchList
                 colorways={garment.colorways}
                 fabricCode={garment.specs.fabricRollRef}
                 editorial
+                showPendingColorways={false}
               />
             </section>
 
@@ -333,39 +318,32 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
               </div>
 
               <dl className="grid grid-cols-2 gap-x-5 gap-y-3 border-t border-[#E8E6E0] pt-4 text-xs">
+                {[
+                  ['Stitch Density', garment.specs.stitchDensity],
+                  ['Seam Finish', garment.specs.seamFinish],
+                  ['Pocket & Trim', garment.specs.pocketConstruction],
+                ].map(([label, rawValue]) => {
+                  const value = getBuyerVisibleValue(rawValue);
+                  return value ? (
+                    <div key={label}>
+                      <dt className="font-mono text-[9px] uppercase tracking-wider text-[#77756F]">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 font-semibold text-[#111111]">{value}</dd>
+                    </div>
+                  ) : null;
+                })}
                 <div>
                   <dt className="font-mono text-[9px] uppercase tracking-wider text-[#77756F]">
-                    Stitch Density
-                  </dt>
-                  <dd className="mt-0.5 font-semibold text-[#111111]">
-                    {garment.specs.stitchDensity}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[9px] uppercase tracking-wider text-[#77756F]">
-                    Seam Finish
-                  </dt>
-                  <dd className="mt-0.5 font-semibold text-[#111111]">
-                    {garment.specs.seamFinish}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[9px] uppercase tracking-wider text-[#77756F]">
-                    Pocket &amp; Trim
-                  </dt>
-                  <dd className="mt-0.5 font-semibold text-[#111111]">
-                    {garment.specs.pocketConstruction}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[9px] uppercase tracking-wider text-[#77756F]">
-                    Size Run · MOQ
+                    Size Run{buyerMoq ? ' · MOQ' : ''}
                   </dt>
                   <dd className="mt-1.5 flex flex-col gap-1.5">
                     <SizeRunChips sizeRun={garment.specs.sizeRun} size="md" />
-                    <span className="font-mono text-[10px] font-medium text-[#55534E] tabular-nums">
-                      MOQ {displayMoq(garment.specs.moq)}
-                    </span>
+                    {buyerMoq && (
+                      <span className="font-mono text-[10px] font-medium text-[#55534E] tabular-nums">
+                        MOQ {buyerMoq}
+                      </span>
+                    )}
                   </dd>
                 </div>
               </dl>
@@ -413,11 +391,6 @@ export const ProductShowcasePage: React.FC<ProductShowcasePageProps> = ({
                 )}
               </div>
 
-              {sourceNote && (
-                <p className="border-t border-[#E8E6E0] pt-2.5 text-xs leading-relaxed text-[#55534E]">
-                  {sourceNote}
-                </p>
-              )}
             </section>
           </div>
         </article>

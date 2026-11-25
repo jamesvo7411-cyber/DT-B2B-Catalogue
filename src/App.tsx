@@ -66,6 +66,7 @@ interface SavedState {
   coverCustomImage?: string;
   fabricColorImages?: Record<string, string>;
   demoMode?: boolean;
+  demoModePreferenceSet?: boolean;
 }
 
 function hydrateGarments(
@@ -188,7 +189,8 @@ function loadSavedState(): SavedState | null {
       shortlist: Array.isArray(parsed.shortlist) ? parsed.shortlist : [],
       coverCustomImage: parsed.coverCustomImage ?? '',
       fabricColorImages: normalizeFabricColorImages(parsed.fabricColorImages),
-      demoMode: Boolean(parsed.demoMode),
+      demoMode:
+        parsed.demoModePreferenceSet === true ? Boolean(parsed.demoMode) : true,
     };
   } catch {
     return null;
@@ -215,7 +217,7 @@ export default function App() {
     () => initialSaved?.fabricColorImages ?? {}
   );
   const [demoMode, setDemoMode] = useState<boolean>(
-    () => initialSaved?.demoMode ?? false
+    () => initialSaved?.demoMode ?? true
   );
   const presentationGarments = useMemo(
     () =>
@@ -340,6 +342,7 @@ export default function App() {
         coverCustomImage,
         fabricColorImages,
         demoMode,
+        demoModePreferenceSet: true,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (error) {
@@ -770,7 +773,7 @@ export default function App() {
     setDemoMode(nextDemoMode);
     showToast(
       nextDemoMode
-        ? 'Demo Mode On — photographed fabrics & full-image garments pushed to top.'
+        ? 'Demo Mode On — image-complete pages first; pages missing images last.'
         : 'Standard catalogue order restored.'
     );
   };

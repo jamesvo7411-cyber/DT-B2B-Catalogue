@@ -11,6 +11,40 @@ export function displayMoq(moq: string): string {
   return trimmed.replace(/\s*\(Placeholder\)\s*$/i, ' · Est.');
 }
 
+export function hasIncompleteFabricComposition(dataFlags?: string[]): boolean {
+  return Boolean(
+    dataFlags?.some(
+      (flag) =>
+        /fabric content|composition/i.test(flag) &&
+        /truncat|incomplete|partial/i.test(flag)
+    )
+  );
+}
+
+export function getBuyerVisibleValue(value?: string | null): string | undefined {
+  const trimmed = value?.trim();
+  if (
+    !trimmed ||
+    /\b(?:placeholder|pending|tbd|tbc|provisional|unverified|unconfirmed|truncated|incomplete)\b/i.test(
+      trimmed
+    ) ||
+    /\bnot\s+(?:(?:yet|currently)\s+)?(?:listed|declared|provided|available|supplied|specified)\b/i.test(
+      trimmed
+    ) ||
+    /\bno\s+(?:[\w-]+\s+){0,5}(?:note|data|information|reference|image|photography|specification)\s+(?:supplied|provided|listed|available)\b/i.test(
+      trimmed
+    ) ||
+    /^(?:[-–—]+|n\/a|unknown)$/i.test(trimmed)
+  ) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+export function displayBuyerProductTitle(title: string): string {
+  return title.replace(/\*+$/, '');
+}
+
 export function conciseSourceNote(flags?: string[]): string {
   if (!flags?.length) return '';
 

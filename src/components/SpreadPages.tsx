@@ -33,6 +33,11 @@ import {
   type CatalogueNavigationMap,
   type SectionId,
 } from '../utils/catalogueOrder';
+import {
+  displayBuyerProductTitle,
+  getBuyerVisibleValue,
+  hasIncompleteFabricComposition,
+} from '../utils/productDisplay';
 import { RunningHeader } from './CatalogueNavigation';
 import { FabricColorwayTile } from './FabricColorwayTile';
 import { GarmentSpread, type SpreadLeafSide } from './GarmentSpread';
@@ -590,7 +595,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                     {String(item.index).padStart(2, '0')}
                   </span>
                   <span className="truncate text-[10px] font-medium text-[#171715]">
-                    {item.title}
+                    {classicMode ? displayBuyerProductTitle(item.title) : item.title}
                   </span>
                   <span className="shrink-0 font-mono text-[8px] font-normal tracking-wide text-[#9A968E] tabular-nums group-hover:text-[#66645F]">
                     {item.sku}
@@ -644,7 +649,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                     {String(item.index).padStart(2, '0')}
                   </span>
                   <span className="truncate font-sans text-[11px] font-medium text-[#171715]">
-                    {item.title}
+                    {classicMode ? displayBuyerProductTitle(item.title) : item.title}
                   </span>
                   <span className="shrink-0 font-mono text-[8.5px] font-normal tracking-wide text-[#9A968E] tabular-nums group-hover:text-[#66645F]">
                     {item.sku}
@@ -721,7 +726,9 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         rightContext={
           leafSide === 'verso'
             ? `SWATCH ${String(swatchSpreadNum).padStart(2, '0')}/${String(swatchSpreadCount).padStart(2, '0')}`
-            : 'PANTONE TCX ARCHIVE'
+            : classicMode
+              ? 'COLORWAYS'
+              : 'PANTONE TCX ARCHIVE'
         }
         footerLeft={`P. ${spreadPadded}${leafSide === 'verso' ? 'A' : 'B'}`}
         footerRight={leafSide === 'verso' ? 'FABRIC SPECIFICATION' : 'COLORWAY GALLERY'}
@@ -763,6 +770,15 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   </span>
                 </div>
               </div>
+            ) : classicMode ? (
+              <div className="flex aspect-[4/3] w-full flex-col items-center justify-center bg-[#FAF9F5] px-4 text-center">
+                <p className="font-serif text-2xl font-normal tracking-tight text-[#3E3C37]">
+                  {fabricFamilyName}
+                </p>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[#77756F]">
+                  {program.fabricCode}
+                </p>
+              </div>
             ) : (
               <div>
                 <div className="flex aspect-[4/3] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#FAF9F5] px-4 text-center">
@@ -779,32 +795,44 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               </div>
             )}
 
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-y border-[#EAE8E3] py-2.5 text-[10px]">
-              <div className="col-span-2">
-                <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
-                  Fabric content
-                </dt>
-                <dd className="mt-0.5 text-[11px] font-semibold leading-snug text-[#111111]">
-                  {program.composition || 'Not listed'}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
-                  Weight
-                </dt>
-                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111] tabular-nums">
-                  {program.weightGsm || 'Not listed'}
-                </dd>
-              </div>
-              <div>
-                <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
-                  Roll width
-                </dt>
-                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111] tabular-nums">
-                  {program.fabricWidth || 'Not listed'}
-                </dd>
-              </div>
-            </dl>
+            {(() => {
+              const compositionIsIncomplete = hasIncompleteFabricComposition(
+                program.dataFlags
+              );
+              const composition = compositionIsIncomplete
+                ? undefined
+                : getBuyerVisibleValue(program.composition);
+              const weight = getBuyerVisibleValue(program.weightGsm);
+              const width = getBuyerVisibleValue(program.fabricWidth);
+              const visibleSpecs = classicMode
+                ? [
+                    ...(composition ? [{ label: 'Fabric content', value: composition }] : []),
+                    ...(weight ? [{ label: 'Weight', value: weight }] : []),
+                    ...(width ? [{ label: 'Roll width', value: width }] : []),
+                  ]
+                : [
+                    { label: 'Fabric content', value: program.composition || 'Not listed' },
+                    { label: 'Weight', value: program.weightGsm || 'Not listed' },
+                    { label: 'Roll width', value: program.fabricWidth || 'Not listed' },
+                  ];
+              return visibleSpecs.length > 0 ? (
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-y border-[#EAE8E3] py-2.5 text-[10px]">
+                  {visibleSpecs.map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className={label === 'Fabric content' ? 'col-span-2' : undefined}
+                    >
+                      <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 font-mono text-[12px] font-bold leading-snug text-[#111111] tabular-nums">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null;
+            })()}
 
             <div className="grid grid-cols-3 gap-2 border-b border-[#EAE8E3] pb-2.5 text-[9.5px]">
               <div className="col-span-2">
@@ -812,12 +840,12 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   Program coverage
                 </p>
                 <p className="mt-0.5 truncate font-medium text-[#111111]">
-                  {programCategories || 'Core garment line'}
+                  {programCategories || (classicMode ? '' : 'Core garment line')}
                 </p>
               </div>
               <div>
                 <p className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
-                  Verified shades
+                  {classicMode ? 'Available shades' : 'Verified shades'}
                 </p>
                 <p className="mt-0.5 font-mono font-bold text-[#111111] tabular-nums">
                   {shadeCount} {shadeCount === 1 ? 'shade' : 'shades'}
@@ -825,24 +853,27 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               </div>
             </div>
 
+            {(!classicMode || getBuyerVisibleValue(program.stretchFeelNote)) && (
             <div>
               <h3 className="font-mono text-[9px] font-bold uppercase tracking-wide text-[#33322F]">
                 Fabric characteristics
               </h3>
               <p className="mt-1 text-[10px] leading-relaxed text-[#55534E]">
-                {program.stretchFeelNote || 'No fabric characteristic note supplied.'}
+                {getBuyerVisibleValue(program.stretchFeelNote) ||
+                  (classicMode ? '' : 'No fabric characteristic note supplied.')}
               </p>
-              {hasLotVariation && (
+              {!classicMode && hasLotVariation && (
                 <p className="mt-2 border-t border-[#EAE8E3] pt-1.5 text-[9px] leading-snug text-[#68665F]">
                   Factory color-lot GSM or width entries vary; confirm the selected shade and lot before ordering.
                 </p>
               )}
-              {program.dataFlags[0] && (
+              {!classicMode && program.dataFlags[0] && (
                 <p className="mt-1.5 border-t border-[#EAE8E3] pt-1.5 text-[9px] leading-snug text-[#68665F]">
                   {program.dataFlags[0]}
                 </p>
               )}
             </div>
+            )}
 
             <section className="mt-auto border-t border-[#EAE8E3] pt-2.5">
               <div className="mb-2 flex items-baseline justify-between gap-2">
@@ -873,7 +904,9 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                         </span>
                       </div>
                       <p className="truncate text-[9.5px] text-[#4E4C47] group-hover:text-[#0A0A0A]">
-                        {garment.title}
+                        {classicMode
+                          ? displayBuyerProductTitle(garment.title)
+                          : garment.title}
                       </p>
                     </button>
                   );
@@ -914,9 +947,11 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 );
               })}
             </div>
-            <p className="mt-2 border-t border-[#EAE8E3] pt-2 text-[9px] leading-relaxed text-[#68665F]">
-              Pantone TCX and chart references identify listed shades; confirm current availability, MOQ, lead time, and final lot specifications with the factory.
-            </p>
+            {!classicMode && (
+              <p className="mt-2 border-t border-[#EAE8E3] pt-2 text-[9px] leading-relaxed text-[#68665F]">
+                Pantone TCX and chart references identify listed shades; confirm current availability, MOQ, lead time, and final lot specifications with the factory.
+              </p>
+            )}
           </div>
         )}
       </LeafShell>
@@ -979,71 +1014,92 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       side="verso"
       showSafeZones={showGuides}
       sectionId="technical"
-      categoryLabel="PRODUCTION NOTES"
+      categoryLabel={classicMode ? 'CONTACT & COLOPHON' : 'PRODUCTION NOTES'}
       pageLabel={`P.${techPadded}A`}
-      rightContext="PRE-PRESS PROFILE"
-      footerLeft={`P. ${techPadded}A`}
-      footerRight="300 DPI & CMYK READY"
+      rightContext={classicMode ? meta.edition : 'PRE-PRESS PROFILE'}
+      footerLeft={classicMode ? 'DREAM TOMORROW · DT' : `P. ${techPadded}A`}
+      footerRight={classicMode ? 'CM · OEM · ODM' : '300 DPI & CMYK READY'}
     >
-      <div className="space-y-5">
-        <div>
-          <div className="flex items-center gap-2 text-[var(--metallic-strong)]">
-            <HardDrive className="h-4 w-4" />
-            <span className="font-mono text-xs">4–5 GB Shared Drive Optimization</span>
-          </div>
-          <h2 className="mt-1.5 font-sans text-xl font-semibold tracking-tight text-[#0A0A0A]">
-            Web Asset Compression &amp; Print Production Spec
-          </h2>
-          <p className="mt-2 text-xs leading-relaxed text-[#525252]">
-            Convert 4–5 GB raw studio TIFF/PNG drives to <span className="font-mono">WebP (q=82)</span> / <span className="font-mono">JPEG (q=85)</span> inside <code className="font-mono text-[#0A0A0A]">public/assets/catalogue/</code> for instant flipbook turning, while preserving modular layout tokens for future print production.
+      {classicMode ? (
+        <div className="flex h-full flex-col items-center justify-center text-center">
+          <img src={BRAND_LOGO_PATH} alt="DT" className="h-16 w-auto object-contain" />
+          <p className="mt-5 font-serif text-3xl tracking-tight text-[#24231F]">
+            Dream Tomorrow
           </p>
-        </div>
-
-        {/* Modular Physical Binding & Pre-Press Geometry Box */}
-        <div className="border border-[#E5E5E5] bg-[#FAFAFA] p-4 space-y-2 text-[11px]">
-          <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-semibold text-[#0A0A0A]">
-            <Layers className="h-3.5 w-3.5 text-[var(--metallic-strong)]" />
-            <span>MODULAR PRINT PRODUCTION PROFILE</span>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-[#E5E5E5] pt-2">
-            <div>
-              <span className="text-[#737373] block text-[9.5px]">Format</span>
-              <span className="font-mono text-[#0A0A0A]">{PRINT_PRODUCTION_SPEC.pageFormat}</span>
-            </div>
-            <div>
-              <span className="text-[#737373] block text-[9.5px]">Binding</span>
-              <span className="font-mono text-[#0A0A0A]">{PRINT_PRODUCTION_SPEC.bindingMethod}</span>
-            </div>
-            <div>
-              <span className="text-[#737373] block text-[9.5px]">Inner Spine Gutter / Outer Safe</span>
-              <span className="font-mono text-[#0A0A0A] tabular-nums">
-                {PRINT_PRODUCTION_SPEC.innerGutterMm}mm spine · {PRINT_PRODUCTION_SPEC.outerMarginMm}mm outer
-              </span>
-            </div>
-            <div>
-              <span className="text-[#737373] block text-[9.5px]">Trim / Bleed Spec</span>
-              <span className="font-mono text-[#0A0A0A] tabular-nums">
-                {PRINT_PRODUCTION_SPEC.trimMarginMm}mm trim · {PRINT_PRODUCTION_SPEC.bleedMm}mm bleed
-              </span>
-            </div>
-            <div className="col-span-2">
-              <span className="text-[#737373] block text-[9.5px]">Print Raster &amp; Color Target</span>
-              <span className="font-mono text-[#0A0A0A]">
-                {PRINT_PRODUCTION_SPEC.targetDpi} DPI · {PRINT_PRODUCTION_SPEC.colorProfile}
-              </span>
-            </div>
+          <p className="mt-2 font-mono text-[10px] tracking-wide text-[#77756F]">
+            CM · OEM · ODM
+          </p>
+          <div className="mt-10 border-t border-[#E5E3DE] pt-4">
+            <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[#77756F]">
+              Wholesale &amp; private-label enquiries
+            </p>
+            <a
+              href="mailto:wholesale@dreamtomorrow.studio"
+              className="mt-1 inline-block font-serif text-base text-[#24231F] underline decoration-[#B8B5AD] underline-offset-4"
+            >
+              wholesale@dreamtomorrow.studio
+            </a>
           </div>
         </div>
+      ) : (
+        <div className="space-y-5">
+          <div>
+            <div className="flex items-center gap-2 text-[var(--metallic-strong)]">
+              <HardDrive className="h-4 w-4" />
+              <span className="font-mono text-xs">4–5 GB Shared Drive Optimization</span>
+            </div>
+            <h2 className="mt-1.5 font-sans text-xl font-semibold tracking-tight text-[#0A0A0A]">
+              Web Asset Compression &amp; Print Production Spec
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-[#525252]">
+              Convert 4–5 GB raw studio TIFF/PNG drives to <span className="font-mono">WebP (q=82)</span> / <span className="font-mono">JPEG (q=85)</span> inside <code className="font-mono text-[#0A0A0A]">public/assets/catalogue/</code> for instant flipbook turning, while preserving modular layout tokens for future print production.
+            </p>
+          </div>
 
-        {!classicMode && (
+          {/* Modular Physical Binding & Pre-Press Geometry Box */}
+          <div className="border border-[#E5E5E5] bg-[#FAFAFA] p-4 space-y-2 text-[11px]">
+            <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-semibold text-[#0A0A0A]">
+              <Layers className="h-3.5 w-3.5 text-[var(--metallic-strong)]" />
+              <span>MODULAR PRINT PRODUCTION PROFILE</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-[#E5E5E5] pt-2">
+              <div>
+                <span className="text-[#737373] block text-[9.5px]">Format</span>
+                <span className="font-mono text-[#0A0A0A]">{PRINT_PRODUCTION_SPEC.pageFormat}</span>
+              </div>
+              <div>
+                <span className="text-[#737373] block text-[9.5px]">Binding</span>
+                <span className="font-mono text-[#0A0A0A]">{PRINT_PRODUCTION_SPEC.bindingMethod}</span>
+              </div>
+              <div>
+                <span className="text-[#737373] block text-[9.5px]">Inner Spine Gutter / Outer Safe</span>
+                <span className="font-mono text-[#0A0A0A] tabular-nums">
+                  {PRINT_PRODUCTION_SPEC.innerGutterMm}mm spine · {PRINT_PRODUCTION_SPEC.outerMarginMm}mm outer
+                </span>
+              </div>
+              <div>
+                <span className="text-[#737373] block text-[9.5px]">Trim / Bleed Spec</span>
+                <span className="font-mono text-[#0A0A0A] tabular-nums">
+                  {PRINT_PRODUCTION_SPEC.trimMarginMm}mm trim · {PRINT_PRODUCTION_SPEC.bleedMm}mm bleed
+                </span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-[#737373] block text-[9.5px]">Print Raster &amp; Color Target</span>
+                <span className="font-mono text-[#0A0A0A]">
+                  {PRINT_PRODUCTION_SPEC.targetDpi} DPI · {PRINT_PRODUCTION_SPEC.colorProfile}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2.5 border-t border-[#EFEFEF] pt-3 text-[11.5px]">
             <p className="font-semibold text-[#0A0A0A]">Session Drag-and-Drop vs. Saved Project Assets</p>
             <p className="text-[#525252]">
               Images dragged onto any product or swatch plate preview immediately in the browser and carry through to <strong>Print / Export PDF</strong>, remaining scoped to your browser session until committed to project assets or exported via CSV/JSON.
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </LeafShell>
   );
 

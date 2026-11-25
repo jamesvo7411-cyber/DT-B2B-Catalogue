@@ -21,7 +21,12 @@ import {
   getFabricFamilyName,
   type CatalogueNavigationMap,
 } from '../utils/catalogueOrder';
-import { conciseSourceNote, displayMoq } from '../utils/productDisplay';
+import {
+  conciseSourceNote,
+  displayBuyerProductTitle,
+  displayMoq,
+  getBuyerVisibleValue,
+} from '../utils/productDisplay';
 
 export type SpreadLeafSide = 'full' | 'verso' | 'recto';
 
@@ -97,6 +102,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
       item.specs.fabricRollRef.toLowerCase() === garment.specs.fabricRollRef.toLowerCase()
   );
   const sourceNote = conciseSourceNote(garment.dataFlags);
+  const buyerMoq = getBuyerVisibleValue(garment.specs.moq);
   const [unavailableSlots, setUnavailableSlots] = useState<Partial<Record<MediaSlotKey, boolean>>>({});
 
   useEffect(() => {
@@ -115,24 +121,20 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
     setUnavailableSlots((prev) => (prev[slotKey] ? prev : { ...prev, [slotKey]: true }));
   };
 
-  const productDetailSlots: { key: MediaSlotKey; label: string; hint: string }[] = [
-    {
-      key: 'pocket',
-      label: 'Detail 01',
-      hint: garment.detailHints?.pocket ?? 'Pocket & trim closeup',
-    },
-    {
-      key: 'seam',
-      label: 'Detail 02',
-      hint: garment.detailHints?.seam ?? 'Collar & seam closeup',
-    },
-    { key: 'swatch', label: 'Fabric Image', hint: `Swatch ${garment.specs.fabricRollRef}` },
-    {
-      key: 'custom',
-      label: 'Detail 03',
-      hint: garment.detailHints?.custom ?? 'Fit & construction detail',
-    },
+  const productDetailSlots: { key: MediaSlotKey; label: string }[] = [
+    { key: 'pocket', label: 'Detail 01' },
+    { key: 'seam', label: 'Detail 02' },
+    { key: 'swatch', label: 'Fabric Image' },
+    { key: 'custom', label: 'Detail 03' },
   ];
+  const visibleProductDetailSlots = productDetailSlots.filter(({ key }) => {
+    const slot = garment.media[key];
+    return Boolean(slot.url || slot.fallbackUrl) && !unavailableSlots[key];
+  });
+  const buyerColorwayCount = garment.colorways.filter(
+    (color) =>
+      getBuyerVisibleValue(color) && !color.toLowerCase().includes('pending')
+  ).length;
   const hasHeroAsset =
     Boolean(garment.media.hero.url || garment.media.hero.fallbackUrl) &&
     !unavailableSlots.hero;
@@ -201,39 +203,23 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   const renderClassicDetail = (
     slotKey: MediaSlotKey,
     label: string,
-    hint: string,
     aspectClass = 'aspect-[16/10] w-full'
   ) => {
     const slot = garment.media[slotKey];
     const hasLoadedAsset =
       Boolean(slot.url || slot.fallbackUrl) && !unavailableSlots[slotKey];
 
+    if (!hasLoadedAsset) return null;
+
     return (
       <div key={slotKey} className="min-w-0">
-        {hasLoadedAsset ? (
-          renderMedia(
-            slotKey,
-            `${garment.sku} ${label}`,
-            aspectClass,
-            true,
-            undefined,
-            slotKey === 'swatch' ? 1.65 : 1
-          )
-        ) : (
-          <div
-            className={`flex ${aspectClass} flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#FAF9F5] px-2.5 text-center`}
-          >
-            <span aria-hidden="true" className="relative mb-1.5 block h-4 w-4">
-              <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#C8C5BE]" />
-              <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#C8C5BE]" />
-            </span>
-            <span className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-[#55534E]">
-              {label}
-            </span>
-            <span className="mt-0.5 text-[8px] leading-snug text-[#77756F]">
-              {hint}
-            </span>
-          </div>
+        {renderMedia(
+          slotKey,
+          `${garment.sku} ${label}`,
+          aspectClass,
+          true,
+          undefined,
+          slotKey === 'swatch' ? 1.65 : 1
         )}
         <div className="mt-1 flex items-baseline justify-between gap-1.5">
           <p className="font-mono text-[8.5px] font-semibold uppercase tracking-wide text-[#33322F]">
@@ -318,7 +304,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="font-serif text-[24px] font-normal leading-[1.04] tracking-tight text-[#0A0A0A] sm:text-[27px]">
-          {garment.title}
+          {classicMode ? displayBuyerProductTitle(garment.title) : garment.title}
         </h1>
         <span className="shrink-0 font-mono text-[10px] font-semibold tracking-[0.14em] text-[#3E3C37] tabular-nums">
           {garment.sku}
@@ -331,6 +317,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
           fabricPageLabel={fabricPageLabel}
           onSelectFabricCode={onSelectFabricCode}
           disabled={isPreviewLayer}
+          showWorkbenchNotes={!classicMode}
         />
       </div>
       {classicMode && (
@@ -368,10 +355,10 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
         <div className="relative flex h-full min-h-[660px] w-full flex-1 flex-col justify-between bg-[#FAF9F5] p-5 sm:p-6">
           {heroTopLockup}
           <div className="my-auto px-6 py-10 text-center">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#77756F]">
-              Studio Hero Photography Pending
+            <p className="font-serif text-3xl font-normal tracking-tight text-[#3E3C37]">
+              {displayBuyerProductTitle(garment.title)}
             </p>
-            <p className="mt-1.5 font-serif text-xl italic text-[#404040]">
+            <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[#77756F]">
               {garment.sku} · {garment.specs.fabricRollRef}
             </p>
           </div>
@@ -495,30 +482,28 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
         {classicMode ? (
           <>
             {/* 4-Plate Craftsmanship & Fabric Macro Grid (3 Closeup Details + 1 Fabric Image) */}
+            {visibleProductDetailSlots.length > 0 && (
             <section className="border-b border-[#E8E6E0] pb-3">
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <h2 className="font-serif text-[22px] font-normal leading-none tracking-tight text-[#141412]">
                   Construction &amp; Craftsmanship
                 </h2>
-                <span className="font-mono text-[8.5px] font-medium tracking-[0.12em] text-[#66645F]">
-                  4 PLATES
-                </span>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                {productDetailSlots.map(({ key, label, hint }) =>
-                  renderClassicDetail(key, label, hint, 'aspect-[16/10] w-full')
+                {visibleProductDetailSlots.map(({ key, label }) =>
+                  renderClassicDetail(key, label, 'aspect-[16/10] w-full')
                 )}
               </div>
             </section>
+            )}
 
-            {/* Colorways + Pantone / TCX References */}
             <section className="border-b border-[#E8E6E0] pb-3.5">
               <div className="mb-2 flex items-baseline justify-between gap-2">
                 <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#55534E]">
-                  Colorways &amp; Shade References
+                  Colorways
                 </h3>
                 <span className="font-mono text-[9px] text-[#77756F] tabular-nums">
-                  {garment.colorways.length} {garment.colorways.length === 1 ? 'shade' : 'shades'} · TCX / Mill Ref
+                  {buyerColorwayCount} {buyerColorwayCount === 1 ? 'shade' : 'shades'}
                 </span>
               </div>
               <ColorSwatchList
@@ -526,6 +511,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
                 fabricCode={garment.specs.fabricRollRef}
                 compact
                 editorial
+                showPendingColorways={!classicMode}
               />
             </section>
 
@@ -551,39 +537,32 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
               </div>
 
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-[#E8E6E0] pt-3 text-[10px]">
+                {[
+                  ['Stitch Density', garment.specs.stitchDensity],
+                  ['Seam Finish', garment.specs.seamFinish],
+                  ['Pocket & Trim', garment.specs.pocketConstruction],
+                ].map(([label, rawValue]) => {
+                  const value = getBuyerVisibleValue(rawValue);
+                  return value ? (
+                    <div key={label}>
+                      <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 font-medium text-[#111111]">{value}</dd>
+                    </div>
+                  ) : null;
+                })}
                 <div>
                   <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
-                    Stitch Density
-                  </dt>
-                  <dd className="mt-0.5 font-medium text-[#111111]">
-                    {garment.specs.stitchDensity}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
-                    Seam Finish
-                  </dt>
-                  <dd className="mt-0.5 font-medium text-[#111111]">
-                    {garment.specs.seamFinish}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
-                    Pocket &amp; Trim
-                  </dt>
-                  <dd className="mt-0.5 font-medium text-[#111111]">
-                    {garment.specs.pocketConstruction}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
-                    Size Run · MOQ
+                    Size Run{buyerMoq ? ' · MOQ' : ''}
                   </dt>
                   <dd className="mt-1 flex flex-col gap-1">
                     <SizeRunChips sizeRun={garment.specs.sizeRun} size="xs" />
-                    <span className="font-mono text-[8.5px] font-medium text-[#55534E] tabular-nums">
-                      MOQ {displayMoq(garment.specs.moq)}
-                    </span>
+                    {buyerMoq && (
+                      <span className="font-mono text-[8.5px] font-medium text-[#55534E] tabular-nums">
+                        MOQ {buyerMoq}
+                      </span>
+                    )}
                   </dd>
                 </div>
               </dl>
@@ -678,6 +657,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
                 fabricCode={garment.specs.fabricRollRef}
                 compact
                 editorial
+                showPendingColorways={!classicMode}
               />
             </div>
 

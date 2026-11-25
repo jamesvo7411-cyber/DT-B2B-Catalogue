@@ -121,6 +121,9 @@ export function sortGarmentsForDemo(garments: GarmentItem[]): GarmentItem[] {
     if (scoreA.isFullImages !== scoreB.isFullImages) {
       return scoreA.isFullImages ? -1 : 1;
     }
+    if ((scoreA.populatedCount === 0) !== (scoreB.populatedCount === 0)) {
+      return scoreA.populatedCount === 0 ? 1 : -1;
+    }
     if (scoreA.populatedCount !== scoreB.populatedCount) {
       return scoreB.populatedCount - scoreA.populatedCount;
     }
@@ -146,7 +149,7 @@ export function sortFabricProgramsForDemo(
   const garmentByIndex = new Map(garments.map((g) => [g.index, g]));
 
   const scoreProgram = (program: FabricSwatchProgram) => {
-    const totalColors = Math.max(1, program.factoryColors.length);
+    const totalColors = program.factoryColors.length;
     const populatedColors = program.factoryColors.filter((color) => {
       const key = getFactoryColorImageKey(program.fabricCode, color.colorName);
       return Boolean(fabricColorImages[key] || color.swatchImageUrl);
@@ -155,7 +158,10 @@ export function sortFabricProgramsForDemo(
       getPreferredFactoryFabricImage(program.fabricCode, fabricColorImages)?.imageUrl ||
         program.swatchImageUrl
     );
-    const isComplete = hasHero && populatedColors === program.factoryColors.length && program.factoryColors.length > 0;
+    const isComplete =
+      hasHero && totalColors > 0 && populatedColors === totalColors;
+    const imageCount = populatedColors + (hasHero ? 1 : 0);
+    const totalImages = totalColors + 1;
     const fullProductLinks = program.linkedIndices.filter((idx) => {
       const item = garmentByIndex.get(idx);
       return item ? getGarmentMediaCompleteness(item).isFullImages : false;
@@ -164,7 +170,8 @@ export function sortFabricProgramsForDemo(
     return {
       isComplete,
       hasHero,
-      ratio: populatedColors / totalColors,
+      imageCount,
+      ratio: imageCount / totalImages,
       populatedColors,
       fullProductLinks,
     };
@@ -175,8 +182,12 @@ export function sortFabricProgramsForDemo(
     const sb = scoreProgram(b);
 
     if (sa.isComplete !== sb.isComplete) return sa.isComplete ? -1 : 1;
-    if (sa.hasHero !== sb.hasHero) return sa.hasHero ? -1 : 1;
+    if ((sa.imageCount === 0) !== (sb.imageCount === 0)) {
+      return sa.imageCount === 0 ? 1 : -1;
+    }
     if (sa.ratio !== sb.ratio) return sb.ratio - sa.ratio;
+    if (sa.imageCount !== sb.imageCount) return sb.imageCount - sa.imageCount;
+    if (sa.hasHero !== sb.hasHero) return sa.hasHero ? -1 : 1;
     if (sa.fullProductLinks !== sb.fullProductLinks) return sb.fullProductLinks - sa.fullProductLinks;
     if (sa.populatedColors !== sb.populatedColors) return sb.populatedColors - sa.populatedColors;
     return a.fabricCode.localeCompare(b.fabricCode);

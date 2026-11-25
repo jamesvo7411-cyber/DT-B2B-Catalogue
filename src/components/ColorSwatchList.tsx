@@ -1,12 +1,14 @@
 import React from 'react';
 import { getColorSwatchHex } from '../data/garments';
 import { getFactoryFabricColors } from '../data/factoryFabricColors';
+import { getBuyerVisibleValue } from '../utils/productDisplay';
 
 interface ColorSwatchListProps {
   colorways: string[];
   fabricCode?: string;
   compact?: boolean;
   editorial?: boolean;
+  showPendingColorways?: boolean;
 }
 
 function splitColorCode(raw: string): { name: string; code: string | null; isPending: boolean } {
@@ -28,8 +30,16 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
   fabricCode,
   compact = false,
   editorial = false,
+  showPendingColorways = false,
 }) => {
   const factoryColors = fabricCode ? getFactoryFabricColors(fabricCode) : [];
+  const visibleColorways = showPendingColorways
+    ? colorways
+    : colorways.filter(
+        (color) =>
+          getBuyerVisibleValue(color) &&
+          !color.toLowerCase().includes('pending')
+      );
 
   return (
     <div
@@ -41,7 +51,7 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
             : 'grid-cols-2 sm:grid-cols-4'
       }`}
     >
-      {colorways.map((color, idx) => {
+      {visibleColorways.map((color, idx) => {
         const hex = getColorSwatchHex(color);
         const { name, code, isPending } = splitColorCode(color);
         const matchedFactory = factoryColors.find(
@@ -49,12 +59,14 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
             fc.colorName.toLowerCase() === name.toLowerCase() ||
             color.toLowerCase().includes(fc.colorName.toLowerCase())
         );
+        const matchedShadeCode = getBuyerVisibleValue(matchedFactory?.shadeCode);
         const subline = [
-          code || matchedFactory?.reference || null,
-          matchedFactory?.shadeCode &&
+          getBuyerVisibleValue(code) || getBuyerVisibleValue(matchedFactory?.reference) || null,
+          matchedShadeCode &&
+          matchedFactory &&
           matchedFactory.shadeCode.toLowerCase() !== name.toLowerCase() &&
           matchedFactory.shadeCode !== code
-            ? matchedFactory.shadeCode
+            ? matchedShadeCode
             : null,
         ]
           .filter(Boolean)
@@ -79,10 +91,12 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
               style={
                 hex
                   ? { backgroundColor: hex }
-                  : {
-                      backgroundImage:
-                        'repeating-linear-gradient(45deg, #F0F0F0, #F0F0F0 3px, #FFFFFF 3px, #FFFFFF 6px)',
-                    }
+                  : showPendingColorways
+                    ? {
+                        backgroundImage:
+                          'repeating-linear-gradient(45deg, #F0F0F0, #F0F0F0 3px, #FFFFFF 3px, #FFFFFF 6px)',
+                      }
+                    : { backgroundColor: '#E8E6E0' }
               }
             />
             <div className="min-w-0 leading-tight">

@@ -10,7 +10,13 @@ import {
   type CatalogueNavigationMap,
   type SectionId,
 } from '../utils/catalogueOrder';
-import { conciseSourceNote, displayFabricComposition, displayMoq } from '../utils/productDisplay';
+import {
+  conciseSourceNote,
+  displayBuyerProductTitle,
+  displayFabricComposition,
+  displayMoq,
+  getBuyerVisibleValue,
+} from '../utils/productDisplay';
 import { RunningHeader } from './CatalogueNavigation';
 import { MediaPlate } from './MediaPlate';
 import { SizeRunChips } from './SizeRunChips';
@@ -80,6 +86,33 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
   const [activePhoto, setActivePhoto] = useState(0);
   const [activeColorway, setActiveColorway] = useState(garment?.colorways[0] ?? '');
   const isMobileWorkbench = isWorkbench;
+  const buyerMoq = garment ? getBuyerVisibleValue(garment.specs.moq) : undefined;
+  const mobileSpecFields = garment
+    ? [
+        { label: 'Style Code', value: garment.sku },
+        { label: 'Fabric Code', value: garment.specs.fabricRollRef },
+        {
+          label: 'Fabric Content',
+          value: displayFabricComposition(garment.specs.composition),
+        },
+        { label: 'GSM', value: garment.specs.weightGsm.replace(/\s*GSM\b/i, '') },
+        { label: 'Width', value: garment.specs.fabricWidth },
+        { label: 'Colors', value: String(garment.colorCount) },
+      ]
+    : [];
+  const compositionIsIncomplete =
+    garment?.dataFlags?.some(
+      (flag) =>
+        /fabric content|composition/i.test(flag) &&
+        /truncat|incomplete|partial/i.test(flag)
+    ) ?? false;
+  const visibleMobileSpecFields = isMobileWorkbench
+    ? mobileSpecFields
+    : mobileSpecFields.filter(
+        ({ label, value }) =>
+          getBuyerVisibleValue(value) &&
+          !(label === 'Fabric Content' && compositionIsIncomplete)
+      );
   const spreadPadded = String(bookPage + 1).padStart(2, '0');
   const fabricSpreadIdx = garment ? navMap?.fabricPageByCode.get(garment.specs.fabricRollRef) : undefined;
   const fabricPageLabel =
@@ -264,7 +297,7 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
             />
             <div className="flex items-start justify-between gap-3">
               <h1 className="font-sans text-2xl font-extrabold leading-tight tracking-tight text-[#111111]">
-                {garment.title}
+                {displayBuyerProductTitle(garment.title)}
               </h1>
               <span className="shrink-0 border border-[#DAD8D2] bg-white px-2 py-1 font-mono text-xs font-bold text-[#111111]">
                 {garment.sku}
@@ -322,11 +355,11 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                 </div>
               ))}
             </div>
-          ) : (
+          ) : isMobileWorkbench ? (
             <p className="border-y border-[#DAD8D2] bg-white px-3 py-5 text-xs text-[#55534E]">
               No product photography is supplied for this style.
             </p>
-          )}
+          ) : null}
 
           {photos.length > 1 && (
             <div className="mt-2 flex justify-center gap-2" aria-label="Image carousel pages">
@@ -353,14 +386,7 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
               Product specifications
             </h2>
             <dl className="grid grid-cols-2 gap-2"            >
-              {[
-                { label: 'Style Code', value: garment.sku },
-                { label: 'Fabric Code', value: garment.specs.fabricRollRef },
-                { label: 'Fabric Content', value: displayFabricComposition(garment.specs.composition) },
-                { label: 'GSM', value: garment.specs.weightGsm.replace(/\s*GSM\b/i, '') },
-                { label: 'Width', value: garment.specs.fabricWidth },
-                { label: 'Colors', value: String(garment.colorCount) },
-              ].map(({ label, value }) => (
+              {visibleMobileSpecFields.map(({ label, value }) => (
                 <div key={label} className="min-w-0 border border-[#E6E4DE] bg-white p-3">
                   <dt className="text-[9px] font-semibold uppercase tracking-wide text-[#62605A]">
                     {label}
@@ -373,7 +399,7 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                           onClick={() => onSelectFabricCode(garment.specs.fabricRollRef)}
                           className="text-left underline decoration-[#B8B5AD] underline-offset-2"
                         >
-                          {value || 'Not provided'}
+                          {value || (isMobileWorkbench ? 'Not provided' : '')}
                         </button>
                         <p className="font-sans text-[10px] font-normal text-[#66645F]">
                           {getFabricFamilyName(garment.specs.fabricRollRef)}
@@ -389,20 +415,22 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                         )}
                       </div>
                     ) : (
-                      value || 'Not provided'
+                      value || (isMobileWorkbench ? 'Not provided' : '')
                     )}
                   </dd>
                 </div>
               ))}
               <div className="col-span-2 min-w-0 border border-[#E6E4DE] bg-white p-3">
                 <dt className="text-[9px] font-semibold uppercase tracking-wide text-[#62605A]">
-                  Size Run · MOQ
+                  Size Run{isMobileWorkbench || buyerMoq ? ' · MOQ' : ''}
                 </dt>
                 <dd className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
                   <SizeRunChips sizeRun={garment.specs.sizeRun} size="md" />
-                  <span className="font-mono text-[10px] font-semibold text-[#55534E] tabular-nums">
-                    {displayMoq(garment.specs.moq)}
-                  </span>
+                  {(isMobileWorkbench || buyerMoq) && (
+                    <span className="font-mono text-[10px] font-semibold text-[#55534E] tabular-nums">
+                      {isMobileWorkbench ? displayMoq(garment.specs.moq) : buyerMoq}
+                    </span>
+                  )}
                 </dd>
               </div>
             </dl>
@@ -421,7 +449,7 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                 ))}
               </ul>
             </div>
-            {conciseSourceNote(garment.dataFlags) && (
+            {isMobileWorkbench && conciseSourceNote(garment.dataFlags) && (
               <p className="mt-2 border-t border-[#DAD8D2] pt-2 text-xs leading-relaxed text-[#55534E]">
                 {conciseSourceNote(garment.dataFlags)}
               </p>
@@ -436,11 +464,20 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
               Colorways
             </h2>
             <div className="flex flex-wrap gap-2">
-              {garment.colorways.map((colorway) => {
+              {garment.colorways
+                .filter(
+                  (colorway) =>
+                    isMobileWorkbench ||
+                    (getBuyerVisibleValue(colorway) &&
+                      !colorway.toLowerCase().includes('pending'))
+                )
+                .map((colorway) => {
                 const colorHex = getColorSwatchHex(colorway);
                 const isSelected = activeColorway === colorway;
                 const refData = factoryColorLookup.get(colorway.trim().toLowerCase());
-                const refLine = refData?.reference || refData?.shadeCode;
+                const refLine =
+                  getBuyerVisibleValue(refData?.reference) ||
+                  getBuyerVisibleValue(refData?.shadeCode);
                 return (
                   <button
                     key={colorway}
@@ -479,7 +516,7 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                     </span>
                   </button>
                 );
-              })}
+                })}
             </div>
           </section>
         </div>

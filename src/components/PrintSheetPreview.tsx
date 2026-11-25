@@ -793,7 +793,12 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
               </span>
             </div>
             <div className="mt-2">
-              <ProductSpecStrip item={item} overlay fabricPageLabel={fabricPageLabel} />
+              <ProductSpecStrip
+                item={item}
+                overlay
+                fabricPageLabel={fabricPageLabel}
+                showWorkbenchNotes
+              />
             </div>
             <div className="mt-1.5 flex items-center justify-between border-t border-[#111111]/15 pt-1 font-mono text-[8px] font-semibold text-[#4E4C47] tabular-nums">
               <span>P.{pagePadded}A</span>
