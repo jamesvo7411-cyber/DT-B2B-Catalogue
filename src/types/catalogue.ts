@@ -13,6 +13,12 @@ export type AssetStage = 'blank' | 'ai-concept' | 'studio-final';
 
 export type MetallicTheme = 'platinum' | 'champagne' | 'graphite';
 
+export interface ImageCrop {
+  scale: number;
+  x: number;
+  y: number;
+}
+
 export type CatalogueSection = 'flipbook' | 'fabrics' | 'index' | 'print';
 
 export type PrintOrientation = 'landscape' | 'portrait';
@@ -26,6 +32,7 @@ export interface MediaSlot {
   aspectLabel: string;
   note: string;
   isSessionDrop?: boolean;
+  crop?: ImageCrop;
 }
 
 export interface GarmentSpecs {
@@ -42,6 +49,19 @@ export interface GarmentSpecs {
   moq: string;
   leadTime: string;
   wholesaleRef: string;
+}
+
+export interface FactoryFabricColor {
+  fabricCode: string;
+  colorName: string;
+  factoryColorName: string;
+  shadeCode: string;
+  reference: string;
+  lotWeightGsm: string;
+  lotWidth: string;
+  sourceNote: string;
+  swatchImageUrl?: string;
+  surfaceCharacter?: string;
 }
 
 export interface GarmentItem {
@@ -69,6 +89,7 @@ export interface GarmentItem {
 
 export interface FabricSwatchProgram {
   fabricCode: string;
+  factoryColors: FactoryFabricColor[];
   composition: string;
   weightGsm: string;
   fabricWidth: string;

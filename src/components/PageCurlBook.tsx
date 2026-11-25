@@ -15,6 +15,8 @@ interface PageCurlBookProps {
   bookPage: number;
   totalSpreads: number;
   zoom: number;
+  classicMode: boolean;
+  curlEnabled: boolean;
   turnRequest: TurnRequest | null;
   onCommitPage: (nextPage: number) => void;
   renderSpread: (
@@ -121,6 +123,8 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
   bookPage,
   totalSpreads,
   zoom,
+  classicMode,
+  curlEnabled,
   turnRequest,
   onCommitPage,
   renderSpread,
@@ -139,6 +143,12 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
     curlRef.current = curl;
   }, [curl]);
 
+  useEffect(() => {
+    if (curlEnabled) return;
+    curlRef.current = null;
+    setCurl(null);
+  }, [curlEnabled]);
+
   // Measure live unscaled book width & height
   useEffect(() => {
     const el = bookRef.current;
@@ -155,7 +165,8 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
     return () => ro.disconnect();
   }, [bookPage, zoom]);
 
-  const isDesktopSpread = bookSize.w >= 768;
+  // Stage gutters reduce a 768px viewport to roughly 720px of book width.
+  const isDesktopSpread = bookSize.w >= 680;
 
   // Trigger programmatic diagonal page curl when Next / Prev / keyboard arrows fire
   useEffect(() => {
@@ -170,6 +181,8 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
         : bookPage <= 0
           ? totalSpreads - 1
           : bookPage - 1;
+
+    if (!curlEnabled) return;
 
     if (!isDesktopSpread) {
       onCommitPage(targetPage);
@@ -196,7 +209,7 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
       animDuration: 460,
       commitOnFinish: true,
     });
-  }, [turnRequest, bookPage, totalSpreads, isDesktopSpread, bookSize, onCommitPage]);
+  }, [turnRequest, bookPage, totalSpreads, isDesktopSpread, bookSize, curlEnabled, onCommitPage]);
 
   // 60fps animation & spring smoothing loop
   useEffect(() => {
@@ -510,7 +523,7 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
     };
   }, [curl, isDesktopSpread, bookSize]);
 
-  const cornerHitZones = isDesktopSpread
+  const cornerHitZones = isDesktopSpread && curlEnabled
     ? [
         { side: 'right' as const, cornerY: bookSize.h, pos: 'bottom-0 right-0', label: 'Drag or click bottom-right corner to turn forward' },
         { side: 'right' as const, cornerY: 0, pos: 'top-0 right-0', label: 'Drag or click top-right corner to turn forward' },
@@ -554,14 +567,18 @@ export const PageCurlBook: React.FC<PageCurlBookProps> = ({
         <div
           ref={bookRef}
           className={`relative border border-[#DEDEDE] bg-white shadow-[0_12px_36px_rgba(0,0,0,0.06)] ${
-            curl?.mode === 'dragging' ? 'cursor-grabbing select-none' : ''
+            curlEnabled && curl?.mode === 'dragging' ? 'cursor-grabbing select-none' : ''
           }`}
         >
           {/* Architectural outer frame corner registration ticks */}
-          <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -left-1.5 z-40 h-3 w-3 border-t border-l metallic-frame-tick" />
-          <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -right-1.5 z-40 h-3 w-3 border-t border-r metallic-frame-tick" />
-          <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -left-1.5 z-40 h-3 w-3 border-b border-l metallic-frame-tick" />
-          <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -right-1.5 z-40 h-3 w-3 border-b border-r metallic-frame-tick" />
+          {curlEnabled && !classicMode && (
+            <>
+              <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -left-1.5 z-40 h-3 w-3 border-t border-l metallic-frame-tick" />
+              <span aria-hidden="true" className="pointer-events-none absolute -top-1.5 -right-1.5 z-40 h-3 w-3 border-t border-r metallic-frame-tick" />
+              <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -left-1.5 z-40 h-3 w-3 border-b border-l metallic-frame-tick" />
+              <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -right-1.5 z-40 h-3 w-3 border-b border-r metallic-frame-tick" />
+            </>
+          )}
 
           {/* ================================================================
               PERSISTENT TWO-PAGE SPREAD (ZERO UNMOUNTING ON HOVER/DRAG)

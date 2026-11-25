@@ -6,14 +6,16 @@ import type {
   GarmentItem,
   MediaSlotKey,
 } from '../types/catalogue';
+import { getFactoryColorLabels, getFactoryFabricColors } from './factoryFabricColors';
+import { getExpectedImageFile, PRODUCT_ASSETS } from './productAssets';
 
 export const BRAND_LOGO_PATH = '/assets/aistudio/image_d4ceae1f.png';
 
 export const DEFAULT_CATALOGUE_META: CatalogueMetadata = {
-  season: 'DOT / DT Apparel — B2B Landscape Catalogue',
+  season: 'Dream Tomorrow (DT) — B2B Landscape Catalogue',
   edition: 'CM · OEM · ODM Capability & 43-Style Line Book',
   subtitle:
-    'A modular monochrome B2B lookbook and technical specification portfolio for Dream Tomorrow (DOT / DT Apparel), built for CM, OEM, and ODM wholesale buyers and leadership review.',
+    'A modular monochrome B2B lookbook and technical specification portfolio for Dream Tomorrow (DT), built for CM, OEM, and ODM wholesale buyers and leadership review.',
   presentationNote:
     'Visual frames are initialized as architectural blank plates mapped to each real style code and swatchbook fabric roll. Drag and drop local images onto any slot to preview live in-browser (session-only unless saved to project assets or exported).',
   contactEmail: 'wholesale@dreamtomorrow.studio',
@@ -163,94 +165,21 @@ interface RawProductRow {
   dataFlags?: string[];
 }
 
-const COLORS_A82 = ['Stone Grey', 'Smoke Grey', 'Black', 'Beige'];
-const COLORS_A28 = ['Black', 'Khaki', 'Navy', 'Smoke Grey'];
-const COLORS_A29 = [
-  'Black',
-  'Navy',
-  'Smoke Grey (TCX 15-4101)',
-  '[4th Color Pending — Source Truncated]',
-];
-const COLORS_K03 = ['Black', 'Olive', 'Navy', 'Khaki'];
-const COLORS_MODAL_NAM = [
-  'B8385',
-  'B7901',
-  'BC14',
-  'Salt-and-Pepper Grey',
-  'Black',
-  'White',
-  'Navy',
-  'Heather Grey',
-];
-const COLORS_PIQUE_NAM = [
-  'Black',
-  'White',
-  'Orchid Ice (TCX 13-3406)',
-  'Peach (TCX 14-1228)',
-  'Grey (CGR)',
-  'Bean Grey',
-  'Navy',
-  'Heather Grey',
-];
-const COLORS_SLUB20 = [
-  'Mauve',
-  'Khaki',
-  'Grey (CGR)',
-  'Brick (TCX 17-1230)',
-  'Cement Grey (TCX 16-4702)',
-  'Black',
-  'White',
-];
-const COLORS_CM26_NAM = [
-  'Light Blue',
-  'Black',
-  'Grey',
-  'Khaki (Chart AP #50)',
-  'Peach (TCX 14-1228)',
-  'Cement Grey',
-  'White',
-  'Navy',
-];
-const COLORS_CM36 = [
-  'Melange Grey',
-  'Black Beauty',
-  'Bright White',
-  'Blue',
-  'Navy',
-  'Egret',
-];
-const COLORS_CM40 = [
-  'Black',
-  'White',
-  'Cement Grey',
-  'Peach (TCX 14-1228)',
-  'Butter Yellow (TCX 12-0752)',
-  'Navy',
-];
-const COLORS_FTR76 = ['Fog', 'Black'];
-const COLORS_MODAL_NU = ['Pink', 'Yellow', 'Purple'];
-const COLORS_PIQUE_YODY_NU = [
-  'Carrot',
-  'Chocolate',
-  'Cream Orange',
-  'Grey',
-  'Lotus Pink',
-  'White',
-  'Black',
-  'Jade',
-  'Lime Pink',
-  'Sea Blue',
-];
-const COLORS_CM26_NU = ['Carrot', 'White', 'Black', 'Lotus Pink', 'Grey'];
-const COLORS_AK005 = ['Cream White (TCX 11-0103)', 'Silver Sage', 'Olive Green'];
-
-const FLAG_A82 = ['Fabric content truncated after "5%" in source PDF — verify final fiber'];
-const FLAG_A28 = ['Fabric content truncated after "20% rayon," in source PDF — verify remaining 5%'];
-const FLAG_A29 = [
-  'Fabric content truncated after "20% rayon," in source PDF — verify remaining 5%',
-  '4th colorway name truncated after TCX 15-4101 in source PDF',
-];
-const FLAG_FTR76 = ['Fabric content truncated after "18% Rayon;" in source PDF — verify remaining 6%'];
+const COLORS_A82 = getFactoryColorLabels('A82');
+const COLORS_A28 = getFactoryColorLabels('A28');
+const COLORS_A29 = getFactoryColorLabels('A29');
+const COLORS_K03 = getFactoryColorLabels('K03');
+const COLORS_MODAL_NAM = getFactoryColorLabels('MODAL NAM');
+const COLORS_PIQUE_NAM = getFactoryColorLabels('PQ 4 CHIỀU / PIQUE NAM – 4 WAYS');
+const COLORS_SLUB20 = getFactoryColorLabels('SLUB 20');
+const COLORS_CM26_NAM = getFactoryColorLabels('CM26 NAM');
+const COLORS_CM36 = getFactoryColorLabels('CM36');
+const COLORS_CM40 = getFactoryColorLabels('CM40');
+const COLORS_FTR76 = getFactoryColorLabels('76');
+const COLORS_MODAL_NU = getFactoryColorLabels('MODAL NỮ');
+const COLORS_PIQUE_YODY_NU = getFactoryColorLabels('YODY NỮ');
+const COLORS_CM26_NU = getFactoryColorLabels('CM26 NỮ');
+const COLORS_AK005 = getFactoryColorLabels('CM30');
 
 const RAW_PRODUCTS: RawProductRow[] = [
   // TROUSERS
@@ -264,14 +193,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Trousers',
     chapterNumeral: 'I',
     fabricCode: 'A82',
-    composition: '95% Rayon-Poly, 5% [Verify fiber — source truncated]',
+    composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
     stretchFeelNote: 'Dense 330 GSM structured hand-feel with controlled stretch recovery',
     colorCount: 4,
     colorways: COLORS_A82,
     fitNote: 'Tailored straight-leg cut with substantial 330 GSM architectural drape',
-    dataFlags: FLAG_A82,
   },
   {
     rowNum: 2,
@@ -283,14 +211,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Trousers',
     chapterNumeral: 'I',
     fabricCode: 'A28',
-    composition: '75% Poly, 20% Rayon, [5% Pending — source truncated]',
+    composition: '75% Poly, 20% Rayon, 5% Spandex',
     weightGsm: '245–250 GSM',
     fabricWidth: '150 cm (1M50)',
     stretchFeelNote: 'Mid-weight smooth suiting finish engineered for crease resistance',
     colorCount: 4,
     colorways: COLORS_A28,
     fitNote: 'Balanced mid-weight trouser designed for crease resistance and daily mobility',
-    dataFlags: FLAG_A28,
   },
   {
     rowNum: 3,
@@ -302,14 +229,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Trousers',
     chapterNumeral: 'I',
     fabricCode: 'A29',
-    composition: '75% Poly, 20% Rayon, [5% Pending — source truncated]',
+    composition: '75% Poly, 20% Rayon, 5% Spandex',
     weightGsm: '330–350 GSM',
     fabricWidth: '150 cm (1M50)',
     stretchFeelNote: 'Heavyweight winter suiting drape with crisp vertical pleat retention',
     colorCount: 4,
     colorways: COLORS_A29,
     fitNote: 'Dense autumn/winter suiting trouser engineered for crisp leg line retention',
-    dataFlags: FLAG_A29,
   },
   {
     rowNum: 23,
@@ -320,15 +246,14 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's Fluid Wide-Leg Tailored Trouser",
     category: 'Trousers',
     chapterNumeral: 'I',
-    fabricCode: 'FTR76SAM',
-    composition: '76% Polyester, 18% Rayon, [6% Pending — source truncated]',
+    fabricCode: '76',
+    composition: '76% Polyester, 18% Rayon, 6% Spandex',
     weightGsm: '203 GSM',
     fabricWidth: '57/58"',
     stretchFeelNote: 'Lightweight fluid suiting hand-feel with soft movement',
     colorCount: 2,
     colorways: COLORS_FTR76,
     fitNote: 'Lightweight fluid suiting trouser designed for clean wide-leg drape',
-    dataFlags: FLAG_FTR76,
   },
 
   // SHORTS
@@ -342,14 +267,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Shorts',
     chapterNumeral: 'II',
     fabricCode: 'A28',
-    composition: '75% Poly, 20% Rayon, [5% Pending — source truncated]',
+    composition: '75% Poly, 20% Rayon, 5% Spandex',
     weightGsm: '245–250 GSM',
     fabricWidth: '150 cm (1M50)',
     stretchFeelNote: 'Clean matte khaki hand-feel matching the A28 trouser program',
     colorCount: 4,
     colorways: COLORS_A28,
     fitNote: 'Above-knee chino silhouette matching the A28 trouser suiting program',
-    dataFlags: FLAG_A28,
   },
   {
     rowNum: 5,
@@ -379,14 +303,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Shorts',
     chapterNumeral: 'II',
     fabricCode: 'A82',
-    composition: '95% Rayon-Poly, 5% [Verify fiber — source truncated]',
+    composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
     stretchFeelNote: 'Substantial 330 GSM woven structure holding clean front pleats',
     colorCount: 4,
     colorways: COLORS_A82,
     fitNote: 'Clean front-pleat tailored short crafted from structured 330 GSM A82 cloth',
-    dataFlags: FLAG_A82,
   },
   {
     rowNum: 25,
@@ -398,14 +321,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Shorts',
     chapterNumeral: 'II',
     fabricCode: 'A82',
-    composition: '95% Rayon-Poly, 5% [Verify fiber — source truncated]',
+    composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
     stretchFeelNote: 'Firm architectural drape supporting clean turn-up cuffs',
     colorCount: 4,
     colorways: COLORS_A82,
     fitNote: 'Relaxed A-line tailored short with crisp turn-up hem stability',
-    dataFlags: FLAG_A82,
   },
   {
     rowNum: 26,
@@ -417,14 +339,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Shorts',
     chapterNumeral: 'II',
     fabricCode: 'A82',
-    composition: '95% Rayon-Poly, 5% [Verify fiber — source truncated]',
+    composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
     stretchFeelNote: 'Smooth heavyweight finish engineered for culotte-proportion movement',
     colorCount: 4,
     colorways: COLORS_A82,
     fitNote: 'Longer culotte-proportioned short balancing structure and ease of movement',
-    dataFlags: FLAG_A82,
   },
 
   // POLOS
@@ -509,7 +430,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Men's 4-Way Stretch Piqué Polo — Design 01",
     category: 'Polos',
     chapterNumeral: 'III',
-    fabricCode: 'PIQUE NAM-4 WAYS',
+    fabricCode: 'PQ 4 CHIỀU / PIQUE NAM – 4 WAYS',
     composition: '95% Cotton, 5% Spandex',
     weightGsm: '190–200 GSM',
     fabricWidth: '185–195 cm',
@@ -527,7 +448,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Men's 4-Way Stretch Piqué Polo — Design 02",
     category: 'Polos',
     chapterNumeral: 'III',
-    fabricCode: 'PIQUE NAM-4 WAYS',
+    fabricCode: 'PQ 4 CHIỀU / PIQUE NAM – 4 WAYS',
     composition: '95% Cotton, 5% Spandex',
     weightGsm: '190–200 GSM',
     fabricWidth: '185–195 cm',
@@ -545,7 +466,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Men's 4-Way Stretch Piqué Polo — Design 03",
     category: 'Polos',
     chapterNumeral: 'III',
-    fabricCode: 'PIQUE NAM-4 WAYS',
+    fabricCode: 'PQ 4 CHIỀU / PIQUE NAM – 4 WAYS',
     composition: '95% Cotton, 5% Spandex',
     weightGsm: '190–200 GSM',
     fabricWidth: '185–195 cm',
@@ -563,7 +484,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Men's 4-Way Stretch Piqué Polo — Design 04",
     category: 'Polos',
     chapterNumeral: 'III',
-    fabricCode: 'PIQUE NAM-4 WAYS',
+    fabricCode: 'PQ 4 CHIỀU / PIQUE NAM – 4 WAYS',
     composition: '95% Cotton, 5% Spandex',
     weightGsm: '190–200 GSM',
     fabricWidth: '185–195 cm',
@@ -583,7 +504,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     chapterNumeral: 'III',
     fabricCode: 'SLUB 20',
     composition: '100% Cotton',
-    weightGsm: '188 GSM',
+    weightGsm: '185–190 GSM',
     fabricWidth: '208 cm (2.08 m)',
     stretchFeelNote: 'Natural dry cotton hand-feel with organic irregular slub yarn texture',
     colorCount: 7,
@@ -601,7 +522,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     chapterNumeral: 'III',
     fabricCode: 'SLUB 20',
     composition: '100% Cotton',
-    weightGsm: '188 GSM',
+    weightGsm: '185–190 GSM',
     fabricWidth: '208 cm (2.08 m)',
     stretchFeelNote: 'Natural dry cotton hand-feel with organic irregular slub yarn texture',
     colorCount: 7,
@@ -653,14 +574,14 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's Performance Piqué Polo — Design 01",
     category: 'Polos',
     chapterNumeral: 'III',
-    fabricCode: 'PIQUE YODY NỮ',
+    fabricCode: 'YODY NỮ',
     composition: '45% Cotton, 50% Poly, 5% Spandex',
     weightGsm: '190–200 GSM',
     fabricWidth: '180–185 cm',
     stretchFeelNote: 'Crisp quick-dry cotton-poly piqué with 5% stretch and high colorfastness',
-    colorCount: 10,
+    colorCount: 9,
     colorways: COLORS_PIQUE_YODY_NU,
-    fitNote: 'High-durability cotton-poly piqué knit offering moisture control across 10 shades',
+    fitNote: 'High-durability cotton-poly piqué knit offering moisture control across 9 shades',
   },
   {
     rowNum: 30,
@@ -671,12 +592,12 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's Performance Piqué Polo — Design 02",
     category: 'Polos',
     chapterNumeral: 'III',
-    fabricCode: 'PIQUE YODY NỮ',
+    fabricCode: 'YODY NỮ',
     composition: '45% Cotton, 50% Poly, 5% Spandex',
     weightGsm: '190–200 GSM',
     fabricWidth: '180–185 cm',
     stretchFeelNote: 'Crisp quick-dry cotton-poly piqué with 5% stretch and high colorfastness',
-    colorCount: 10,
+    colorCount: 9,
     colorways: COLORS_PIQUE_YODY_NU,
     fitNote: 'Refined women’s piqué silhouette engineered for colorfastness and wash durability',
   },
@@ -943,9 +864,9 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's 4-Way Stretch Compact Cotton Long-Line Tee",
     category: 'Tees & V-Necks',
     chapterNumeral: 'IV',
-    fabricCode: 'AK005 Cotton 4c CM40/OP30',
+    fabricCode: 'CM30',
     composition: '94% Cotton, 6% Spandex',
-    weightGsm: '180 (175–185) GSM',
+    weightGsm: '175–185 GSM',
     fabricWidth: '175 cm (1M75)',
     stretchFeelNote: '40s combed cotton + 30D elastane giving dense 4-way stretch & sleek surface',
     colorCount: 3,
@@ -961,9 +882,9 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's 4-Way Stretch Compact Cotton Crew — Edition 01",
     category: 'Tees & V-Necks',
     chapterNumeral: 'IV',
-    fabricCode: 'AK005 Cotton 4c CM40/OP30',
+    fabricCode: 'CM30',
     composition: '94% Cotton, 6% Spandex',
-    weightGsm: '180 (175–185) GSM',
+    weightGsm: '175–185 GSM',
     fabricWidth: '175 cm (1M75)',
     stretchFeelNote: '40s combed cotton + 30D elastane giving dense 4-way stretch & sleek surface',
     colorCount: 3,
@@ -979,9 +900,9 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's 4-Way Stretch Compact Cotton Crew — Edition 02",
     category: 'Tees & V-Necks',
     chapterNumeral: 'IV',
-    fabricCode: 'AK005 Cotton 4c CM40/OP30',
+    fabricCode: 'CM30',
     composition: '94% Cotton, 6% Spandex',
-    weightGsm: '180 (175–185) GSM',
+    weightGsm: '175–185 GSM',
     fabricWidth: '175 cm (1M75)',
     stretchFeelNote: '40s combed cotton + 30D elastane giving dense 4-way stretch & sleek surface',
     colorCount: 3,
@@ -1000,14 +921,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Skirts',
     chapterNumeral: 'V',
     fabricCode: 'A82',
-    composition: '95% Rayon-Poly, 5% [Verify fiber — source truncated]',
+    composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
     stretchFeelNote: 'Structured 330 GSM cloth holding crisp A-line architectural volume',
     colorCount: 4,
     colorways: COLORS_A82,
     fitNote: 'Structured 330 GSM skirt silhouette engineered for clean waist-to-hem line',
-    dataFlags: FLAG_A82,
   },
   {
     rowNum: 42,
@@ -1019,14 +939,13 @@ const RAW_PRODUCTS: RawProductRow[] = [
     category: 'Skirts',
     chapterNumeral: 'V',
     fabricCode: 'A82',
-    composition: '95% Rayon-Poly, 5% [Verify fiber — source truncated]',
+    composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
     stretchFeelNote: 'Structured 330 GSM drape supporting wrap-front pleat tension',
     colorCount: 4,
     colorways: COLORS_A82,
     fitNote: 'Contemporary structured skirt with concealed interior button anchor and slit ease',
-    dataFlags: FLAG_A82,
   },
   {
     rowNum: 43,
@@ -1037,15 +956,14 @@ const RAW_PRODUCTS: RawProductRow[] = [
     title: "Women's Fluid Pleated Skirt",
     category: 'Skirts',
     chapterNumeral: 'V',
-    fabricCode: 'FTR76SAM',
-    composition: '76% Polyester, 18% Rayon, [6% Pending — source truncated]',
+    fabricCode: '76',
+    composition: '76% Polyester, 18% Rayon, 6% Spandex',
     weightGsm: '203 GSM',
     fabricWidth: '57/58"',
     stretchFeelNote: 'Lightweight 203 GSM fluid suiting weave pairing with WBL0001 trouser',
     colorCount: 2,
     colorways: COLORS_FTR76,
     fitNote: 'Light 203 GSM fluid suiting skirt paired with the WBL0001 trouser program',
-    dataFlags: FLAG_FTR76,
   },
 ];
 
@@ -1072,7 +990,7 @@ function getCraftDetails(row: RawProductRow): {
         `Structured ${row.weightGsm} fabric architecture (${row.fabricCode}) retaining crisp leg crease`,
         'Reinforced French bearer pockets with high-density pocket bag twill',
         'Clean overlocked and bound interior seams preventing fray across industrial wash cycles',
-        `Offered in ${row.colorCount} colorways across full graded sizing`,
+        `Offered in ${row.colorways.length} colorways across full graded sizing`,
       ],
     };
   }
@@ -1092,7 +1010,7 @@ function getCraftDetails(row: RawProductRow): {
         `Recovery-engineered ${row.fabricCode} weave preventing knee and seat bagging`,
         'High-tensile pocket bag lining anchored into the waistband seam',
         'Single-needle topstitched waist and reinforced belt-loop joinery',
-        `Available across ${row.colorCount} core monochrome & neutral shades`,
+        `Available across ${row.colorways.length} core monochrome & neutral shades`,
       ],
     };
   }
@@ -1112,7 +1030,7 @@ function getCraftDetails(row: RawProductRow): {
         `Signature ${row.fabricCode} textile offering smooth drape and wash-after-wash collar stability`,
         'Reinforced placket base bar-tack and herringbone twill neck taping',
         'Split side-vent hems reinforced internally to resist tearing under tension',
-        `Offered in ${row.colorCount} palette options from core neutrals to Pantone TCX accents`,
+        `Offered in ${row.colorways.length} palette options from core neutrals to Pantone TCX accents`,
       ],
     };
   }
@@ -1132,7 +1050,7 @@ function getCraftDetails(row: RawProductRow): {
         `Matching ${row.fabricCode} suiting textile enabling cohesive coordinated B2B sets`,
         'Waistband-anchored side pockets eliminating pocket bag sag',
         'Blind-stitched bottom hem and smooth internal facing finish',
-        `Produced in ${row.colorCount} refined shades for versatile merchandising`,
+        `Produced in ${row.colorways.length} refined shades for versatile merchandising`,
       ],
     };
   }
@@ -1158,15 +1076,14 @@ function getCraftDetails(row: RawProductRow): {
         ? 'Reinforced overlapping V-neck rib binding preventing collar distortion'
         : 'High-recovery ribbed crew collar backed by clean shoulder-to-shoulder taping',
       'Four-thread overlocked internal seams and flat twin-needle coverstitch hems',
-      `Available in ${row.colorCount} colorway options for modular B2B assortment`,
+      `Available in ${row.colorways.length} colorway options for modular B2B assortment`,
     ],
   };
 }
 
 function createBlankMedia(
   index: number,
-  row: RawProductRow,
-  craft: ReturnType<typeof getCraftDetails>
+  row: RawProductRow
 ): Record<MediaSlotKey, GarmentItem['media'][MediaSlotKey]> {
   const num = String(index).padStart(2, '0');
   return {
@@ -1174,36 +1091,36 @@ function createBlankMedia(
       url: '',
       stage: 'blank',
       caption: `Fig. ${num}.A — ${row.sku} Primary Silhouette`,
-      aspectLabel: '3:4 Portrait Plate',
-      note: `${row.gender}'s (${row.genderCode}) full-length editorial shot`,
+      aspectLabel: '5:4 Image',
+      note: '',
     },
     pocket: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.B — Pocket & Placket Construction Detail`,
-      aspectLabel: '4:3 Macro Plate',
-      note: craft.pocketConstruction,
+      caption: `Fig. ${num}.B — Detail 01`,
+      aspectLabel: '4:3 Image',
+      note: '',
     },
     seam: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.C — Inner Seam & Binding`,
-      aspectLabel: '4:3 Macro Plate',
-      note: `${craft.seamFinish} (${craft.stitchDensity})`,
+      caption: `Fig. ${num}.C — Detail 02`,
+      aspectLabel: '4:3 Image',
+      note: '',
     },
     swatch: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.D — ${row.fabricCode} Texture Swatch`,
-      aspectLabel: '1:1 Textile Plate',
-      note: `${row.fabricCode} · ${row.weightGsm} · ${row.fabricWidth}`,
+      caption: `Fig. ${num}.D — Fabric image`,
+      aspectLabel: '1:1 Image',
+      note: '',
     },
     custom: {
       url: '',
       stage: 'blank',
-      caption: `Fig. ${num}.E — Custom Fit / Label / Trim Note`,
-      aspectLabel: '4:3 Custom Slot',
-      note: 'Optional B2B care label, hardware, or fit-session photo',
+      caption: `Fig. ${num}.E — Detail 03`,
+      aspectLabel: '4:3 Image',
+      note: '',
     },
   };
 }
@@ -1242,11 +1159,42 @@ export function createInitialGarments(): GarmentItem[] {
     const num = idx + 1;
     const craft = getCraftDetails(row);
     const slug = row.sku.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const assetMapping = PRODUCT_ASSETS[row.sku];
+    const expectedHeroFile = assetMapping
+      ? getExpectedImageFile(assetMapping.sourceImage)
+      : undefined;
+    const media = createBlankMedia(num, row);
+
+    if (assetMapping?.heroFile) {
+      media.hero = {
+        ...media.hero,
+        url: `/catalogue-media/${encodeURIComponent(assetMapping.heroFile)}`,
+        stage: 'studio-final',
+        caption: `${media.hero.caption} · ${assetMapping.heroFile}`,
+        note: `Local image file: ${assetMapping.heroFile}`,
+      };
+    } else if (expectedHeroFile) {
+      media.hero.note = `Expected local image file: ${expectedHeroFile} (not found in the image folder; drop it here when available).`;
+    }
+
+    const detailSlots: MediaSlotKey[] = ['pocket', 'seam', 'swatch'];
+    assetMapping?.followingFiles?.forEach((fileName, fileIndex) => {
+      const slotKey = detailSlots[fileIndex];
+      if (!slotKey) return;
+      media[slotKey] = {
+        ...media[slotKey],
+        url: `/catalogue-media/${encodeURIComponent(fileName)}`,
+        stage: 'studio-final',
+        caption: `${media[slotKey].caption} · Best guess · ${fileName}`,
+        note: `Best-guess detail from the next shoot image in sequence: ${fileName}. Please verify; drop another image to replace.`,
+      };
+    });
+
     return {
       id: `garment-${String(num).padStart(2, '0')}`,
       index: num,
       sku: row.sku,
-      title: row.title,
+      title: assetMapping?.title ?? `${row.title}*`,
       gender: row.gender,
       genderCode: row.genderCode,
       productGroupVi: row.productGroupVi,
@@ -1255,10 +1203,12 @@ export function createInitialGarments(): GarmentItem[] {
       summary: `${row.fitNote}. Cut from swatchbook fabric ${row.fabricCode} (${row.weightGsm}, ${row.fabricWidth} width).`,
       descriptionBullets: craft.bullets,
       keyFeatures: craft.features,
-      colorCount: row.colorCount,
+      colorCount: row.colorways.length,
       colorways: row.colorways,
       dataFlags: row.dataFlags,
-      productUrl: `https://dreamtomorrow.studio/b2b/line-sheet/${slug}`,
+      productUrl:
+        assetMapping?.productUrl ??
+        `https://dreamtomorrow.studio/b2b/line-sheet/${slug}`,
       videoUrl: '',
       videoTitle: `${row.sku} Drape & Movement Study`,
       specs: {
@@ -1276,7 +1226,7 @@ export function createInitialGarments(): GarmentItem[] {
         leadTime: '4 – 6 Weeks Ex-Factory (Placeholder)',
         wholesaleRef: 'CM / OEM / ODM Quote',
       },
-      media: createBlankMedia(num, row, craft),
+      media,
     };
   });
 }
@@ -1288,13 +1238,15 @@ export function buildFabricSwatchPrograms(garments: GarmentItem[]): FabricSwatch
     const key = g.specs.fabricRollRef;
     const existing = map.get(key);
     if (!existing) {
+      const factoryColors = getFactoryFabricColors(key);
       map.set(key, {
         fabricCode: key,
+        factoryColors,
         composition: g.specs.composition,
         weightGsm: g.specs.weightGsm,
         fabricWidth: g.specs.fabricWidth,
         stretchFeelNote: g.specs.stretchFeelNote,
-        colorCount: g.colorCount,
+        colorCount: factoryColors.length,
         colorways: [...g.colorways],
         linkedSkus: [g.sku],
         linkedIndices: [g.index],
@@ -1319,6 +1271,23 @@ export function buildFabricSwatchPrograms(garments: GarmentItem[]): FabricSwatch
   }
 
   return Array.from(map.values());
+}
+
+export function getFabricSwatchSpreadCount(garments: GarmentItem[]): number {
+  return buildFabricSwatchPrograms(garments).length;
+}
+
+export function getProductSpreadOffset(garments: GarmentItem[]): number {
+  return 2 + getFabricSwatchSpreadCount(garments);
+}
+
+export function getFabricSwatchSpreadPage(fabricCode: string, garments: GarmentItem[]): number {
+  const programIndex = buildFabricSwatchPrograms(garments).findIndex(
+    (program) => program.fabricCode === fabricCode
+  );
+  return programIndex < 0
+    ? 2
+    : 2 + programIndex;
 }
 
 export const METALLIC_THEMES = [

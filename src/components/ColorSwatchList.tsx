@@ -4,12 +4,18 @@ import { getColorSwatchHex } from '../data/garments';
 interface ColorSwatchListProps {
   colorways: string[];
   compact?: boolean;
+  editorial?: boolean;
 }
 
 function splitColorCode(raw: string): { name: string; code: string | null; isPending: boolean } {
   const isPending = raw.toLowerCase().includes('pending');
   const match = raw.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
   if (match) {
+    const leadingValue = match[1].trim();
+    const parentheticalValue = match[2].trim();
+    if (/^[A-Z]{1,2}\d{2,4}$/i.test(leadingValue) && !/^(TCX|Chart)\b/i.test(parentheticalValue)) {
+      return { name: parentheticalValue, code: leadingValue, isPending };
+    }
     return { name: match[1].trim(), code: match[2].trim(), isPending };
   }
   return { name: raw.trim(), code: null, isPending };
@@ -18,11 +24,16 @@ function splitColorCode(raw: string): { name: string; code: string | null; isPen
 export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
   colorways,
   compact = false,
+  editorial = false,
 }) => {
   return (
     <div
       className={`grid gap-2 ${
-        compact ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'
+        editorial
+          ? 'grid-cols-2 sm:grid-cols-4'
+          : compact
+            ? 'grid-cols-2 sm:grid-cols-3'
+            : 'grid-cols-2 sm:grid-cols-4'
       }`}
     >
       {colorways.map((color, idx) => {
@@ -31,16 +42,19 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
         return (
           <div
             key={`${color}-${idx}`}
-            className={`flex items-center gap-2.5 border px-2.5 py-1.5 ${
-              isPending
-                ? 'border-dashed border-[#B0B0B0] bg-[#FAFAFA]'
-                : 'border-[#E8E8E8] bg-white'
+            className={`flex min-w-0 items-center gap-2.5 ${
+              editorial
+                ? 'border-0 bg-transparent px-0 py-0'
+                : `border px-2.5 py-1.5 ${
+                    isPending
+                      ? 'border-dashed border-[#B0B0B0] bg-[#FAFAFA]'
+                      : 'border-[#E8E8E8] bg-white'
+                  }`
             }`}
           >
-            {/* Readable architectural rectangular swatch chip */}
             <span
               aria-hidden="true"
-              className="h-5 w-7 shrink-0 border border-black/15"
+              className={`shrink-0 border border-black/15 ${editorial ? 'h-4 w-5' : 'h-5 w-7'}`}
               style={
                 hex
                   ? { backgroundColor: hex }
@@ -51,11 +65,22 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
               }
             />
             <div className="min-w-0 leading-tight">
-              <p className="truncate text-[11px] font-medium text-[#0A0A0A]" title={color}>
+              <p
+                className={`truncate font-medium text-[#0A0A0A] ${
+                  editorial ? 'text-[10px]' : 'text-[11px]'
+                }`}
+                title={color}
+              >
                 {name}
               </p>
               {code && (
-                <p className="truncate font-mono text-[10px] text-[#737373]">{code}</p>
+                <p
+                  className={`truncate font-mono text-[#737373] ${
+                    editorial ? 'text-[9px]' : 'text-[10px]'
+                  }`}
+                >
+                  {code}
+                </p>
               )}
             </div>
           </div>

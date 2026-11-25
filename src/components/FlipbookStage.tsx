@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,37 +13,53 @@ import {
 import type {
   CatalogueMetadata,
   GarmentItem,
+  ImageCrop,
   MediaSlot,
   MediaSlotKey,
   MetallicTheme,
 } from '../types/catalogue';
-import { BRAND_LOGO_PATH, buildFabricSwatchPrograms } from '../data/garments';
+import {
+  BRAND_LOGO_PATH,
+  buildFabricSwatchPrograms,
+  getFabricSwatchSpreadCount,
+  getProductSpreadOffset,
+} from '../data/garments';
+import { getFactoryColorImageKey, getPreferredFactoryFabricImage } from '../data/factoryFabricColors';
 import { PageCurlBook } from './PageCurlBook';
 import { SpreadPages } from './SpreadPages';
+import { MobileCatalogueView } from './MobileCatalogueView';
 import type { SpreadLeafSide } from './GarmentSpread';
 
 interface FlipbookStageProps {
   garments: GarmentItem[];
+  isMobile: boolean;
+  isWorkbench: boolean;
   meta: CatalogueMetadata;
   metallicTheme: MetallicTheme;
-  bookPage: number; // 0..49 (50 total spreads)
+  bookPage: number;
   editMode: boolean;
+  classicMode: boolean;
   shortlist: string[];
   coverCustomImage: string;
   showSafeZones: boolean;
   turnRequest: { dir: 'next' | 'prev'; nonce: number } | null;
   onRequestTurn: (dir: 'next' | 'prev') => void;
   onChangeBookPage: (page: number) => void;
+  onToggleEditMode: () => void;
   onChangeMetallicTheme: (theme: MetallicTheme) => void;
   onToggleSafeZones: () => void;
   onDropCoverImage: (dataUrl: string) => void;
   onReplaceFile: (garmentId: string, slotKey: MediaSlotKey, dataUrl: string) => void;
-  onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
+  onUpdateCrop: (garmentId: string, slotKey: MediaSlotKey, crop: ImageCrop) => void;
+  fabricColorImages: Record<string, string>;
+  onReplaceFabricColorImage?: (imageKey: string, dataUrl: string) => void;
+  onImageUploadError?: (message: string) => void;
   onToggleShortlist: (id: string) => void;
   onInspectMedia: (slot: MediaSlot, titleLabel: string, garmentTitle: string) => void;
   onOpenEditor: (garmentIndex: number, focusSlot?: MediaSlotKey) => void;
   onOpenVideo: (garment: GarmentItem) => void;
   onExportCurrentPdf: (garmentIndex: number) => void;
+  onSelectFabricCode: (fabricCode: string) => void;
   onOpenFullPrintModal: () => void;
   onExportCsv: () => void;
   onExportJson: () => void;
@@ -55,45 +71,65 @@ const ZOOM_STEPS = [0.75, 1, 1.25, 1.5] as const;
 
 export const FlipbookStage: React.FC<FlipbookStageProps> = ({
   garments,
+  isMobile,
+  isWorkbench,
   meta,
   metallicTheme,
   bookPage,
   editMode,
+  classicMode,
   shortlist,
   coverCustomImage,
   showSafeZones,
   turnRequest,
   onRequestTurn,
   onChangeBookPage,
+  onToggleEditMode,
   onChangeMetallicTheme,
   onToggleSafeZones,
   onDropCoverImage,
   onReplaceFile,
-  onReplaceFabricSwatch,
+  onUpdateCrop,
+  fabricColorImages,
+  onReplaceFabricColorImage,
+  onImageUploadError,
   onToggleShortlist,
   onInspectMedia,
   onOpenEditor,
   onOpenVideo,
   onExportCurrentPdf,
+  onSelectFabricCode,
   onOpenFullPrintModal,
   onExportCsv,
   onExportJson,
   onTriggerImportCsv,
   onTriggerImportJson,
 }) => {
-  const productOffset = 6; // 0=Cover, 1=TOC, 2..5=Swatches (4 spreads), 6..48=43 Products, 49=Asset/Specs
-  const totalSpreads = 2 + 4 + garments.length + 1; // 50 spreads
+  const swatchPrograms = buildFabricSwatchPrograms(garments);
+  const swatchSpreadCount = getFabricSwatchSpreadCount(garments);
+  const productOffset = getProductSpreadOffset(garments);
+  const totalSpreads = productOffset + garments.length + 1;
 
   const [zoom, setZoom] = useState<number>(1);
   const [thumbnailView, setThumbnailView] = useState<boolean>(false);
 
-  const fabricPrograms = buildFabricSwatchPrograms(garments);
+  useEffect(() => {
+    if (classicMode) {
+      setZoom(1);
+      setThumbnailView(false);
+    }
+  }, [classicMode]);
+
+  useEffect(() => {
+    if (isMobile) setThumbnailView(false);
+  }, [isMobile]);
 
   const getSpreadLabel = (page: number): string => {
     if (page === 0) return '01 · Cover & CM / OEM / ODM Overview';
     if (page === 1) return '02 · Table of Contents & Directory';
-    if (page >= 2 && page <= 5) {
-      return `0${page + 1} · Fabric & Color Swatches (${page - 1}/4)`;
+    if (page >= 2 && page < productOffset) {
+      const program = swatchPrograms[page - 2];
+      return `${String(page + 1).padStart(2, '0')} · Fabric ${program?.fabricCode ?? ''} (${page - 1}/${swatchSpreadCount})`;
     }
     if (page >= productOffset && page < productOffset + garments.length) {
       const item = garments[page - productOffset];
@@ -122,7 +158,8 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
         garments={garments}
         meta={meta}
         metallicTheme={metallicTheme}
-        editMode={editMode}
+        editMode={editMode && isWorkbench}
+        classicMode={classicMode || !isWorkbench}
         shortlist={shortlist}
         coverCustomImage={coverCustomImage}
         showSafeZones={showSafeZones}
@@ -132,12 +169,16 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
         onChangeMetallicTheme={onChangeMetallicTheme}
         onDropCoverImage={onDropCoverImage}
         onReplaceFile={onReplaceFile}
-        onReplaceFabricSwatch={onReplaceFabricSwatch}
+        onUpdateCrop={onUpdateCrop}
+        fabricColorImages={fabricColorImages}
+        onReplaceFabricColorImage={onReplaceFabricColorImage}
+        onImageUploadError={onImageUploadError}
         onToggleShortlist={onToggleShortlist}
         onInspectMedia={onInspectMedia}
         onOpenEditor={onOpenEditor}
         onOpenVideo={onOpenVideo}
         onExportCurrentPdf={onExportCurrentPdf}
+        onSelectFabricCode={onSelectFabricCode}
         onExportCsv={onExportCsv}
         onExportJson={onExportJson}
         onTriggerImportCsv={onTriggerImportCsv}
@@ -147,9 +188,11 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
     [
       totalSpreads,
       garments,
+      isWorkbench,
       meta,
       metallicTheme,
       editMode,
+      classicMode,
       shortlist,
       coverCustomImage,
       showSafeZones,
@@ -157,12 +200,16 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
       onChangeMetallicTheme,
       onDropCoverImage,
       onReplaceFile,
-      onReplaceFabricSwatch,
+      onUpdateCrop,
+      fabricColorImages,
+      onReplaceFabricColorImage,
+      onImageUploadError,
       onToggleShortlist,
       onInspectMedia,
       onOpenEditor,
       onOpenVideo,
       onExportCurrentPdf,
+      onSelectFabricCode,
       onExportCsv,
       onExportJson,
       onTriggerImportCsv,
@@ -170,15 +217,44 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
     ]
   );
 
+  if (isMobile) {
+    return (
+      <MobileCatalogueView
+        garments={garments}
+        bookPage={bookPage}
+        totalSpreads={totalSpreads}
+        productOffset={productOffset}
+        isWorkbench={isWorkbench}
+        editMode={editMode}
+        getSpreadLabel={getSpreadLabel}
+        renderStaticPage={(page) => renderSpread(page, 'full', false)}
+        onChangeBookPage={onChangeBookPage}
+        onToggleEditMode={onToggleEditMode}
+        onReplaceFile={onReplaceFile}
+        onUpdateCrop={onUpdateCrop}
+        onInspectMedia={onInspectMedia}
+        onOpenEditor={onOpenEditor}
+        onSelectFabricCode={onSelectFabricCode}
+      />
+    );
+  }
+
   return (
     <section
-      aria-label="Interactive Diagonal Page-Curl Landscape Flipbook"
-      className="mx-auto max-w-[1380px] px-4 py-6 sm:px-6 lg:px-10 lg:py-7"
+      aria-label={
+        classicMode
+          ? 'Buyer catalogue spread'
+          : 'Workbench page-curl catalogue'
+      }
+      className={`mx-auto max-w-[1380px] px-4 sm:px-6 lg:px-10 ${
+        classicMode ? 'py-1 lg:py-2' : 'py-6 lg:py-7'
+      }`}
     >
       {/* ====================================================================
           TOP FLIPBOOK CONTROL BAR (PREV/NEXT + JUMP + ZOOM + THUMBNAILS + GUIDES)
           ==================================================================== */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-4 text-xs">
+      {!classicMode && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-4 text-xs">
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
@@ -225,7 +301,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
             <span>Next</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
-        </div>
+          </div>
 
         {/* Section Quick Jump + Thumbnail Grid + Zoom + Binding Safe-Zone Guides + Print */}
         <div className="flex flex-wrap items-center gap-2">
@@ -265,7 +341,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
                 onChangeBookPage(2);
               }}
               className={`px-2 py-1 text-[11px] font-medium cursor-pointer ${
-                !thumbnailView && bookPage >= 2 && bookPage <= 5
+                !thumbnailView && bookPage >= 2 && bookPage < productOffset
                   ? 'bg-[#0A0A0A] text-white'
                   : 'text-[#525252] hover:text-[#0A0A0A]'
               }`}
@@ -369,11 +445,64 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           </button>
         </div>
       </div>
+      )}
+
+      {classicMode && (
+      <nav
+        aria-label="Buyer catalogue controls"
+        className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-3 text-xs"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onRequestTurn('prev')}
+            aria-label="Previous spread"
+            className="inline-flex items-center gap-1.5 border border-[#DADADA] bg-white px-3 py-1.5 font-semibold text-[#111111] transition-colors hover:border-[#111111]"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Prev
+          </button>
+          <label className="sr-only" htmlFor="classic-spread-select">Choose catalogue spread</label>
+          <select
+            id="classic-spread-select"
+            value={bookPage}
+            onChange={(event) => onChangeBookPage(Number(event.target.value))}
+            className="max-w-[min(60vw,420px)] border border-[#DADADA] bg-white px-2.5 py-1.5 font-mono text-[11px] font-medium text-[#111111] focus:border-[#111111] focus:outline-none"
+          >
+            {Array.from({ length: totalSpreads }, (_, index) => (
+              <option key={index} value={index}>{getSpreadLabel(index)}</option>
+            ))}
+          </select>
+          <span className="font-mono text-[10px] text-[#555555] tabular-nums">
+            {String(bookPage + 1).padStart(2, '0')} / {String(totalSpreads).padStart(2, '0')}
+          </span>
+          <button
+            type="button"
+            onClick={() => onRequestTurn('next')}
+            aria-label="Next spread"
+            className="inline-flex items-center gap-1.5 border border-[#DADADA] bg-white px-3 py-1.5 font-semibold text-[#111111] transition-colors hover:border-[#111111]"
+          >
+            Next
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            activeProduct ? onExportCurrentPdf(activeProduct.index) : onOpenFullPrintModal()
+          }
+          className="inline-flex items-center gap-1.5 bg-[#111111] px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#333333]"
+        >
+          <Printer className="h-3 w-3" />
+          {activeProduct ? `Print ${activeProduct.sku}` : 'Print / Export PDF'}
+        </button>
+      </nav>
+      )}
 
       {/* ====================================================================
           THUMBNAIL GRID VIEW OR DIAGONAL PAGE-CURL FLIPBOOK STAGE
           ==================================================================== */}
-      {thumbnailView ? (
+      {!classicMode && thumbnailView ? (
         <div className="border border-[#E5E5E5] bg-[#FAFAFA] p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] pb-3">
             <div>
@@ -398,8 +527,16 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
               const isCurrent = i === bookPage;
               const isProduct = i >= productOffset && i < productOffset + garments.length;
               const product = isProduct ? garments[i - productOffset] : null;
-              const isSwatch = i >= 2 && i <= 5;
-              const swatchRoll = isSwatch ? fabricPrograms[(i - 2) * 4] : null;
+              const isSwatch = i >= 2 && i < productOffset;
+              const swatchProgram = isSwatch ? swatchPrograms[i - 2] : null;
+              const swatchHero = swatchProgram
+                ? getPreferredFactoryFabricImage(swatchProgram.fabricCode, fabricColorImages)
+                : undefined;
+              const firstColor = swatchProgram?.factoryColors[0];
+              const colorImage = firstColor
+                ? fabricColorImages[getFactoryColorImageKey(swatchProgram.fabricCode, firstColor.colorName)] ??
+                  firstColor.swatchImageUrl
+                : undefined;
 
               return (
                 <button
@@ -422,14 +559,23 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
                       <div className="spine-verso-shadow pointer-events-none absolute inset-y-0 right-0 w-2" />
                       {i === 0 ? (
                         <span className="font-sans text-[9px] font-semibold text-[#0A0A0A] text-center">
-                          DOT / DT
+                          DREAM TOMORROW
                         </span>
                       ) : i === 1 ? (
                         <span className="font-mono text-[8px] text-[#525252]">TOC · NAM</span>
                       ) : isSwatch ? (
-                        <span className="font-mono text-[8px] text-[#525252]">
-                          {swatchRoll?.fabricCode ?? 'SWATCH'}
-                        </span>
+                        swatchHero ? (
+                          <img
+                            src={swatchHero.imageUrl}
+                            alt={`${swatchProgram?.fabricCode ?? 'Fabric'} swatch`}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="font-mono text-[8px] text-[#525252]">
+                            {swatchProgram?.fabricCode ?? 'FABRIC'}
+                          </span>
+                        )
                       ) : product ? (
                         product.media.hero.url ? (
                           <img
@@ -468,7 +614,18 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
                       ) : i === 1 ? (
                         <span className="font-mono text-[8px] text-[#525252]">INDEX · NỮ</span>
                       ) : isSwatch ? (
-                        <span className="font-mono text-[8px] text-[#737373]">PANTONE TCX</span>
+                        colorImage ? (
+                          <img
+                            src={colorImage}
+                            alt={`${swatchProgram?.fabricCode ?? 'Fabric'} colorway`}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="font-mono text-[8px] text-[#737373]">
+                            {swatchProgram?.factoryColors.length ?? 0} COLORWAYS
+                          </span>
+                        )
                       ) : product ? (
                         <div className="w-full space-y-1 px-1">
                           <div className="grid grid-cols-2 gap-1">
@@ -489,7 +646,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
                       Sp. {String(i + 1).padStart(2, '0')}
                     </span>
                     <span className="truncate font-mono text-[9.5px] text-[#737373]">
-                      {product ? product.sku : i === 0 ? 'COVER' : i === 1 ? 'TOC' : isSwatch ? `SWATCH ${i - 1}` : 'DATA'}
+                      {product ? product.sku : i === 0 ? 'COVER' : i === 1 ? 'TOC' : isSwatch ? swatchProgram?.fabricCode ?? 'FABRIC' : 'DATA'}
                     </span>
                   </div>
                   <p className="mt-0.5 truncate text-[10.5px] text-[#404040]">
@@ -500,7 +657,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
                         : i === 1
                           ? 'Style Directory'
                           : isSwatch
-                            ? `Swatchbook Rolls ${(i - 2) * 4 + 1}–${Math.min(fabricPrograms.length, (i - 1) * 4)}`
+                            ? `${swatchProgram?.factoryColors.length ?? 0} colorways · 1 fabric family`
                             : 'Assets & CSV Swap'}
                   </p>
                 </button>
@@ -513,6 +670,8 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           bookPage={bookPage}
           totalSpreads={totalSpreads}
           zoom={zoom}
+          classicMode={classicMode}
+          curlEnabled
           turnRequest={turnRequest}
           onCommitPage={onChangeBookPage}
           renderSpread={renderSpread}
@@ -522,7 +681,8 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
       {/* ====================================================================
           DIRECT BOOK TURN HINT & BOTTOM 50-SPREAD SPINE SCRUBBER
           ==================================================================== */}
-      <div className="mt-5 border-t border-[#E5E5E5] pt-4">
+      {!classicMode && (
+        <div className="mt-5 border-t border-[#E5E5E5] pt-4">
         <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#737373]">
           <span>
             Spine Scrubber — <span className="font-mono text-[#0A0A0A]">{getSpreadLabel(bookPage)}</span>
@@ -555,6 +715,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           })}
         </div>
       </div>
+      )}
     </section>
   );
 };
