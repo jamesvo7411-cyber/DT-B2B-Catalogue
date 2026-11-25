@@ -51,6 +51,19 @@ export interface GarmentSpecs {
   wholesaleRef: string;
 }
 
+export interface FactoryFabricColor {
+  fabricCode: string;
+  colorName: string;
+  factoryColorName: string;
+  shadeCode: string;
+  reference: string;
+  lotWeightGsm: string;
+  lotWidth: string;
+  sourceNote: string;
+  swatchImageUrl?: string;
+  surfaceCharacter?: string;
+}
+
 export interface GarmentItem {
   id: string;
   index: number; // 1..43
@@ -76,6 +89,7 @@ export interface GarmentItem {
 
 export interface FabricSwatchProgram {
   fabricCode: string;
+  factoryColors: FactoryFabricColor[];
   composition: string;
   weightGsm: string;
   fabricWidth: string;

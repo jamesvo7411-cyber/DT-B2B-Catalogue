@@ -5,9 +5,16 @@ import { displayFabricComposition } from '../utils/productDisplay';
 interface ProductSpecStripProps {
   item: GarmentItem;
   compact?: boolean;
+  onSelectFabricCode?: (fabricCode: string) => void;
+  disabled?: boolean;
 }
 
-export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({ item, compact = false }) => {
+export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({
+  item,
+  compact = false,
+  onSelectFabricCode,
+  disabled = false,
+}) => {
   const fields = [
     { label: 'Style Code', value: item.sku, mono: true },
     { label: 'Fabric Code', value: item.specs.fabricRollRef, mono: true },
@@ -28,18 +35,31 @@ export const ProductSpecStrip: React.FC<ProductSpecStripProps> = ({ item, compac
         <div key={field.label} className="min-w-0 py-1">
           <span
             className={`block text-[#85837F] ${
-              compact ? 'text-[7.5px]' : 'text-[9px] tracking-wide'
+              compact ? 'text-[7.5px]' : 'text-[9px] font-semibold tracking-wide text-[#555555]'
             }`}
           >
             {field.label}
           </span>
-          <span
-            className={`mt-0.5 block break-words leading-tight text-[#22211F] ${
-              field.mono ? 'font-mono tabular-nums' : 'font-sans'
-            } ${compact ? 'text-[8px]' : 'text-[10px]'}`}
-          >
-            {field.value || '—'}
-          </span>
+          {field.label === 'Fabric Code' && onSelectFabricCode ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelectFabricCode(item.specs.fabricRollRef)}
+              className={`mt-0.5 block break-words text-left leading-tight text-[#22211F] underline decoration-[#B8B5AD] underline-offset-2 disabled:no-underline ${
+                field.mono ? 'font-mono tabular-nums' : 'font-sans'
+              } ${compact ? 'text-[8px]' : 'text-[12px] font-bold text-[#111111]'}`}
+            >
+              {field.value || '—'}
+            </button>
+          ) : (
+            <span
+              className={`mt-0.5 block break-words leading-tight text-[#22211F] ${
+                field.mono ? 'font-mono tabular-nums' : 'font-sans'
+              } ${compact ? 'text-[8px]' : 'text-[12px] font-bold text-[#111111]'}`}
+            >
+              {field.value || '—'}
+            </span>
+          )}
         </div>
       ))}
     </div>

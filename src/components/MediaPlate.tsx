@@ -11,8 +11,10 @@ interface MediaPlateProps {
   titleLabel: string;
   editMode: boolean;
   interactive?: boolean;
+  editable?: boolean;
   showBlankGuides?: boolean;
   compact?: boolean;
+  displayScale?: number;
   imageOverlay?: React.ReactNode;
   onReplaceFile?: (slotKey: MediaSlotKey, dataUrl: string) => void;
   onUpdateCrop?: (slotKey: MediaSlotKey, crop: ImageCrop) => void;
@@ -27,8 +29,10 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   titleLabel,
   editMode,
   interactive = true,
+  editable = true,
   showBlankGuides = true,
   compact = false,
+  displayScale = 1,
   imageOverlay,
   onReplaceFile,
   onUpdateCrop,
@@ -66,6 +70,11 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
 
   const hasImage = Boolean(slot.url && !imgError);
   const isSessionLocal = slot.isSessionDrop || slot.url.startsWith('data:');
+  const currentCrop = normalizeImageCrop(cropMode ? cropDraft : slot.crop);
+  const displayedImageStyle = imageCropStyle({
+    ...currentCrop,
+    scale: Math.max(currentCrop.scale, displayScale),
+  });
 
   const setDraft = (crop: ImageCrop) => {
     const normalized = normalizeImageCrop(crop);
@@ -136,9 +145,9 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
       onInspect(slot, titleLabel);
       return;
     }
-    if (onReplaceFile) {
+    if (editable && onReplaceFile) {
       fileInputRef.current?.click();
-    } else if (onOpenEditor) {
+    } else if (editable && onOpenEditor) {
       onOpenEditor(slotKey);
     }
   };
@@ -149,17 +158,17 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
         role="group"
         aria-label={titleLabel}
         onDragOver={
-          interactive
+          interactive && editable
             ? (e) => {
                 e.preventDefault();
                 if (!isDragging) setIsDragging(true);
               }
             : undefined
         }
-        onDragLeave={interactive ? () => setIsDragging(false) : undefined}
-        onDrop={interactive ? handleDrop : undefined}
+        onDragLeave={interactive && editable ? () => setIsDragging(false) : undefined}
+        onDrop={interactive && editable ? handleDrop : undefined}
         className={`group relative w-full overflow-hidden transition-colors duration-200 ${
-          interactive
+          interactive && (editable || hasImage)
             ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]'
             : 'cursor-default'
         } ${aspectClass} ${
@@ -167,10 +176,12 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
             ? 'bg-[#F2F2F2] ring-2 ring-[#0A0A0A]'
             : hasImage
               ? 'bg-[#F5F4F0]'
-              : 'plate-blueprint-bg'
+              : showBlankGuides
+                ? 'plate-blueprint-bg'
+                : 'bg-[#EEF0FF]'
         }`}
       >
-        {interactive && (
+        {interactive && editable && (
           <>
             <input
               ref={fileInputRef}
@@ -182,22 +193,26 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
                 e.target.value = '';
               }}
             />
+          </>
+        )}
 
-            <button
-              type="button"
-              onClick={handlePlateClick}
-              aria-label={
-                hasImage
+        {interactive && (editable || hasImage) && (
+          <button
+            type="button"
+            onClick={handlePlateClick}
+            aria-label={
+              !editable
+                ? `Inspect ${titleLabel} image`
+                : hasImage
                   ? editMode
                     ? `Replace ${titleLabel} image`
                     : `Inspect ${titleLabel} image`
                   : `Drop or upload image for ${titleLabel}`
-              }
-              className="absolute inset-0 z-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-[#0A0A0A]"
-            >
-              <span className="sr-only">{titleLabel}</span>
-            </button>
-          </>
+            }
+            className="absolute inset-0 z-10 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-[#0A0A0A]"
+          >
+            <span className="sr-only">{titleLabel}</span>
+          </button>
         )}
 
         {hasImage ? (
@@ -209,25 +224,24 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
               decoding="async"
               referrerPolicy="no-referrer"
               onError={() => setImgError(true)}
-              style={imageCropStyle(cropMode ? cropDraft : slot.crop)}
+              style={displayedImageStyle}
               className={`h-full w-full object-cover ${cropMode ? 'transition-none' : 'transition-transform duration-300 ease-out'}`}
             />
           </>
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center px-5 text-center">
-            <div
-              aria-hidden="true"
-              className="mb-3 flex h-8 w-8 items-center justify-center text-[#9A9892]"
-            >
-              <span className="relative block h-6 w-6">
-                <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#C9C6BF]" />
-                <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#C9C6BF]" />
-                <span className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 border border-[#A9A69E] bg-white" />
-              </span>
-            </div>
-
             {showBlankGuides && (
               <>
+                <div
+                  aria-hidden="true"
+                  className="mb-3 flex h-8 w-8 items-center justify-center text-[#9A9892]"
+                >
+                  <span className="relative block h-6 w-6">
+                    <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#C9C6BF]" />
+                    <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#C9C6BF]" />
+                    <span className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 border border-[#A9A69E] bg-white" />
+                  </span>
+                </div>
                 <p
                   className={`font-sans font-medium text-[#0A0A0A] tracking-tight ${
                     compact ? 'text-sm' : 'text-[15px]'
@@ -246,7 +260,7 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
               </>
             )}
 
-            {interactive && (
+            {interactive && showBlankGuides && (
               <div className="no-print mt-4 inline-flex items-center gap-1.5 border-b border-transparent pb-0.5 text-[11px] font-medium text-[#525252] transition-colors duration-200 group-hover:border-[#0A0A0A] group-hover:text-[#0A0A0A]">
                 <Upload className="h-3 w-3" />
                 <span>{isDragging ? 'Release to preview in session' : 'Drop or click to place image'}</span>
@@ -265,7 +279,7 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
           </div>
         )}
 
-        {editMode && hasImage && (
+        {editMode && editable && hasImage && (
           <div className="no-print absolute right-2 top-2 z-20">
             {!cropMode ? (
               <button

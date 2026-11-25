@@ -18,7 +18,7 @@ const SLOT_META: { key: MediaSlotKey; label: string; hint: string }[] = [
   { key: 'hero', label: 'Primary Silhouette (3:4)', hint: 'Full front garment shot' },
   { key: 'pocket', label: 'Pocket & Placket Detail (4:3)', hint: 'Welt, bar-tack & placket close-up' },
   { key: 'seam', label: 'Inner Seam & Binding (4:3)', hint: 'Interior stitch & seam durability' },
-  { key: 'swatch', label: 'Fabric Texture Swatch (1:1)', hint: 'Macro weave & material roll detail' },
+  { key: 'swatch', label: 'Auto-Linked Fabric Image (1:1)', hint: 'Shared fabric-family image from the Fabric Library' },
   { key: 'custom', label: 'Custom Fit / Label / Trim (4:3)', hint: 'Optional care label, hardware, or fit note' },
 ];
 
@@ -142,6 +142,7 @@ export const SlotEditorDrawer: React.FC<SlotEditorDrawerProps> = ({
 
               {SLOT_META.map(({ key, label, hint }) => {
                 const slot = garment.media[key];
+                const isFactoryLinked = key === 'swatch';
                 return (
                   <div
                     key={key}
@@ -155,19 +156,24 @@ export const SlotEditorDrawer: React.FC<SlotEditorDrawerProps> = ({
                         <p className="text-[11px] text-[#737373]">{hint}</p>
                       </div>
 
-                      {/* Asset Stage Selector */}
-                      <select
-                        aria-label={`${label} asset stage`}
-                        value={slot.stage}
-                        onChange={(e) =>
-                          updateMedia(key, { stage: e.target.value as AssetStage })
-                        }
-                        className="border border-[#E5E5E5] bg-white px-2 py-1 font-mono text-[11px] text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none cursor-pointer"
-                      >
-                        <option value="blank">Blank Slot</option>
-                        <option value="ai-concept">AI Concept</option>
-                        <option value="studio-final">Studio Final</option>
-                      </select>
+                      {isFactoryLinked ? (
+                        <span className="font-mono text-[9px] font-semibold uppercase tracking-wide text-[#55534E]">
+                          Auto-linked
+                        </span>
+                      ) : (
+                        <select
+                          aria-label={`${label} asset stage`}
+                          value={slot.stage}
+                          onChange={(e) =>
+                            updateMedia(key, { stage: e.target.value as AssetStage })
+                          }
+                          className="border border-[#E5E5E5] bg-white px-2 py-1 font-mono text-[11px] text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none cursor-pointer"
+                        >
+                          <option value="blank">Blank Slot</option>
+                          <option value="ai-concept">AI Concept</option>
+                          <option value="studio-final">Studio Final</option>
+                        </select>
+                      )}
                     </div>
 
                     <div className="mt-3 flex items-center gap-4">
@@ -187,60 +193,68 @@ export const SlotEditorDrawer: React.FC<SlotEditorDrawerProps> = ({
                         )}
                       </div>
 
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex items-center gap-1.5 border border-[#0A0A0A] bg-[#0A0A0A] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[#262626] cursor-pointer">
-                            <Upload className="h-3 w-3" />
-                            <span>{slot.url ? 'Replace File' : 'Upload Image'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                handleFileUpload(key, e.target.files?.[0]);
-                                e.target.value = '';
-                              }}
-                            />
-                          </label>
+                      {isFactoryLinked ? (
+                        <p className="flex-1 text-[11px] leading-relaxed text-[#55534E]">
+                          {slot.url
+                            ? `Shared from the ${garment.specs.fabricRollRef} fabric family.`
+                            : `No image linked to ${garment.specs.fabricRollRef} yet. Add one in the Fabric Library.`}
+                        </p>
+                      ) : (
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 border border-[#0A0A0A] bg-[#0A0A0A] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-[#262626] cursor-pointer">
+                              <Upload className="h-3 w-3" />
+                              <span>{slot.url ? 'Replace File' : 'Upload Image'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  handleFileUpload(key, e.target.files?.[0]);
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
 
-                          {slot.url && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateMedia(key, { url: '', stage: 'blank' })
-                              }
-                              className="inline-flex items-center gap-1 border border-[#E5E5E5] px-2.5 py-1.5 text-[11px] text-[#525252] transition-colors hover:border-[#0A0A0A] hover:text-[#0A0A0A] cursor-pointer"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              <span>Revert to Blank</span>
-                            </button>
-                          )}
+                            {slot.url && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateMedia(key, { url: '', stage: 'blank' })
+                                }
+                                className="inline-flex items-center gap-1 border border-[#E5E5E5] px-2.5 py-1.5 text-[11px] text-[#525252] transition-colors hover:border-[#0A0A0A] hover:text-[#0A0A0A] cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                <span>Revert to Blank</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <input
+                            type="url"
+                            value={slot.url.startsWith('data:') ? '' : slot.url}
+                            onChange={(e) =>
+                              updateMedia(key, {
+                                url: e.target.value,
+                                stage: e.target.value
+                                  ? slot.stage === 'blank'
+                                    ? 'ai-concept'
+                                    : slot.stage
+                                  : 'blank',
+                              })
+                            }
+                            placeholder={
+                              slot.url.startsWith('data:')
+                                ? 'Local image loaded (or paste image URL to replace)'
+                                : 'Or paste image URL...'
+                            }
+                            className="w-full border border-[#E5E5E5] px-2.5 py-1.5 font-mono text-[11px] text-[#0A0A0A] placeholder:text-[#A3A3A3] focus:border-[#0A0A0A] focus:outline-none"
+                          />
                         </div>
-
-                        <input
-                          type="url"
-                          value={slot.url.startsWith('data:') ? '' : slot.url}
-                          onChange={(e) =>
-                            updateMedia(key, {
-                              url: e.target.value,
-                              stage: e.target.value
-                                ? slot.stage === 'blank'
-                                  ? 'ai-concept'
-                                  : slot.stage
-                                : 'blank',
-                            })
-                          }
-                          placeholder={
-                            slot.url.startsWith('data:')
-                              ? 'Local image loaded (or paste image URL to replace)'
-                              : 'Or paste image URL...'
-                          }
-                          className="w-full border border-[#E5E5E5] px-2.5 py-1.5 font-mono text-[11px] text-[#0A0A0A] placeholder:text-[#A3A3A3] focus:border-[#0A0A0A] focus:outline-none"
-                        />
-                      </div>
+                      )}
                     </div>
 
-                    <div className="mt-2.5">
+                    {!isFactoryLinked && <div className="mt-2.5">
                       <input
                         type="text"
                         value={slot.caption}
@@ -248,7 +262,7 @@ export const SlotEditorDrawer: React.FC<SlotEditorDrawerProps> = ({
                         placeholder="Figure caption"
                         className="w-full border border-[#EFEFEF] px-2.5 py-1.5 font-serif italic text-xs text-[#404040] focus:border-[#0A0A0A] focus:outline-none"
                       />
-                    </div>
+                    </div>}
                   </div>
                 );
               })}

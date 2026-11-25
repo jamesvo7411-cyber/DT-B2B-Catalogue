@@ -16,14 +16,21 @@ import type {
   MetallicTheme,
 } from '../types/catalogue';
 import {
+  buildFabricSwatchPrograms,
   BRAND_LOGO_PATH,
   CATEGORIES,
   CM_OEM_ODM_PILLARS,
   METALLIC_THEMES,
   PRINT_PRODUCTION_SPEC,
+  getFabricSwatchSpreadCount,
+  getProductSpreadOffset,
 } from '../data/garments';
+import {
+  getFactoryColorImageKey,
+  getPreferredFactoryFabricImage,
+} from '../data/factoryFabricColors';
 import { readImageFileAsDataUrl } from '../utils/media';
-import { FabricSwatchBoard } from './FabricSwatchBoard';
+import { FabricColorwayTile } from './FabricColorwayTile';
 import { GarmentSpread, type SpreadLeafSide } from './GarmentSpread';
 
 export interface SpreadPagesProps {
@@ -44,12 +51,15 @@ export interface SpreadPagesProps {
   onDropCoverImage: (dataUrl: string) => void;
   onReplaceFile: (garmentId: string, slotKey: MediaSlotKey, dataUrl: string) => void;
   onUpdateCrop: (garmentId: string, slotKey: MediaSlotKey, crop: ImageCrop) => void;
-  onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
+  fabricColorImages: Record<string, string>;
+  onReplaceFabricColorImage?: (imageKey: string, dataUrl: string) => void;
+  onImageUploadError?: (message: string) => void;
   onToggleShortlist: (id: string) => void;
   onInspectMedia: (slot: MediaSlot, titleLabel: string, garmentTitle: string) => void;
   onOpenEditor: (garmentIndex: number, focusSlot?: MediaSlotKey) => void;
   onOpenVideo: (garment: GarmentItem) => void;
   onExportCurrentPdf: (garmentIndex: number) => void;
+  onSelectFabricCode: (fabricCode: string) => void;
   onExportCsv: () => void;
   onExportJson: () => void;
   onTriggerImportCsv: () => void;
@@ -139,12 +149,15 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   onDropCoverImage,
   onReplaceFile,
   onUpdateCrop,
-  onReplaceFabricSwatch,
+  fabricColorImages,
+  onReplaceFabricColorImage,
+  onImageUploadError,
   onToggleShortlist,
   onInspectMedia,
   onOpenEditor,
   onOpenVideo,
   onExportCurrentPdf,
+  onSelectFabricCode,
   onExportCsv,
   onExportJson,
   onTriggerImportCsv,
@@ -154,7 +167,9 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   const [coverDragging, setCoverDragging] = useState(false);
   const showGuides = Boolean(showSafeZones && !classicMode);
 
-  const productOffset = 6; // 0=Cover, 1=TOC, 2..5=Swatches (4 spreads), 6..48=43 Products, 49=Asset/Data
+  const swatchPrograms = buildFabricSwatchPrograms(garments);
+  const swatchSpreadCount = getFabricSwatchSpreadCount(garments);
+  const productOffset = getProductSpreadOffset(garments);
   const menItems = garments.filter((g) => g.gender === 'Men');
   const womenItems = garments.filter((g) => g.gender === 'Women');
 
@@ -248,7 +263,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               </div>
             )}
 
-            {!isPreviewLayer && !classicMode && (
+            {!isPreviewLayer && (
               <button
                 type="button"
                 onClick={() => onGoToPage(1)}
@@ -409,7 +424,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
           <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 border-y border-[#EAE8E3] py-2 text-[9px] text-[#77736D]">
             <button
               type="button"
-              disabled={isPreviewLayer || classicMode}
+              disabled={isPreviewLayer}
               onClick={() => onGoToPage(0)}
               className="transition-colors hover:text-[#171715] cursor-pointer"
             >
@@ -417,15 +432,18 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             </button>
             <button
               type="button"
-              disabled={isPreviewLayer || classicMode}
+              disabled={isPreviewLayer}
               onClick={() => onGoToPage(2)}
               className="transition-colors hover:text-[#171715] cursor-pointer"
             >
-              Fabrics &amp; colour <span className="ml-1 font-mono">03–06</span>
+              Fabrics &amp; colour{' '}
+              <span className="ml-1 font-mono">
+                03–{String(productOffset).padStart(2, '0')}
+              </span>
             </button>
             <button
               type="button"
-              disabled={isPreviewLayer || classicMode}
+              disabled={isPreviewLayer}
               onClick={() => onGoToPage(totalSpreads - 1)}
               className="transition-colors hover:text-[#171715] cursor-pointer"
             >
@@ -442,7 +460,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 <button
                   key={c.name}
                   type="button"
-                  disabled={isPreviewLayer || classicMode}
+                  disabled={isPreviewLayer}
                   onClick={() => firstInCat && onGoToPage(productOffset + firstInCat.index - 1)}
                   className="group flex w-full items-center justify-between gap-3 py-2 text-left transition-colors hover:bg-[#F8F7F4] cursor-pointer"
                 >
@@ -470,7 +488,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               <button
                 key={item.id}
                 type="button"
-                disabled={isPreviewLayer || classicMode}
+                disabled={isPreviewLayer}
                 onClick={() => onGoToPage(productOffset + item.index - 1)}
                 className="flex w-full items-baseline justify-between gap-2 border-b border-[#F2F0EB] py-1 text-left text-[10px] transition-colors hover:bg-[#F8F7F4] cursor-pointer"
               >
@@ -514,7 +532,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               <button
                 key={item.id}
                 type="button"
-                disabled={isPreviewLayer || classicMode}
+                disabled={isPreviewLayer}
                 onClick={() => onGoToPage(productOffset + item.index - 1)}
                 className="flex w-full items-baseline justify-between gap-3 py-2.5 text-left text-[11px] transition-colors hover:bg-[#F8F7F4] cursor-pointer"
               >
@@ -536,84 +554,179 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   }
 
   /* ========================================================================
-     SPREADS 03–06: DEDICATED FABRIC & COLOR SWATCH SPREADS (2 VERSO + 2 RECTO)
+     FABRIC LIBRARY: ONE TWO-PAGE SPREAD PER FABRIC FAMILY
      ======================================================================== */
-  if (pageIndex >= 2 && pageIndex <= 5) {
-    const swatchSpreadNum = pageIndex - 1; // 1..4
-    const baseRollIdx = (pageIndex - 2) * 4;
+  if (pageIndex >= 2 && pageIndex < productOffset) {
+    const swatchSpreadNum = pageIndex - 1;
+    const program = swatchPrograms[pageIndex - 2];
+    if (!program) return null;
 
-    const swatchVerso = (
-      <LeafShell
-        side="verso"
-        showSafeZones={showGuides}
-        headerLeft={`FABRIC & COLOR SWATCHES · PART ${swatchSpreadNum}/4`}
-        headerRight="LEFT LEAF (VERSO)"
-        footerLeft={`P. 0${swatchSpreadNum + 2}A`}
-        footerRight="SWATCHBOOK TEXTILES"
-      >
-        <div>
-          <div className="mb-3">
-            <h2 className="font-sans text-lg font-semibold tracking-tight text-[#0A0A0A]">
-              Swatchbook Textiles &amp; Pantone TCX Palette
-            </h2>
-            {!classicMode && <p className="mt-0.5 font-serif text-xs italic text-[#737373]">
-              Drop 1:1 fabric scans onto any tile to propagate across linked styles
-            </p>}
-          </div>
-          <FabricSwatchBoard
-            garments={garments}
-            onReplaceFabricSwatch={onReplaceFabricSwatch}
-            onSelectStyleIndex={(idx) => onGoToPage(productOffset + idx - 1)}
-            interactive={!classicMode}
-            sliceRange={[baseRollIdx, baseRollIdx + 2]}
-            embeddedInFlipbook
-            compactLeaf
-            isPreviewLayer={isPreviewLayer}
-          />
-        </div>
-      </LeafShell>
+    const heroImage = getPreferredFactoryFabricImage(program.fabricCode, fabricColorImages);
+    const linkedProducts = program.linkedIndices.flatMap((styleIndex, linkedIndex) => {
+      const garment = garments.find((item) => item.index === styleIndex);
+      return garment ? [{ garment, sku: program.linkedSkus[linkedIndex] }] : [];
+    });
+    const uniqueLotGsm = new Set(
+      program.factoryColors.map((color) => color.lotWeightGsm.trim()).filter(Boolean)
     );
+    const uniqueLotWidths = new Set(
+      program.factoryColors.map((color) => color.lotWidth.trim()).filter(Boolean)
+    );
+    const hasLotVariation = uniqueLotGsm.size > 1 || uniqueLotWidths.size > 1;
 
-    const swatchRecto = (
+    const renderFabricLeaf = (leafSide: 'verso' | 'recto') => (
       <LeafShell
-        side="recto"
+        side={leafSide}
         showSafeZones={showGuides}
-        headerLeft="PANTONE TCX & ROLL WIDTH SPECS"
-        headerRight="RIGHT LEAF (RECTO)"
-        footerLeft="GSM & WIDTH SEPARATED"
-        footerRight={`P. 0${swatchSpreadNum + 2}B`}
+        headerLeft={`SWATCHBOOK TEXTILES · SPREAD ${String(swatchSpreadNum).padStart(2, '0')}/${String(swatchSpreadCount).padStart(2, '0')}`}
+        headerRight={`${program.fabricCode} · ${program.colorCount} COLORWAYS`}
+        footerLeft={`P. ${String(pageIndex + 1).padStart(2, '0')}${leafSide === 'verso' ? 'A' : 'B'}`}
+        footerRight={leafSide === 'verso' ? 'FABRIC SPECIFICATION' : 'COLORWAY GALLERY'}
       >
-        <div className="flex flex-1 flex-col justify-between">
-          <FabricSwatchBoard
-            garments={garments}
-            onReplaceFabricSwatch={onReplaceFabricSwatch}
-            onSelectStyleIndex={(idx) => onGoToPage(productOffset + idx - 1)}
-            interactive={!classicMode}
-            sliceRange={[baseRollIdx + 2, baseRollIdx + 4]}
-            embeddedInFlipbook
-            compactLeaf
-            isPreviewLayer={isPreviewLayer}
-          />
-
-          {pageIndex === 5 && (
-            <div className="mt-4 border border-[#E5E5E5] bg-[#FAFAFA] p-4 text-[11px] leading-relaxed text-[#404040]">
-              <p className="font-mono text-[10.5px] font-semibold text-[#0A0A0A]">
-                Lab-Dip &amp; Custom Mill Dyeing Notes
+        {leafSide === 'verso' ? (
+          <div className="flex flex-1 flex-col gap-3">
+            <div>
+              <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--metallic-strong)]">
+                Fabric family
               </p>
-              <p className="mt-1">
-                Pantone TCX &amp; Chart codes shown above correspond to approved showroom swatchbook lots. Truncated fiber compositions from the source line sheet (`A82`, `A28`, `A29`, `FTR76SAM`) are flagged for mill spec confirmation prior to bulk PO issuance.
-              </p>
+              <h2 className="mt-1 font-sans text-3xl font-extrabold leading-none tracking-tight text-[#111111]">
+                {program.fabricCode}
+              </h2>
             </div>
-          )}
-        </div>
+
+            {heroImage ? (
+              <img
+                src={heroImage.imageUrl}
+                alt={`${program.fabricCode} fabric drape`}
+                loading="lazy"
+                decoding="async"
+                className="aspect-[16/10] w-full border border-[#E5E3DE] bg-[#F7F6F2] object-cover"
+              />
+            ) : (
+              <div className="flex aspect-[16/10] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#F7F6F2] px-4 text-center">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#33322F]">
+                  Fabric hero image not supplied
+                </p>
+                <p className="mt-1 max-w-[36ch] text-[10px] leading-relaxed text-[#68665F]">
+                  Add a verified {program.fabricCode} fabric drape in the Fabric Library.
+                </p>
+              </div>
+            )}
+
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-y border-[#EAE8E3] py-2.5 text-[10px]">
+              <div className="col-span-2">
+                <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
+                  Fabric content
+                </dt>
+                <dd className="mt-0.5 text-[11px] font-semibold leading-snug text-[#111111]">
+                  {program.composition || 'Not listed'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
+                  Weight
+                </dt>
+                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111]">
+                  {program.weightGsm || 'Not listed'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
+                  Roll width
+                </dt>
+                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111]">
+                  {program.fabricWidth || 'Not listed'}
+                </dd>
+              </div>
+            </dl>
+
+            <div>
+              <h3 className="font-mono text-[9px] font-bold uppercase tracking-wide text-[#33322F]">
+                Fabric characteristics
+              </h3>
+              <p className="mt-1 text-[10px] leading-relaxed text-[#55534E]">
+                {program.stretchFeelNote || 'No fabric characteristic note supplied.'}
+              </p>
+              {hasLotVariation && (
+                <p className="mt-1 border-l-2 border-[#A6A39B] pl-2 text-[9px] leading-snug text-[#68665F]">
+                  Factory color-lot GSM or width entries vary; confirm the selected shade and lot before ordering.
+                </p>
+              )}
+              {program.dataFlags[0] && (
+                <p className="mt-1 border-l-2 border-[#A6A39B] pl-2 text-[9px] leading-snug text-[#68665F]">
+                  {program.dataFlags[0]}
+                </p>
+              )}
+            </div>
+
+            <section className="mt-auto border-t border-[#EAE8E3] pt-2.5">
+              <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                <h3 className="font-mono text-[9px] font-bold uppercase tracking-wide text-[#33322F]">
+                  Styles using this fabric
+                </h3>
+                <span className="font-mono text-[8px] text-[#77756F]">
+                  {linkedProducts.length} linked
+                </span>
+              </div>
+              <div className="flex max-h-24 flex-wrap content-start gap-x-3 gap-y-1 overflow-y-auto">
+                {linkedProducts.map(({ garment, sku }) => (
+                  <button
+                    key={garment.id}
+                    type="button"
+                    disabled={isPreviewLayer}
+                    onClick={() => onGoToPage(productOffset + garment.index - 1)}
+                    className="text-left text-[9px] leading-snug text-[#292824] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#111111] disabled:cursor-default"
+                  >
+                    {garment.title} <span className="font-mono font-bold">({sku})</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col">
+            <div className="mb-3 flex items-end justify-between gap-3 border-b border-[#EAE8E3] pb-2.5">
+              <div>
+                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--metallic-strong)]">
+                  All shades · same fabric family
+                </p>
+                <h2 className="mt-1 font-sans text-2xl font-extrabold tracking-tight text-[#111111]">
+                  {program.fabricCode} colorways
+                </h2>
+              </div>
+              <span className="shrink-0 font-mono text-[9px] font-semibold text-[#33322F]">
+                {program.factoryColors.length} shades
+              </span>
+            </div>
+            <div className="grid flex-1 grid-cols-3 content-start gap-2 sm:gap-2.5">
+              {program.factoryColors.map((color, colorIndex) => {
+                const imageKey = getFactoryColorImageKey(program.fabricCode, color.colorName);
+                const imageUrl = fabricColorImages[imageKey] || color.swatchImageUrl || '';
+                return (
+                  <FabricColorwayTile
+                    key={`${program.fabricCode}-${color.colorName}-${colorIndex}`}
+                    color={color}
+                    imageUrl={imageUrl}
+                    interactive={!classicMode && !isPreviewLayer}
+                    onReplace={onReplaceFabricColorImage}
+                    onError={onImageUploadError}
+                  />
+                );
+              })}
+            </div>
+            <p className="mt-2 border-t border-[#EAE8E3] pt-2 text-[9px] leading-relaxed text-[#68665F]">
+              Pantone TCX and chart references identify listed shades; confirm current availability, MOQ, lead time, and final lot specifications with the factory.
+            </p>
+          </div>
+        )}
       </LeafShell>
     );
 
-    return renderSpreadPair(swatchVerso, swatchRecto);
+    return renderSpreadPair(renderFabricLeaf('verso'), renderFabricLeaf('recto'));
   }
 
   /* ========================================================================
-     SPREADS 07–49: 43 PRODUCT SPREADS (SYMMETRIC 50/50 VERSO | RECTO)
+     PRODUCT SPREADS
      ======================================================================== */
   if (pageIndex >= productOffset && pageIndex < productOffset + garments.length) {
     const product = garments[pageIndex - productOffset];
@@ -638,12 +751,13 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         onOpenEditor={(focusSlot) => onOpenEditor(product.index, focusSlot)}
         onOpenVideo={onOpenVideo}
         onExportCurrentPdf={() => onExportCurrentPdf(product.index)}
+        onSelectFabricCode={onSelectFabricCode}
       />
     );
   }
 
   /* ========================================================================
-     SPREAD 50: ASSET READINESS, PRINT PRODUCTION SPECS & CSV / JSON SWAP
+     FINAL SPREAD: ASSET READINESS, PRINT PRODUCTION SPECS & CSV / JSON SWAP
      ======================================================================== */
   const backVerso = (
     <LeafShell
@@ -748,14 +862,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               Import &amp; Export Line Sheet Data
             </h2>
             <p className="mt-2 text-xs leading-relaxed text-[#525252]">
-              Download the structured CSV or JSON blueprint containing all 43 Dream Tomorrow styles (with separated <span className="font-mono">weightGsm</span> and <span className="font-mono">fabricWidth</span> columns, image URL paths, and <span className="font-mono">dataFlags</span>), update in Sheets/Excel, and re-import to refresh all 50 spreads.
+              Download the structured CSV or JSON blueprint containing all 43 Dream Tomorrow styles (with separated <span className="font-mono">weightGsm</span> and <span className="font-mono">fabricWidth</span> columns, image URL paths, and <span className="font-mono">dataFlags</span>), update in Sheets/Excel, and re-import to refresh the catalogue.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               type="button"
-              disabled={isPreviewLayer || classicMode}
+              disabled={isPreviewLayer}
               onClick={onExportCsv}
               className="inline-flex items-center justify-center gap-2 border border-[#0A0A0A] bg-[#0A0A0A] px-4 py-2.5 text-xs font-medium text-white hover:bg-[#262626] cursor-pointer"
             >

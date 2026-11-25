@@ -11,6 +11,11 @@ function splitColorCode(raw: string): { name: string; code: string | null; isPen
   const isPending = raw.toLowerCase().includes('pending');
   const match = raw.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
   if (match) {
+    const leadingValue = match[1].trim();
+    const parentheticalValue = match[2].trim();
+    if (/^[A-Z]{1,2}\d{2,4}$/i.test(leadingValue) && !/^(TCX|Chart)\b/i.test(parentheticalValue)) {
+      return { name: parentheticalValue, code: leadingValue, isPending };
+    }
     return { name: match[1].trim(), code: match[2].trim(), isPending };
   }
   return { name: raw.trim(), code: null, isPending };

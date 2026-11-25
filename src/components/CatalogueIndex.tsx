@@ -24,6 +24,7 @@ interface CatalogueIndexProps {
   shortlist: string[];
   onToggleShortlist: (id: string) => void;
   onSelectGarment: (index: number) => void;
+  onSelectFabricCode: (fabricCode: string) => void;
   onEditGarment: (index: number) => void;
 }
 
@@ -85,6 +86,7 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
   shortlist,
   onToggleShortlist,
   onSelectGarment,
+  onSelectFabricCode,
   onEditGarment,
 }) => {
   const [search, setSearch] = useState('');
@@ -392,6 +394,13 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
                 <p className="mt-2 text-xs text-[#77736D] line-clamp-1">
                   {item.specs.composition} <span aria-hidden="true">·</span> {item.specs.weightGsm}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => onSelectFabricCode(item.specs.fabricRollRef)}
+                  className="mt-2 w-fit font-mono text-[10px] text-[#55534E] underline decoration-[#B8B5AD] underline-offset-2"
+                >
+                  Fabric {item.specs.fabricRollRef}
+                </button>
 
                 <div className="mt-4 flex items-center justify-between border-t border-[#EAE8E3] pt-3 text-[11px] text-[#8A877F]">
                   <span className="inline-flex items-center gap-2 tabular-nums">
@@ -457,8 +466,14 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
                         {item.title}
                       </button>
                     </td>
-                    <td className="py-3.5 pr-4 font-mono text-[11px] text-[#0A0A0A] whitespace-nowrap">
-                      {item.specs.fabricRollRef}
+                    <td className="py-3.5 pr-4 font-mono text-[11px] whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => onSelectFabricCode(item.specs.fabricRollRef)}
+                        className="text-[#0A0A0A] underline decoration-[#B8B5AD] underline-offset-2"
+                      >
+                        {item.specs.fabricRollRef}
+                      </button>
                     </td>
                     <td className="py-3.5 pr-4 text-[#404040]">
                       {item.specs.composition}

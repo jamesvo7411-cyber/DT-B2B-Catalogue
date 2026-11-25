@@ -38,6 +38,7 @@ interface GarmentSpreadProps {
   onOpenEditor: (focusSlot?: MediaSlotKey) => void;
   onOpenVideo: (garment: GarmentItem) => void;
   onExportCurrentPdf: () => void;
+  onSelectFabricCode: (fabricCode: string) => void;
 }
 
 export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
@@ -60,6 +61,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   onOpenEditor,
   onOpenVideo,
   onExportCurrentPdf,
+  onSelectFabricCode,
 }) => {
   const paddedNumber = String(garment.index).padStart(2, '0');
   const paddedTotal = String(allGarments.length).padStart(2, '0');
@@ -73,41 +75,91 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
       item.specs.fabricRollRef.toLowerCase() === garment.specs.fabricRollRef.toLowerCase()
   );
   const sourceNote = conciseSourceNote(garment.dataFlags);
+  const productDetailSlots: { key: MediaSlotKey; label: string }[] = [
+    { key: 'pocket', label: 'Detail 01' },
+    { key: 'seam', label: 'Detail 02' },
+    { key: 'swatch', label: 'Fabric Image' },
+    { key: 'custom', label: 'Detail 03' },
+  ];
 
   const renderMedia = (
     slotKey: MediaSlotKey,
     titleLabel: string,
     aspectClass: string,
     compact = false,
-    imageOverlay?: React.ReactNode
-  ) => (
-    <MediaPlate
-      slotKey={slotKey}
-      slot={garment.media[slotKey]}
-      aspectClass={aspectClass}
-      titleLabel={titleLabel}
-      editMode={editMode && !isPreviewLayer && !classicMode}
-      interactive={!classicMode}
-      compact={compact}
-      imageOverlay={imageOverlay}
-      onReplaceFile={
-        isPreviewLayer || classicMode
-          ? undefined
-          : (key, url) => onReplaceFile(garment.id, key, url)
-      }
-      onUpdateCrop={
-        isPreviewLayer || classicMode
-          ? undefined
-          : (key, crop) => onUpdateCrop(garment.id, key, crop)
-      }
-      onInspect={
-        isPreviewLayer || classicMode
-          ? undefined
-          : (slot, label) => onInspectMedia(slot, label, garment.title)
-      }
-      onOpenEditor={isPreviewLayer || classicMode ? undefined : (key) => onOpenEditor(key)}
-    />
-  );
+    imageOverlay?: React.ReactNode,
+    displayScale = 1
+  ) => {
+    const slot = garment.media[slotKey];
+    if (classicMode && !slot.url) return null;
+    const canEditSlot = !classicMode && slotKey !== 'swatch';
+
+    return (
+      <MediaPlate
+        slotKey={slotKey}
+        slot={slot}
+        aspectClass={aspectClass}
+        titleLabel={titleLabel}
+        editMode={editMode && !isPreviewLayer && canEditSlot}
+        interactive={!classicMode}
+        editable={canEditSlot}
+        showBlankGuides={canEditSlot}
+        compact={compact || classicMode}
+        displayScale={displayScale}
+        imageOverlay={imageOverlay}
+        onReplaceFile={
+          isPreviewLayer || !canEditSlot
+            ? undefined
+            : (key, url) => onReplaceFile(garment.id, key, url)
+        }
+        onUpdateCrop={
+          isPreviewLayer || !canEditSlot
+            ? undefined
+            : (key, crop) => onUpdateCrop(garment.id, key, crop)
+        }
+        onInspect={
+          isPreviewLayer || classicMode
+            ? undefined
+            : (slot, label) => onInspectMedia(slot, label, garment.title)
+        }
+        onOpenEditor={isPreviewLayer || !canEditSlot ? undefined : (key) => onOpenEditor(key)}
+      />
+    );
+  };
+
+  const renderClassicDetail = (slotKey: MediaSlotKey, label: string) => {
+    const hasImage = Boolean(garment.media[slotKey].url);
+    const missingLabel =
+      slotKey === 'swatch' ? 'Fabric image not supplied' : 'Detail image not supplied';
+    return (
+      <div key={slotKey} className="min-w-0">
+        {hasImage ? (
+          renderMedia(
+            slotKey,
+            `${garment.sku} ${label}`,
+            'aspect-[4/3] w-full',
+            true,
+            undefined,
+            slotKey === 'swatch' ? 1.65 : 1
+          )
+        ) : (
+          <div className="flex aspect-[4/3] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#F7F6F2] px-2 text-center">
+            <span className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#55534E]">
+              {missingLabel}
+            </span>
+            {slotKey === 'swatch' && (
+              <span className="mt-1 text-[8px] leading-snug text-[#77756F]">
+                Add a {garment.specs.fabricRollRef} image in the Fabric Library.
+              </span>
+            )}
+          </div>
+        )}
+        <p className="mt-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-[#33322F]">
+          {label}
+        </p>
+      </div>
+    );
+  };
 
   const leafShell = (leafSide: 'verso' | 'recto', children: React.ReactNode) => {
     const verso = leafSide === 'verso';
@@ -141,9 +193,9 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   const versoLeaf = leafShell(
     'verso',
     <>
-      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] tracking-wide text-[#77756F]">
+      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] font-semibold tracking-wide text-[#111111]">
         <span>DREAM TOMORROW</span>
-        <span className="text-right">
+        <span className="text-right font-bold">
           {garment.gender.toUpperCase()} · {garment.category.toUpperCase()}
         </span>
       </header>
@@ -152,20 +204,42 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
         {renderMedia(
           'hero',
           'Primary image',
-          'aspect-[5/4]',
-          false,
-          <div className="max-w-[38ch]">
-            <p className="font-mono text-[9px] tracking-[0.16em]">
-              {garment.sku} <span className="mx-1.5 opacity-70">/</span>{' '}
-              {garment.category.toUpperCase()}
-            </p>
-            <h1 className="mt-1 font-serif text-3xl leading-[0.98] tracking-tight sm:text-4xl">
-              {garment.title}
-            </h1>
+          'aspect-[13/12]',
+          classicMode,
+          classicMode ? undefined : (
+            <div className="max-w-[38ch]">
+              <p className="font-mono text-[10px] font-bold tracking-[0.12em]">
+                {garment.sku} <span className="mx-1.5 opacity-70">/</span>{' '}
+                {garment.category.toUpperCase()}
+              </p>
+              <h1 className="mt-1 font-sans text-3xl font-extrabold leading-[0.98] tracking-tight sm:text-4xl">
+                {garment.title}
+              </h1>
+            </div>
+          )
+        )}
+
+        {classicMode && (
+          <div className="flex items-center gap-4 border-b border-[#EFEDE8] pb-3">
+            <span className="font-sans text-5xl font-extrabold leading-none tracking-[-0.06em] text-[#111111]">
+              {paddedNumber}
+            </span>
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] font-bold tracking-wide text-[#111111]">
+                {garment.gender.toUpperCase()} · {garment.category.toUpperCase()}
+              </p>
+              <h1 className="mt-1 font-sans text-2xl font-extrabold leading-tight tracking-tight text-[#111111] sm:text-3xl">
+                {garment.title}
+              </h1>
+            </div>
           </div>
         )}
 
-        <ProductSpecStrip item={garment} />
+        <ProductSpecStrip
+          item={garment}
+          onSelectFabricCode={onSelectFabricCode}
+          disabled={isPreviewLayer}
+        />
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFEDE8] pb-3">
           {sourceNote ? (
@@ -198,7 +272,8 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#696761]">
+        {!classicMode && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#111111]">
           <div className="flex items-center gap-4">
             {garment.videoUrl && !classicMode && (
               <button
@@ -224,14 +299,15 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
             )}
           </div>
           {!classicMode && (
-            <span className="font-mono text-[9px] text-[#8A8882]">
+            <span className="font-mono text-[9px] font-semibold text-[#111111]">
               {populatedCount}/5 images
             </span>
           )}
         </div>
+        )}
       </main>
 
-      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] text-[#8A8882] tabular-nums">
+      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] font-semibold text-[#111111] tabular-nums">
         <span>P. {versoPage}</span>
         <span>{paddedNumber}.A · {garment.productGroupVi.toUpperCase()}</span>
       </footer>
@@ -241,65 +317,113 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   const rectoLeaf = leafShell(
     'recto',
     <>
-      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] tracking-wide text-[#77756F]">
+      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] font-semibold tracking-wide text-[#111111]">
         <span>DETAILS</span>
-        <span>{garment.sku}</span>
+        <span className="font-bold">{garment.sku}</span>
       </header>
 
       <main className="relative z-10 flex flex-1 flex-col gap-4">
-        <div>
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h2 className="font-serif text-xl tracking-tight text-[#24231F]">In close view</h2>
-            <span className="font-mono text-[8px] tracking-[0.12em] text-[#8A8882]">
-              IMAGE DETAILS
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {renderMedia('pocket', 'Detail 01', 'aspect-[4/3]')}
-            {renderMedia('seam', 'Detail 02', 'aspect-[4/3]')}
-          </div>
-        </div>
+        {classicMode ? (
+          <>
+            <section className="border-b border-[#E8E6E0] pb-4">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2 className="font-sans text-2xl font-extrabold tracking-tight text-[#111111]">
+                  Construction &amp; fabric
+                </h2>
+                <span className="font-mono text-[10px] font-semibold text-[#111111]">
+                  4 IMAGE PANELS
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {productDetailSlots.map(({ key, label }) => renderClassicDetail(key, label))}
+              </div>
+            </section>
+            <section className="border-t border-[#E8E6E0] pt-3">
+              <h3 className="mb-2 font-sans text-sm font-bold uppercase tracking-wide text-[#111111]">
+                Colorways
+              </h3>
+              <ColorSwatchList colorways={garment.colorways} compact editorial />
+            </section>
+          </>
+        ) : (
+          <>
+            <div>
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <h2 className="font-serif text-xl tracking-tight text-[#24231F]">In close view</h2>
+                <span className="font-mono text-[8px] tracking-[0.12em] text-[#8A8882]">
+                  IMAGE DETAILS
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {renderMedia('pocket', 'Detail 01', 'aspect-[4/3]')}
+                {renderMedia('seam', 'Detail 02', 'aspect-[4/3]')}
+              </div>
+            </div>
 
-        <div className="border-t border-[#EFEDE8] pt-3">
-          <h3 className="mb-2 font-mono text-[9px] tracking-[0.12em] text-[#77756F]">COLORWAYS</h3>
-          <ColorSwatchList colorways={garment.colorways} compact editorial />
-        </div>
+            <div className="border-t border-[#EFEDE8] pt-3">
+              <h3 className="mb-2 font-mono text-[9px] tracking-[0.12em] text-[#77756F]">COLORWAYS</h3>
+              <ColorSwatchList colorways={garment.colorways} compact editorial />
+            </div>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 border-t border-[#EFEDE8] pt-3">
-          <div>
-            <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
-              FABRIC IMAGE
-            </p>
-            {renderMedia('swatch', 'Fabric image', 'aspect-[4/3]')}
-          </div>
-          <div>
-            <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
-              DETAIL 03
-            </p>
-            {renderMedia('custom', 'Detail 03', 'aspect-[4/3]')}
-          </div>
-        </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 border-t border-[#EFEDE8] pt-3">
+              <div>
+                <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
+                  FABRIC IMAGE
+                </p>
+                {garment.media.swatch.url ? (
+                  renderMedia('swatch', 'Fabric image', 'aspect-[4/3]', false, undefined, 1.65)
+                ) : (
+                  <div className="flex aspect-[4/3] flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#F7F6F2] px-2 text-center">
+                    <span className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#55534E]">
+                      Fabric image not supplied
+                    </span>
+                    <span className="mt-1 text-[8px] leading-snug text-[#77756F]">
+                      Add a {garment.specs.fabricRollRef} image in the Fabric Library.
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
+                  DETAIL 03
+                </p>
+                {renderMedia('custom', 'Detail 03', 'aspect-[4/3]')}
+              </div>
+            </div>
 
-        {fabricSiblings.length > 0 && !classicMode && (
-          <div className="border-t border-[#EFEDE8] pt-2.5 text-[9px] text-[#77756F]">
-            <span>More styles in {garment.specs.fabricRollRef}: </span>
-            {fabricSiblings.map((sibling, index) => (
-              <React.Fragment key={sibling.id}>
-                {index > 0 && <span className="mx-1">·</span>}
-                <button
-                  type="button"
-                  onClick={() => onJumpToIndex(sibling.index)}
-                  className="font-mono text-[#33322F] underline decoration-[#D4D1CA] underline-offset-2"
-                >
-                  {sibling.sku}
-                </button>
-              </React.Fragment>
-            ))}
-          </div>
+            {fabricSiblings.length > 0 && (
+              <div className="border-t border-[#EFEDE8] pt-2.5 text-[9px] text-[#77756F]">
+                <span>
+                  More styles in{' '}
+                  <button
+                    type="button"
+                    disabled={isPreviewLayer}
+                    onClick={() => onSelectFabricCode(garment.specs.fabricRollRef)}
+                    className="font-mono underline decoration-[#D4D1CA] underline-offset-2 disabled:no-underline"
+                  >
+                    {garment.specs.fabricRollRef}
+                  </button>
+                  :{' '}
+                </span>
+                {fabricSiblings.map((sibling, index) => (
+                  <React.Fragment key={sibling.id}>
+                    {index > 0 && <span className="mx-1">·</span>}
+                    <button
+                      type="button"
+                      onClick={() => onJumpToIndex(sibling.index)}
+                      className="font-mono text-[#33322F] underline decoration-[#D4D1CA] underline-offset-2"
+                    >
+                      {sibling.sku}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] text-[#8A8882] tabular-nums">
+      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] font-semibold text-[#111111] tabular-nums">
         <span>{paddedNumber}.B–E</span>
         <span>P. {rectoPage}</span>
       </footer>

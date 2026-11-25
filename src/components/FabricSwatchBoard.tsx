@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowUpRight, Upload } from 'lucide-react';
-import type { FabricSwatchProgram, GarmentItem } from '../types/catalogue';
-import { buildFabricSwatchPrograms } from '../data/garments';
+import { AlertTriangle, ArrowUpRight, ImagePlus, Search, Upload } from 'lucide-react';
+import type { FactoryFabricColor, FabricSwatchProgram, GarmentItem } from '../types/catalogue';
+import { buildFabricSwatchPrograms, getColorSwatchHex } from '../data/garments';
+import { getFactoryColorImageKey } from '../data/factoryFabricColors';
+import { getBuyerFacingColorNote, getDisplayColorName } from '../utils/fabricDisplay';
 import { readImageFileAsDataUrl } from '../utils/media';
 import { ColorSwatchList } from './ColorSwatchList';
 
@@ -9,12 +11,130 @@ interface FabricSwatchBoardProps {
   garments: GarmentItem[];
   onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
   onSelectStyleIndex: (index: number) => void;
+  fabricColorImages?: Record<string, string>;
+  onReplaceFabricColorImage?: (imageKey: string, dataUrl: string) => void;
+  onImageUploadError?: (message: string) => void;
   interactive?: boolean;
   sliceRange?: [number, number];
   embeddedInFlipbook?: boolean;
   compactLeaf?: boolean;
   isPreviewLayer?: boolean;
 }
+
+export const FabricColorImageTile: React.FC<{
+  color: FactoryFabricColor;
+  imageUrl: string;
+  interactive: boolean;
+  aspectClass?: string;
+  tightCrop?: boolean;
+  onReplace?: (dataUrl: string) => void;
+  onError?: (message: string) => void;
+}> = ({
+  color,
+  imageUrl,
+  interactive,
+  aspectClass = 'aspect-square',
+  tightCrop = false,
+  onReplace,
+  onError,
+}) => {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const canEdit = interactive && Boolean(onReplace);
+  const hasImage = Boolean(imageUrl && !imgError);
+
+  useEffect(() => setImgError(false), [imageUrl]);
+
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      onError?.('Choose an image file for the fabric color.');
+      return;
+    }
+    if (!onReplace) return;
+    try {
+      onReplace(await readImageFileAsDataUrl(file, 720));
+    } catch (error) {
+      onError?.(error instanceof Error ? error.message : 'Unable to read the fabric image.');
+    }
+  };
+
+  return (
+    <div
+      className={`group relative ${aspectClass} overflow-hidden border ${
+        dragging ? 'border-[#111111] bg-[#F0EFEB]' : 'border-[#E5E3DE] bg-[#F7F6F2]'
+      }`}
+      onDragOver={
+        canEdit
+          ? (event) => {
+              event.preventDefault();
+              setDragging(true);
+            }
+          : undefined
+      }
+      onDragLeave={canEdit ? () => setDragging(false) : undefined}
+      onDrop={
+        canEdit
+          ? (event) => {
+              event.preventDefault();
+              setDragging(false);
+              void handleFile(event.dataTransfer.files[0]);
+            }
+          : undefined
+      }
+    >
+      {canEdit && (
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          aria-label={`Choose fabric image for ${color.colorName}`}
+          onChange={(event) => {
+            void handleFile(event.target.files?.[0]);
+            event.target.value = '';
+          }}
+        />
+      )}
+      {hasImage ? (
+        <img
+          src={imageUrl}
+          alt={`${getDisplayColorName(color)} ${color.fabricCode} fabric texture`}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgError(true)}
+          className={`h-full w-full object-cover ${tightCrop ? 'scale-[1.65]' : ''}`}
+        />
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center">
+          <div
+            aria-hidden="true"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#D8D6D0] bg-white"
+          >
+            <ImagePlus className="h-5 w-5 text-[#77756F]" />
+          </div>
+          <p className="text-xs font-semibold text-[#302F2B]">
+            {imgError ? 'Image could not be loaded' : 'Swatch image not supplied'}
+          </p>
+          <p className="text-[10px] text-[#77756F]">
+            {getDisplayColorName(color)} · {color.fabricCode}
+          </p>
+        </div>
+      )}
+      {canEdit && (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="absolute inset-x-2 bottom-2 inline-flex items-center justify-center gap-1.5 border border-white/60 bg-black/75 px-2 py-1.5 text-[10px] font-medium text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
+        >
+          <Upload className="h-3 w-3" />
+          {hasImage ? 'Replace image' : 'Upload image'}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const FabricSwatchTile: React.FC<{
   program: FabricSwatchProgram;
@@ -130,7 +250,7 @@ const FabricSwatchTile: React.FC<{
             {program.fabricCode}
           </p>
           <p className="mt-0.5 text-[9.5px] text-[#737373]">
-            {interactive ? 'Drop 1:1 scan' : 'No image linked'}
+            {interactive ? 'Drop or upload swatch' : 'Image not supplied'}
           </p>
         </div>
       )}
@@ -142,16 +262,267 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
   garments,
   onReplaceFabricSwatch,
   onSelectStyleIndex,
+  fabricColorImages = {},
+  onReplaceFabricColorImage,
+  onImageUploadError,
   interactive = true,
   sliceRange,
   embeddedInFlipbook = false,
   compactLeaf = false,
   isPreviewLayer = false,
 }) => {
+  const [query, setQuery] = useState('');
   const allPrograms = buildFabricSwatchPrograms(garments);
   const programs = sliceRange
     ? allPrograms.slice(sliceRange[0], sliceRange[1])
     : allPrograms;
+
+  if (!embeddedInFlipbook) {
+    const normalizedQuery = query.trim().toLowerCase();
+    const visiblePrograms = allPrograms
+      .map((program) => {
+        const programText = [
+          program.fabricCode,
+          program.composition,
+          program.linkedSkus.join(' '),
+          program.genders.join(' '),
+        ]
+          .join(' ')
+          .toLowerCase();
+        const programMatches = !normalizedQuery || programText.includes(normalizedQuery);
+        const matchingColors = program.factoryColors.filter((color) =>
+          [
+            color.colorName,
+            color.factoryColorName,
+            color.shadeCode,
+            color.reference,
+            color.lotWeightGsm,
+            color.lotWidth,
+          ]
+            .join(' ')
+            .toLowerCase()
+            .includes(normalizedQuery)
+        );
+        return {
+          program,
+          colors: !normalizedQuery || programMatches ? program.factoryColors : matchingColors,
+        };
+      })
+      .filter(({ colors }) => colors.length > 0);
+    const totalColorOptions = allPrograms.reduce(
+      (total, program) => total + program.factoryColors.length,
+      0
+    );
+    const canEditColorImages = interactive && Boolean(onReplaceFabricColorImage);
+
+    return (
+      <div className="mx-auto max-w-[1360px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+        <header className="mb-8 border-b border-[#E5E3DE] pb-6">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#77756F]">
+            Dream Tomorrow · Fabric Library
+          </p>
+          <div className="mt-2 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <div>
+              <h1 className="font-sans text-3xl font-semibold tracking-tight text-[#171715] sm:text-4xl">
+                Fabric &amp; Color Availability
+              </h1>
+              <p className="mt-2 max-w-[68ch] text-sm leading-relaxed text-[#55534E]">
+                Browse factory-listed fabric programs, shade codes, and Pantone or chart references.
+                Some English shade names are provisional, so confirm the physical swatch along with
+                current stock, MOQ, and lead time before placing an order.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <div className="border border-[#E5E3DE] bg-white px-4 py-3">
+                <span className="block font-mono text-lg font-semibold text-[#171715]">
+                  {allPrograms.length}
+                </span>
+                <span className="text-[10px] uppercase tracking-wide text-[#77756F]">
+                  Fabric programs
+                </span>
+              </div>
+              <div className="border border-[#E5E3DE] bg-white px-4 py-3">
+                <span className="block font-mono text-lg font-semibold text-[#171715]">
+                  {totalColorOptions}
+                </span>
+                <span className="text-[10px] uppercase tracking-wide text-[#77756F]">
+                  Listed colors
+                </span>
+              </div>
+            </div>
+          </div>
+          <label className="mt-5 flex max-w-xl items-center gap-2 border border-[#D8D6D0] bg-white px-3 py-2.5">
+            <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[#77756F]" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search fabric, style, color, shade code, or TCX"
+              className="w-full bg-transparent text-sm text-[#171715] outline-none placeholder:text-[#99968E]"
+              aria-label="Search fabric programs and colors"
+            />
+          </label>
+          {canEditColorImages && (
+            <p className="mt-2 text-[11px] text-[#77756F]">
+              Workbench: drop or upload a different generated fabric image on each color card.
+            </p>
+          )}
+        </header>
+
+        <div className="space-y-8">
+          {visiblePrograms.map(({ program, colors }) => (
+            <article
+              key={program.fabricCode}
+              className="border border-[#E5E3DE] bg-white"
+            >
+              <div className="border-b border-[#E5E3DE] bg-[#FAF9F6] px-4 py-4 sm:px-6">
+                <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#77756F]">
+                      Factory fabric / roll code
+                    </p>
+                    <h2 className="mt-1 font-mono text-lg font-semibold text-[#171715]">
+                      {program.fabricCode}
+                    </h2>
+                    <p className="mt-1 max-w-[66ch] text-xs leading-relaxed text-[#55534E]">
+                      {program.composition}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs lg:min-w-[280px]">
+                    <div>
+                      <span className="block text-[10px] text-[#77756F]">Typical GSM</span>
+                      <span className="font-mono font-semibold text-[#171715]">{program.weightGsm}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-[#77756F]">Typical width</span>
+                      <span className="font-mono font-semibold text-[#171715]">{program.fabricWidth}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-[#77756F]">Factory-listed colors</span>
+                      <span className="font-mono font-semibold text-[#171715]">
+                        {program.factoryColors.length}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-[#77756F]">Linked styles</span>
+                      <span className="font-mono font-semibold text-[#171715]">
+                        {program.linkedSkus.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[#E5E3DE] pt-3">
+                  <span className="text-[10px] uppercase tracking-wide text-[#77756F]">
+                    Styles using this fabric:
+                  </span>
+                  {program.linkedSkus.map((sku, index) => (
+                    <button
+                      key={sku}
+                      type="button"
+                      disabled={isPreviewLayer}
+                      onClick={() => onSelectStyleIndex(program.linkedIndices[index])}
+                      className="inline-flex items-center gap-1 font-mono text-[10px] font-medium text-[#171715] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#171715] disabled:cursor-default"
+                    >
+                      {sku}
+                      <ArrowUpRight aria-hidden="true" className="h-2.5 w-2.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 sm:gap-4 sm:p-5 lg:grid-cols-4 xl:grid-cols-5">
+                {colors.map((color) => {
+                  const imageKey = getFactoryColorImageKey(program.fabricCode, color.colorName);
+                  const imageUrl = fabricColorImages?.[imageKey] || color.swatchImageUrl || '';
+                  const buyerFacingColorNote = getBuyerFacingColorNote(color);
+                  return (
+                    <section
+                      key={imageKey}
+                      className="min-w-0 border border-[#EAE8E2] bg-white"
+                      aria-label={`${color.colorName} in ${program.fabricCode}`}
+                    >
+                      <FabricColorImageTile
+                        color={color}
+                        imageUrl={imageUrl}
+                        interactive={canEditColorImages}
+                        onReplace={
+                          onReplaceFabricColorImage
+                            ? (dataUrl) => onReplaceFabricColorImage(imageKey, dataUrl)
+                            : undefined
+                        }
+                        onError={onImageUploadError}
+                      />
+                      <div className="space-y-2 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-sm font-semibold leading-tight text-[#171715]">
+                            {getDisplayColorName(color)}
+                          </h3>
+                          {color.reference && (
+                            <span className="shrink-0 border border-[#E5E3DE] px-1.5 py-0.5 font-mono text-[9px] text-[#55534E]">
+                              {color.reference}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 border-t border-[#F0EFEB] pt-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-4 w-6 shrink-0 border border-black/10"
+                            style={{ backgroundColor: getColorSwatchHex(color.colorName) ?? '#F3F2EF' }}
+                          />
+                          <p className="min-w-0 text-[10px] leading-snug text-[#55534E]">
+                            <span className="block text-[9px] uppercase tracking-wide text-[#88857D]">
+                              Factory shade code
+                            </span>
+                            <span className="font-mono font-medium text-[#302F2B]">
+                              {color.shadeCode || 'Not listed'}
+                            </span>
+                          </p>
+                        </div>
+                        {color.factoryColorName && color.factoryColorName !== color.shadeCode && (
+                          <p className="truncate text-[10px] text-[#77756F]" title={color.factoryColorName}>
+                            Factory label: {color.factoryColorName}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 border-t border-[#F0EFEB] pt-2 text-[10px]">
+                          <p>
+                            <span className="block text-[9px] text-[#88857D]">Lot GSM</span>
+                            <span className="font-mono font-medium text-[#302F2B]">
+                              {color.lotWeightGsm || 'Not listed'}
+                            </span>
+                          </p>
+                          <p>
+                            <span className="block text-[9px] text-[#88857D]">Lot width</span>
+                            <span className="font-mono font-medium text-[#302F2B]">
+                              {color.lotWidth || 'Not listed'}
+                            </span>
+                          </p>
+                        </div>
+                        {!interactive && buyerFacingColorNote && (
+                          <p className="border-t border-dashed border-[#E5E3DE] pt-2 text-[9px] leading-snug text-[#6A6253]">
+                            Shade confirmation: {buyerFacingColorNote}
+                          </p>
+                        )}
+                        {interactive && color.sourceNote && (
+                          <p className="border-t border-dashed border-[#E5E3DE] pt-2 text-[9px] leading-snug text-[#6A6253]">
+                            Source note: {color.sourceNote}
+                          </p>
+                        )}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+          {visiblePrograms.length === 0 && (
+            <p className="border border-dashed border-[#D8D6D0] bg-white px-4 py-8 text-center text-sm text-[#77756F]">
+              No fabric colors match that search.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={embeddedInFlipbook ? '' : 'mx-auto max-w-[1360px] px-6 py-10 lg:px-10 lg:py-14'}>
@@ -237,17 +608,21 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     Colorways ({prog.colorCount})
                   </span>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
-                    {prog.linkedSkus.map((sku, idx) => (
-                      <button
-                        key={sku}
-                        type="button"
-                        disabled={isPreviewLayer || !interactive}
-                        onClick={() => onSelectStyleIndex(prog.linkedIndices[idx])}
-                        className="font-mono text-[#0A0A0A] underline underline-offset-2 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] cursor-pointer"
-                      >
-                        {sku}
-                      </button>
-                    ))}
+                    {prog.linkedIndices.map((styleIndex, idx) => {
+                      const style = garments.find((item) => item.index === styleIndex);
+                      const sku = prog.linkedSkus[idx];
+                      return (
+                        <button
+                          key={sku}
+                          type="button"
+                          disabled={isPreviewLayer}
+                          onClick={() => onSelectStyleIndex(styleIndex)}
+                          className="text-left text-[9px] leading-snug text-[#0A0A0A] underline underline-offset-2 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] disabled:cursor-default"
+                        >
+                          {style ? `${style.title} (${sku})` : sku}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <ColorSwatchList colorways={prog.colorways} compact />
@@ -313,18 +688,22 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                 {/* Linked Style Codes */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[11px]">
                   <span className="text-[#737373]">Styles ({prog.linkedSkus.length}):</span>
-                  {prog.linkedSkus.map((sku, idx) => (
-                    <button
-                      key={sku}
-                      type="button"
-                      disabled={isPreviewLayer || !interactive}
-                      onClick={() => onSelectStyleIndex(prog.linkedIndices[idx])}
-                      className="inline-flex items-center gap-0.5 font-mono text-[#0A0A0A] underline underline-offset-4 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] cursor-pointer"
-                    >
-                      <span>{sku}</span>
-                      <ArrowUpRight className="h-2.5 w-2.5" />
-                    </button>
-                  ))}
+                  {prog.linkedIndices.map((styleIndex, idx) => {
+                    const style = garments.find((item) => item.index === styleIndex);
+                    const sku = prog.linkedSkus[idx];
+                    return (
+                      <button
+                        key={sku}
+                        type="button"
+                        disabled={isPreviewLayer}
+                        onClick={() => onSelectStyleIndex(styleIndex)}
+                        className="inline-flex items-center gap-0.5 text-left text-[10px] text-[#0A0A0A] underline underline-offset-4 decoration-[#D4D4D4] hover:decoration-[#0A0A0A] disabled:cursor-default"
+                      >
+                        <span>{style ? `${style.title} (${sku})` : sku}</span>
+                        <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

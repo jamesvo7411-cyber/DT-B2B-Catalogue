@@ -22,22 +22,22 @@ export const MacroLightboxModal: React.FC<{
 
   return (
     <div
-      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-0 sm:bg-black/80 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={`Macro inspection: ${item.titleLabel}`}
       onClick={onClose}
     >
       <div
-        className="relative flex max-h-[90vh] w-full max-w-4xl flex-col bg-white border border-[#262626]"
+        className="relative flex h-full max-h-[100dvh] w-full max-w-none flex-col border border-[#262626] bg-white sm:h-auto sm:max-h-[90vh] sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#E5E5E5] px-6 py-4">
+        <div className="flex items-center justify-between gap-2 border-b border-[#E5E5E5] px-3 py-3 sm:px-6 sm:py-4">
           <div className="min-w-0 pr-4">
-            <p className="font-mono text-[11px] text-[#737373]">
+            <p className="truncate font-mono text-[9px] text-[#737373] sm:text-[11px]">
               {item.garmentTitle} · {STAGE_LABELS[item.slot.stage]}
             </p>
-            <h3 className="font-serif italic text-xl text-[#0A0A0A] truncate">
+            <h3 className="truncate font-serif text-base italic text-[#0A0A0A] sm:text-xl">
               {item.slot.caption}
             </h3>
           </div>
@@ -45,7 +45,7 @@ export const MacroLightboxModal: React.FC<{
             <button
               type="button"
               onClick={() => setZoomed((z) => !z)}
-              className="inline-flex items-center gap-1.5 border border-[#E5E5E5] px-3 py-1.5 text-xs font-medium text-[#0A0A0A] hover:border-[#0A0A0A] cursor-pointer"
+              className="inline-flex shrink-0 items-center gap-1 border border-[#E5E5E5] px-2 py-1.5 text-[10px] font-medium text-[#0A0A0A] hover:border-[#0A0A0A] sm:gap-1.5 sm:px-3 sm:text-xs"
             >
               {zoomed ? <ZoomOut className="h-3.5 w-3.5" /> : <ZoomIn className="h-3.5 w-3.5" />}
               <span>{zoomed ? '100% Fit' : '200% Macro'}</span>
@@ -54,30 +54,35 @@ export const MacroLightboxModal: React.FC<{
               type="button"
               onClick={onClose}
               aria-label="Close inspection view"
-              className="p-2 text-[#525252] hover:text-[#0A0A0A] cursor-pointer"
+              className="shrink-0 p-2 text-[#525252] hover:text-[#0A0A0A]"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto bg-[#FAFAFA] p-6">
-          <div className="flex min-h-[420px] items-center justify-center">
+        <div
+          className="min-h-0 flex-1 overflow-auto bg-[#FAFAFA] p-2 sm:p-6"
+          style={{ touchAction: 'pan-x pan-y pinch-zoom' }}
+        >
+          <div className="flex min-h-full items-center justify-center">
             <img
               src={item.slot.url}
               alt={item.slot.caption}
               referrerPolicy="no-referrer"
               className={`transition-transform duration-300 ease-out ${
-                zoomed ? 'scale-175 cursor-zoom-out' : 'max-h-[65vh] w-auto object-contain cursor-zoom-in'
+                zoomed
+                  ? 'max-h-none w-auto max-w-none scale-[1.75] cursor-zoom-out'
+                  : 'max-h-[calc(100dvh-150px)] max-w-full object-contain cursor-zoom-in sm:max-h-[65vh]'
               }`}
               onClick={() => setZoomed((z) => !z)}
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-[#E5E5E5] px-6 py-3 text-xs text-[#737373]">
-          <span>{item.slot.note}</span>
-          <span className="font-mono tabular-nums">{item.slot.aspectLabel}</span>
+        <div className="flex items-center justify-between gap-3 border-t border-[#E5E5E5] px-3 py-2 text-[10px] text-[#737373] sm:px-6 sm:py-3 sm:text-xs">
+          <span className="min-w-0 truncate">{item.slot.note}</span>
+          <span className="shrink-0 font-mono tabular-nums">{item.slot.aspectLabel}</span>
         </div>
       </div>
     </div>
