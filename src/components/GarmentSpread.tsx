@@ -96,8 +96,8 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
   const productDetailSlots: { key: MediaSlotKey; label: string; hint: string }[] = [
     { key: 'pocket', label: 'Detail 01', hint: 'Pocket & trim closeup' },
     { key: 'seam', label: 'Detail 02', hint: 'Collar & seam closeup' },
-    { key: 'custom', label: 'Detail 03', hint: 'Fit & construction detail' },
     { key: 'swatch', label: 'Fabric Image', hint: `Swatch ${garment.specs.fabricRollRef}` },
+    { key: 'custom', label: 'Detail 03', hint: 'Fit & construction detail' },
   ];
   const hasHeroAsset =
     Boolean(garment.media.hero.url || garment.media.hero.fallbackUrl) &&

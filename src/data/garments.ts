@@ -8,6 +8,7 @@ import type {
 } from '../types/catalogue';
 import { getFactoryColorLabels, getFactoryFabricColors } from './factoryFabricColors';
 import { getExpectedImageFile, PRODUCT_ASSETS } from './productAssets';
+import { PRODUCT_STUDIO_ASSETS } from './productStudioAssets';
 
 export const BRAND_LOGO_PATH = '/assets/aistudio/image_d4ceae1f.png';
 
@@ -1181,39 +1182,61 @@ export function createInitialGarments(): GarmentItem[] {
     const craft = getCraftDetails(row);
     const slug = row.sku.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const assetMapping = PRODUCT_ASSETS[row.sku];
+    const studioMapping = PRODUCT_STUDIO_ASSETS[row.sku];
     const expectedHeroFile = assetMapping
       ? getExpectedImageFile(assetMapping.sourceImage)
       : undefined;
     const media = createBlankMedia(num, row);
+    const heroFile = studioMapping?.heroFile ?? assetMapping?.heroFile;
 
-    if (assetMapping?.heroFile) {
+    if (heroFile) {
       media.hero = {
         ...media.hero,
-        url: `/catalogue-media/${encodeURIComponent(assetMapping.heroFile)}`,
+        url: `/catalogue-media/${encodeURIComponent(heroFile)}`,
         fallbackUrl:
           row.sku === 'WTSHIRT-MD2'
             ? '/assets/aistudio/WTSHIRT-MD2_Hero_acd4d06e.jpg'
             : undefined,
         stage: 'studio-final',
-        caption: `${media.hero.caption} · ${assetMapping.heroFile}`,
-        note: `Local image file: ${assetMapping.heroFile}`,
+        caption: `${media.hero.caption} · ${heroFile}`,
+        note: `Local image file: ${heroFile}`,
       };
     } else if (expectedHeroFile) {
       media.hero.note = `Expected local image file: ${expectedHeroFile} (not found in the image folder; drop it here when available).`;
     }
 
-    const detailSlots: MediaSlotKey[] = ['pocket', 'seam', 'swatch'];
-    assetMapping?.followingFiles?.forEach((fileName, fileIndex) => {
-      const slotKey = detailSlots[fileIndex];
-      if (!slotKey) return;
+    const detailFiles = studioMapping
+      ? studioMapping.detailFiles
+      : Object.fromEntries(
+          (assetMapping?.followingFiles ?? [])
+            .slice(0, 3)
+            .map((fileName, fileIndex) => [
+              (['pocket', 'seam', 'custom'] as const)[fileIndex],
+              fileName,
+            ])
+        );
+    (['pocket', 'seam', 'custom'] as const).forEach((slotKey) => {
+      const fileName = detailFiles[slotKey];
+      if (!fileName) return;
       media[slotKey] = {
         ...media[slotKey],
         url: `/catalogue-media/${encodeURIComponent(fileName)}`,
         stage: 'studio-final',
-        caption: `${media[slotKey].caption} · Best guess · ${fileName}`,
-        note: `Best-guess detail from the next shoot image in sequence: ${fileName}. Please verify; drop another image to replace.`,
+        caption: `${media[slotKey].caption} · ${fileName}`,
+        note: `Studio product detail image: ${fileName}`,
       };
     });
+
+    if (studioMapping?.fabricFile) {
+      media.swatch = {
+        ...media.swatch,
+        url: `/catalogue-media/${encodeURIComponent(studioMapping.fabricFile)}`,
+        stage: 'studio-final',
+        caption: `${media.swatch.caption} · ${studioMapping.fabricFile}`,
+        note: `Verified product fabric image: ${studioMapping.fabricFile}`,
+        isFactoryFabricImage: true,
+      };
+    }
 
     return {
       id: `garment-${String(num).padStart(2, '0')}`,

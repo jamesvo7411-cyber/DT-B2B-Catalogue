@@ -105,9 +105,15 @@ function localCatalogueImagesPlugin(imageDirectory: string) {
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const bundledImageDirectory = path.resolve(
+    process.cwd(),
+    'public/catalogue-media'
+  );
   const imageDirectory = env.DT_CATALOGUE_IMAGE_DIR
     ? path.resolve(env.DT_CATALOGUE_IMAGE_DIR)
-    : '';
+    : fs.existsSync(bundledImageDirectory)
+      ? bundledImageDirectory
+      : '';
 
   return {
     plugins: [
