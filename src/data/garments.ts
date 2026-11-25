@@ -9,11 +9,14 @@ import type {
 import { getFactoryColorLabels, getFactoryFabricColors } from './factoryFabricColors';
 import { getExpectedImageFile, PRODUCT_ASSETS } from './productAssets';
 import { PRODUCT_STUDIO_ASSETS } from './productStudioAssets';
+import { publicAssetUrl } from '../utils/publicAssetUrl';
 
-export const BRAND_LOGO_PATH = '/assets/aistudio/image_d4ceae1f.png';
+export const BRAND_LOGO_PATH = publicAssetUrl(
+  '/assets/aistudio/image_d4ceae1f.png'
+);
 
 export const COVER_ATELIER_ILLUSTRATION =
-  '/src/assets/images/cover_atelier_plate_1795580913741.jpg';
+  publicAssetUrl('/src/assets/images/cover_atelier_plate_1795580913741.jpg');
 
 export const DEFAULT_CATALOGUE_META: CatalogueMetadata = {
   season: 'Dream Tomorrow (DT) — B2B Landscape Catalogue',
@@ -76,7 +79,9 @@ export const CM_OEM_ODM_PILLARS = [
     code: 'CM',
     title: 'Cut & Make',
     subtitle: 'Buyer-Supplied Fabrics',
-    illustration: '/src/assets/images/pillar_cm_illustration_1795580914784.jpg',
+    illustration: publicAssetUrl(
+      '/src/assets/images/pillar_cm_illustration_1795580914784.jpg'
+    ),
     cropScaleClass: 'scale-[1.13]',
     buyerSupplies: 'Fabric rolls, trims & graded tech pack',
     dtDelivers: 'Precision cutting, assembly & inline SPI QC',
@@ -88,7 +93,9 @@ export const CM_OEM_ODM_PILLARS = [
     code: 'OEM',
     title: 'Original Equipment',
     subtitle: 'Full-Package Sourcing',
-    illustration: '/src/assets/images/pillar_oem_illustration_1795580915075.jpg',
+    illustration: publicAssetUrl(
+      '/src/assets/images/pillar_oem_illustration_1795580915075.jpg'
+    ),
     cropScaleClass: 'scale-[1.03]',
     buyerSupplies: 'Target spec sheet & Pantone TCX palette',
     dtDelivers: '15-mill program sourcing, lab dips & bulk',
@@ -100,7 +107,9 @@ export const CM_OEM_ODM_PILLARS = [
     code: 'ODM',
     title: 'Original Design',
     subtitle: 'Turnkey Branded Blocks',
-    illustration: '/src/assets/images/pillar_odm_illustration_1795580916550.jpg',
+    illustration: publicAssetUrl(
+      '/src/assets/images/pillar_odm_illustration_1795580916550.jpg'
+    ),
     cropScaleClass: 'scale-[1.03]',
     buyerSupplies: 'Brand labels, colorway choice & volume',
     dtDelivers: '43 engineered Men’s & Women’s styles',
@@ -1691,10 +1700,10 @@ export function createInitialGarments(): GarmentItem[] {
     if (heroFile) {
       media.hero = {
         ...media.hero,
-        url: `/catalogue-media/${encodeURIComponent(heroFile)}`,
+        url: publicAssetUrl(`/catalogue-media/${encodeURIComponent(heroFile)}`),
         fallbackUrl:
           row.sku === 'WTSHIRT-MD2'
-            ? '/assets/aistudio/WTSHIRT-MD2_Hero_acd4d06e.jpg'
+            ? publicAssetUrl('/assets/aistudio/WTSHIRT-MD2_Hero_acd4d06e.jpg')
             : undefined,
         stage: 'studio-final',
         caption: `${media.hero.caption} · ${heroFile}`,
@@ -1719,7 +1728,7 @@ export function createInitialGarments(): GarmentItem[] {
       if (!fileName) return;
       media[slotKey] = {
         ...media[slotKey],
-        url: `/catalogue-media/${encodeURIComponent(fileName)}`,
+        url: publicAssetUrl(`/catalogue-media/${encodeURIComponent(fileName)}`),
         stage: 'studio-final',
         caption: `${media[slotKey].caption} · ${fileName}`,
         note: `Studio product detail image: ${fileName}`,
@@ -1729,7 +1738,9 @@ export function createInitialGarments(): GarmentItem[] {
     if (studioMapping?.fabricFile) {
       media.swatch = {
         ...media.swatch,
-        url: `/catalogue-media/${encodeURIComponent(studioMapping.fabricFile)}`,
+        url: publicAssetUrl(
+          `/catalogue-media/${encodeURIComponent(studioMapping.fabricFile)}`
+        ),
         stage: 'studio-final',
         caption: `${media.swatch.caption} · ${studioMapping.fabricFile}`,
         note: `Verified product fabric image: ${studioMapping.fabricFile}`,

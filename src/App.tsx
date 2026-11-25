@@ -38,6 +38,7 @@ import {
 import { buildCatalogueNavigationMap } from './utils/catalogueOrder';
 import { exportGarmentsToCsv, importGarmentsFromCsv } from './utils/dataTransfer';
 import { countCustomFramingEdits, applyFramingBundle, type CatalogueFramingBundle } from './utils/cropPresetIo';
+import { publicAssetUrl } from './utils/publicAssetUrl';
 import { FlipbookStage } from './components/FlipbookStage';
 import { FabricSwatchBoard } from './components/FabricSwatchBoard';
 import { CatalogueIndex } from './components/CatalogueIndex';
@@ -152,7 +153,8 @@ function resolveSavedMediaSlot(
 ): MediaSlot {
   if (!savedSlot?.url) return defaultSlot;
   const isBundledCatalogueAsset =
-    savedSlot.url.startsWith('/catalogue-media/') && !savedSlot.isSessionDrop;
+    savedSlot.url.startsWith(publicAssetUrl('/catalogue-media/')) &&
+    !savedSlot.isSessionDrop;
   return isBundledCatalogueAsset
     ? {
         ...defaultSlot,

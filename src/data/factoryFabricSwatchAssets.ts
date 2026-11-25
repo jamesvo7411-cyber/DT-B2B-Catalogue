@@ -1,4 +1,5 @@
 import type { FactoryFabricColor } from '../types/catalogue';
+import { publicAssetUrl } from '../utils/publicAssetUrl';
 
 type FactoryFabricSwatchAsset = Pick<
   FactoryFabricColor,
@@ -7,7 +8,7 @@ type FactoryFabricSwatchAsset = Pick<
   swatchImageUrl: string;
 };
 
-export const FACTORY_FABRIC_SWATCH_ASSETS: FactoryFabricSwatchAsset[] = [
+const factoryFabricSwatchAssetData: FactoryFabricSwatchAsset[] = [
   { fabricCode: 'A82', colorName: 'Stone Grey', swatchImageUrl: '/assets/fabric-swatches/Part-01_A82_330GSM/swatch-001.jpg' },
   { fabricCode: 'A82', colorName: 'Smoke Grey', swatchImageUrl: '/assets/fabric-swatches/Part-01_A82_330GSM/swatch-002.jpg' },
   { fabricCode: 'A82', colorName: 'Black', swatchImageUrl: '/assets/fabric-swatches/Part-01_A82_330GSM/swatch-003.jpg' },
@@ -62,3 +63,10 @@ export const FACTORY_FABRIC_SWATCH_ASSETS: FactoryFabricSwatchAsset[] = [
   { fabricCode: 'CM26 NỮ', colorName: 'Grey', swatchImageUrl: '/assets/fabric-swatches/Part-05_CM26-CM36/swatch-055.jpg' },
   { fabricCode: 'CM36', colorName: 'Blue', swatchImageUrl: '/assets/fabric-swatches/Part-05_CM26-CM36/swatch-059.jpg' },
 ];
+
+export const FACTORY_FABRIC_SWATCH_ASSETS = factoryFabricSwatchAssetData.map(
+  (asset) => ({
+    ...asset,
+    swatchImageUrl: publicAssetUrl(asset.swatchImageUrl),
+  })
+);
