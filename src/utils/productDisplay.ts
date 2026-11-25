@@ -5,6 +5,12 @@ export function displayFabricComposition(composition: string): string {
     .trim();
 }
 
+export function displayMoq(moq: string): string {
+  const trimmed = moq.trim();
+  if (!trimmed) return '—';
+  return trimmed.replace(/\s*\(Placeholder\)\s*$/i, ' · Est.');
+}
+
 export function conciseSourceNote(flags?: string[]): string {
   if (!flags?.length) return '';
 

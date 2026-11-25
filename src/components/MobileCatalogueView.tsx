@@ -1,17 +1,32 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import type { GarmentItem, ImageCrop, MediaSlotKey } from '../types/catalogue';
 import { getColorSwatchHex } from '../data/garments';
-import { conciseSourceNote, displayFabricComposition } from '../utils/productDisplay';
+import { getFactoryFabricColors } from '../data/factoryFabricColors';
+import {
+  formatSpreadPageCode,
+  getFabricFamilyName,
+  SECTION_THEME,
+  type CatalogueNavigationMap,
+  type SectionId,
+} from '../utils/catalogueOrder';
+import { conciseSourceNote, displayFabricComposition, displayMoq } from '../utils/productDisplay';
+import { RunningHeader } from './CatalogueNavigation';
 import { MediaPlate } from './MediaPlate';
+import { SizeRunChips } from './SizeRunChips';
 
 interface MobileCatalogueViewProps {
   garments: GarmentItem[];
+  navMap?: CatalogueNavigationMap;
+  activeSection?: SectionId;
+  demoMode?: boolean;
+  onToggleDemoMode?: () => void;
   bookPage: number;
   totalSpreads: number;
   productOffset: number;
   isWorkbench: boolean;
   editMode: boolean;
+  customFramingCount?: number;
   getSpreadLabel: (page: number) => string;
   renderStaticPage: (page: number) => React.ReactNode;
   onChangeBookPage: (page: number) => void;
@@ -21,6 +36,8 @@ interface MobileCatalogueViewProps {
   onInspectMedia: (slot: GarmentItem['media'][MediaSlotKey], titleLabel: string, garmentTitle: string) => void;
   onOpenEditor: (garmentIndex: number, focusSlot?: MediaSlotKey) => void;
   onSelectFabricCode: (fabricCode: string) => void;
+  onOpenFabricColorPicker?: (garment: GarmentItem) => void;
+  onOpenCropPresetModal?: () => void;
 }
 
 const SLOT_LABELS: Record<MediaSlotKey, string> = {
@@ -33,11 +50,16 @@ const SLOT_LABELS: Record<MediaSlotKey, string> = {
 
 export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
   garments,
+  navMap,
+  activeSection = 'introduction',
+  demoMode = false,
+  onToggleDemoMode,
   bookPage,
   totalSpreads,
   productOffset,
   isWorkbench,
   editMode,
+  customFramingCount = 0,
   getSpreadLabel,
   renderStaticPage,
   onChangeBookPage,
@@ -47,6 +69,8 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
   onInspectMedia,
   onOpenEditor,
   onSelectFabricCode,
+  onOpenFabricColorPicker,
+  onOpenCropPresetModal,
 }) => {
   const garment =
     bookPage >= productOffset && bookPage < productOffset + garments.length
@@ -56,6 +80,25 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
   const [activePhoto, setActivePhoto] = useState(0);
   const [activeColorway, setActiveColorway] = useState(garment?.colorways[0] ?? '');
   const isMobileWorkbench = isWorkbench;
+  const spreadPadded = String(bookPage + 1).padStart(2, '0');
+  const fabricSpreadIdx = garment ? navMap?.fabricPageByCode.get(garment.specs.fabricRollRef) : undefined;
+  const fabricPageLabel =
+    fabricSpreadIdx !== undefined ? formatSpreadPageCode(fabricSpreadIdx) : undefined;
+  const factoryColorLookup = useMemo(() => {
+    const map = new Map<string, { reference: string; shadeCode: string }>();
+    if (!garment) return map;
+    getFactoryFabricColors(garment.specs.fabricRollRef).forEach((entry) => {
+      const refInfo = {
+        reference: entry.reference.trim(),
+        shadeCode: entry.shadeCode.trim(),
+      };
+      map.set(entry.colorName.trim().toLowerCase(), refInfo);
+      if (entry.factoryColorName.trim()) {
+        map.set(entry.factoryColorName.trim().toLowerCase(), refInfo);
+      }
+    });
+    return map;
+  }, [garment]);
 
   const photos = useMemo(() => {
     if (!garment) return [];
@@ -118,75 +161,108 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
       aria-label="Mobile catalogue"
       className="min-h-[calc(100vh-4rem)] w-full overflow-x-clip bg-[#F4F3EF] pb-28"
     >
-      <header className="sticky top-0 z-40 border-b border-[#E8E6E0] bg-white/95 px-3 py-2.5 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-[#E8E6E0] bg-white/95 px-3 py-2 backdrop-blur">
         <div className="mx-auto max-w-xl">
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
             <label className="sr-only" htmlFor="mobile-spread-select">Choose catalogue style</label>
             <select
               id="mobile-spread-select"
               value={bookPage}
               onChange={(event) => setSpread(Number(event.target.value))}
-              className="min-w-0 flex-1 appearance-none border border-[#DAD8D2] bg-white px-2.5 py-2 text-[11px] font-semibold text-[#111111] focus:border-[#111111] focus:outline-none"
+              className="min-w-0 flex-1 appearance-none border border-[#DAD8D2] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#111111] focus:border-[#111111] focus:outline-none"
             >
               {Array.from({ length: totalSpreads }, (_, index) => (
                 <option key={index} value={index}>{getSpreadLabel(index)}</option>
               ))}
             </select>
+            {onToggleDemoMode && (
+              <button
+                type="button"
+                onClick={onToggleDemoMode}
+                aria-pressed={demoMode}
+                className={`inline-flex shrink-0 items-center gap-1 border px-2 py-1.5 text-[10px] font-medium ${
+                  demoMode
+                    ? 'border-[#111111] bg-[#111111] text-white'
+                    : 'border-[#DAD8D2] bg-white text-[#4A4843]'
+                }`}
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>Demo</span>
+              </button>
+            )}
             <span className="shrink-0 font-mono text-[10px] font-semibold tabular-nums text-[#111111]">
               {pageIndicator}
             </span>
           </div>
-          <nav aria-label="Mobile catalogue shortcuts" className="mt-2 grid grid-cols-3 gap-1">
-            {([
-              { label: 'TOC', page: 1 },
-              { label: 'Swatches', page: 2 },
-              { label: 'Specs', page: totalSpreads - 1 },
-            ]).map(({ label, page }) => {
-              const isSelected =
-                bookPage === page ||
-                (label === 'Swatches' && bookPage >= 2 && bookPage < productOffset);
+          <nav aria-label="Mobile section shortcuts" className="mt-1.5 grid grid-cols-5 gap-1">
+            {(navMap
+              ? navMap.sections
+              : [
+                  { ...SECTION_THEME.introduction, id: 'introduction' as SectionId, startSpreadPage: 0, endSpreadPage: 1 },
+                  { ...SECTION_THEME.fabrics, id: 'fabrics' as SectionId, startSpreadPage: 2, endSpreadPage: Math.max(2, productOffset - 1) },
+                  { ...SECTION_THEME.men, id: 'men' as SectionId, startSpreadPage: productOffset, endSpreadPage: totalSpreads - 2 },
+                  { ...SECTION_THEME.women, id: 'women' as SectionId, startSpreadPage: productOffset, endSpreadPage: totalSpreads - 2 },
+                  { ...SECTION_THEME.technical, id: 'technical' as SectionId, startSpreadPage: totalSpreads - 1, endSpreadPage: totalSpreads - 1 },
+                ]
+            ).map((sec) => {
+              const isSelected = activeSection === sec.id;
               return (
                 <button
-                  key={label}
+                  key={sec.id}
                   type="button"
-                  onClick={() => setSpread(page)}
+                  onClick={() => setSpread(sec.startSpreadPage)}
                   aria-current={isSelected ? 'page' : undefined}
-                  className={`border px-2 py-1.5 text-[10px] font-semibold transition-colors ${
+                  style={{ borderTopColor: sec.markerColor, borderTopWidth: '2px' }}
+                  className={`border-x border-b px-1 py-1 text-[9.5px] font-semibold transition-colors truncate ${
                     isSelected
                       ? 'border-[#111111] bg-[#111111] text-white'
                       : 'border-[#E8E6E0] bg-white text-[#55534E]'
                   }`}
                 >
-                  {label}
+                  {sec.shortLabel}
                 </button>
               );
             })}
           </nav>
           {isMobileWorkbench && (
-            <div className="mt-2 flex items-center justify-between border-t border-[#EFEDE8] pt-2">
+            <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-[#EFEDE8] pt-1.5">
               <span className="font-mono text-[9px] font-semibold uppercase tracking-wide text-[#55534E]">
                 Workbench · image tools
               </span>
-              <button
-                type="button"
-                onClick={onToggleEditMode}
-                aria-pressed={editMode}
-                className="text-[10px] font-semibold text-[#111111] underline underline-offset-2"
-              >
-                Replace mode: {editMode ? 'On' : 'Off'}
-              </button>
+              <div className="flex items-center gap-3">
+                {onOpenCropPresetModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenCropPresetModal}
+                    className="text-[10px] font-semibold text-[#111111] underline underline-offset-2"
+                  >
+                    {customFramingCount > 0 ? `Crops I/O (${customFramingCount})` : 'Crops I/O'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onToggleEditMode}
+                  aria-pressed={editMode}
+                  className="text-[10px] font-semibold text-[#111111] underline underline-offset-2"
+                >
+                  Replace: {editMode ? 'On' : 'Off'}
+                </button>
+              </div>
             </div>
           )}
         </div>
       </header>
 
       {garment ? (
-        <div className="mx-auto max-w-xl px-4 pb-8 pt-5">
-          <div className="mb-4">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#55534E]">
-              {garment.gender} · {garment.category}
-            </p>
-            <div className="mt-1 flex items-start justify-between gap-3">
+        <div className="mx-auto max-w-xl px-4 pb-8 pt-4">
+          <div className="mb-4 space-y-2.5">
+            <RunningHeader
+              sectionId={garment.gender === 'Women' ? 'women' : 'men'}
+              categoryLabel={garment.category}
+              pageLabel={`P.${spreadPadded}`}
+              rightContext={garment.sku}
+            />
+            <div className="flex items-start justify-between gap-3">
               <h1 className="font-sans text-2xl font-extrabold leading-tight tracking-tight text-[#111111]">
                 {garment.title}
               </h1>
@@ -213,15 +289,22 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                     titleLabel={label}
                     editMode={editMode && isMobileWorkbench && key !== 'swatch'}
                     editable={isMobileWorkbench && key !== 'swatch'}
+                    allowReframe={isMobileWorkbench}
                     interactive
                     compact
-                    showBlankGuides={isMobileWorkbench && key !== 'swatch'}
+                    showBlankGuides={isMobileWorkbench}
                     displayScale={key === 'swatch' ? 1.65 : 1}
+                    customActionLabel={key === 'swatch' && isMobileWorkbench ? 'Switch color' : undefined}
+                    onCustomClick={
+                      key === 'swatch' && isMobileWorkbench && onOpenFabricColorPicker
+                        ? () => onOpenFabricColorPicker(garment)
+                        : undefined
+                    }
                     onReplaceFile={(slotKey, dataUrl) =>
                       key !== 'swatch' && onReplaceFile(garment.id, slotKey, dataUrl)
                     }
                     onUpdateCrop={(slotKey, crop) =>
-                      key !== 'swatch' && onUpdateCrop(garment.id, slotKey, crop)
+                      isMobileWorkbench && onUpdateCrop(garment.id, slotKey, crop)
                     }
                     onInspect={(mediaSlot, titleLabel) =>
                       onInspectMedia(mediaSlot, titleLabel, garment.title)
@@ -284,20 +367,60 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                   </dt>
                   <dd className="mt-1 break-words text-sm font-bold leading-snug text-[#111111]">
                     {label === 'Fabric Code' ? (
-                      <button
-                        type="button"
-                        onClick={() => onSelectFabricCode(garment.specs.fabricRollRef)}
-                        className="text-left underline decoration-[#B8B5AD] underline-offset-2"
-                      >
-                        {value || 'Not provided'}
-                      </button>
+                      <div className="space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectFabricCode(garment.specs.fabricRollRef)}
+                          className="text-left underline decoration-[#B8B5AD] underline-offset-2"
+                        >
+                          {value || 'Not provided'}
+                        </button>
+                        <p className="font-sans text-[10px] font-normal text-[#66645F]">
+                          {getFabricFamilyName(garment.specs.fabricRollRef)}
+                        </p>
+                        {fabricPageLabel && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectFabricCode(garment.specs.fabricRollRef)}
+                            className="block font-mono text-[9.5px] font-semibold text-[#33322F] underline decoration-[#C8C5BE] underline-offset-2"
+                          >
+                            See Fabric Library {fabricPageLabel} →
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       value || 'Not provided'
                     )}
                   </dd>
                 </div>
               ))}
+              <div className="col-span-2 min-w-0 border border-[#E6E4DE] bg-white p-3">
+                <dt className="text-[9px] font-semibold uppercase tracking-wide text-[#62605A]">
+                  Size Run · MOQ
+                </dt>
+                <dd className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+                  <SizeRunChips sizeRun={garment.specs.sizeRun} size="md" />
+                  <span className="font-mono text-[10px] font-semibold text-[#55534E] tabular-nums">
+                    {displayMoq(garment.specs.moq)}
+                  </span>
+                </dd>
+              </div>
             </dl>
+            <div className="mt-3 border border-[#E6E4DE] bg-white p-3.5">
+              <p className="font-serif text-base italic leading-snug text-[#1F1E1B]">
+                {garment.summary}
+              </p>
+              <ul className="mt-2.5 space-y-1.5 text-xs leading-relaxed text-[#404040]">
+                {garment.descriptionBullets.slice(0, 3).map((bullet, idx) => (
+                  <li key={idx} className="flex items-baseline gap-2">
+                    <span className="font-mono text-[9px] text-[var(--metallic-strong)] tabular-nums">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             {conciseSourceNote(garment.dataFlags) && (
               <p className="mt-2 border-t border-[#DAD8D2] pt-2 text-xs leading-relaxed text-[#55534E]">
                 {conciseSourceNote(garment.dataFlags)}
@@ -316,13 +439,15 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
               {garment.colorways.map((colorway) => {
                 const colorHex = getColorSwatchHex(colorway);
                 const isSelected = activeColorway === colorway;
+                const refData = factoryColorLookup.get(colorway.trim().toLowerCase());
+                const refLine = refData?.reference || refData?.shadeCode;
                 return (
                   <button
                     key={colorway}
                     type="button"
                     aria-pressed={isSelected}
                     onClick={() => setActiveColorway(colorway)}
-                    className={`inline-flex items-center gap-2 border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                    className={`inline-flex items-center gap-2 border px-2.5 py-2 text-left text-[11px] font-semibold transition-colors ${
                       isSelected
                         ? 'border-[#111111] bg-[#111111] text-white'
                         : 'border-[#DAD8D2] bg-white text-[#33312C]'
@@ -340,7 +465,18 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
                             }
                       }
                     />
-                    {colorway}
+                    <span className="leading-tight">
+                      <span className="block">{colorway}</span>
+                      {refLine && (
+                        <span
+                          className={`block font-mono text-[8.5px] font-normal ${
+                            isSelected ? 'text-white/75' : 'text-[#77756F]'
+                          }`}
+                        >
+                          {refLine}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}

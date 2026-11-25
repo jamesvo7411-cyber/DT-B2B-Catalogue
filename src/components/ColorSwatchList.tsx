@@ -1,8 +1,10 @@
 import React from 'react';
 import { getColorSwatchHex } from '../data/garments';
+import { getFactoryFabricColors } from '../data/factoryFabricColors';
 
 interface ColorSwatchListProps {
   colorways: string[];
+  fabricCode?: string;
   compact?: boolean;
   editorial?: boolean;
 }
@@ -23,9 +25,12 @@ function splitColorCode(raw: string): { name: string; code: string | null; isPen
 
 export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
   colorways,
+  fabricCode,
   compact = false,
   editorial = false,
 }) => {
+  const factoryColors = fabricCode ? getFactoryFabricColors(fabricCode) : [];
+
   return (
     <div
       className={`grid gap-2 ${
@@ -39,6 +44,22 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
       {colorways.map((color, idx) => {
         const hex = getColorSwatchHex(color);
         const { name, code, isPending } = splitColorCode(color);
+        const matchedFactory = factoryColors.find(
+          (fc) =>
+            fc.colorName.toLowerCase() === name.toLowerCase() ||
+            color.toLowerCase().includes(fc.colorName.toLowerCase())
+        );
+        const subline = [
+          code || matchedFactory?.reference || null,
+          matchedFactory?.shadeCode &&
+          matchedFactory.shadeCode.toLowerCase() !== name.toLowerCase() &&
+          matchedFactory.shadeCode !== code
+            ? matchedFactory.shadeCode
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+
         return (
           <div
             key={`${color}-${idx}`}
@@ -73,13 +94,13 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
               >
                 {name}
               </p>
-              {code && (
+              {subline && (
                 <p
                   className={`truncate font-mono text-[#737373] ${
-                    editorial ? 'text-[9px]' : 'text-[10px]'
+                    editorial ? 'text-[8.5px]' : 'text-[9.5px]'
                   }`}
                 >
-                  {code}
+                  {subline}
                 </p>
               )}
             </div>
@@ -89,3 +110,4 @@ export const ColorSwatchList: React.FC<ColorSwatchListProps> = ({
     </div>
   );
 };
+

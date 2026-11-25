@@ -17,6 +17,8 @@ export interface ImageCrop {
   scale: number;
   x: number;
   y: number;
+  posX?: number;
+  posY?: number;
 }
 
 export type CatalogueSection = 'flipbook' | 'fabrics' | 'index' | 'print';
@@ -87,6 +89,11 @@ export interface GarmentItem {
   videoTitle: string;
   specs: GarmentSpecs;
   media: Record<MediaSlotKey, MediaSlot>;
+  detailHints?: {
+    pocket: string;
+    seam: string;
+    custom: string;
+  };
 }
 
 export interface FabricSwatchProgram {

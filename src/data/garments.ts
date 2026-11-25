@@ -221,7 +221,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Dense 330 GSM structured hand-feel with controlled stretch recovery',
     colorCount: 4,
     colorways: COLORS_A82,
-    fitNote: 'Tailored straight-leg cut with substantial 330 GSM architectural drape',
+    fitNote: 'Tailored straight-leg ankle-skimming cut with structured 330 GSM architectural drape',
   },
   {
     rowNum: 2,
@@ -239,7 +239,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Mid-weight smooth suiting finish engineered for crease resistance',
     colorCount: 4,
     colorways: COLORS_A28,
-    fitNote: 'Balanced mid-weight trouser designed for crease resistance and daily mobility',
+    fitNote: 'Balanced mid-weight straight trouser engineered for crease resistance and daily mobility',
   },
   {
     rowNum: 3,
@@ -254,7 +254,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '75% Poly, 20% Rayon, 5% Spandex',
     weightGsm: '330–350 GSM',
     fabricWidth: '150 cm (1M50)',
-    stretchFeelNote: 'Heavyweight winter suiting drape with crisp vertical pleat retention',
+    stretchFeelNote: 'Heavyweight winter suiting drape with crisp vertical crease retention',
     colorCount: 4,
     colorways: COLORS_A29,
     fitNote: 'Dense autumn/winter suiting trouser engineered for crisp leg line retention',
@@ -275,7 +275,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Lightweight fluid suiting hand-feel with soft movement',
     colorCount: 2,
     colorways: COLORS_FTR76,
-    fitNote: 'Lightweight fluid suiting trouser designed for clean wide-leg drape',
+    fitNote: 'Lightweight fluid wide-leg suiting trouser pairing cleanly with the WSP0001 skirt',
   },
 
   // SHORTS
@@ -295,7 +295,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Clean matte khaki hand-feel matching the A28 trouser program',
     colorCount: 4,
     colorways: COLORS_A28,
-    fitNote: 'Above-knee chino silhouette matching the A28 trouser suiting program',
+    fitNote: 'Above-knee flat-front chino walk short matching the A28 trouser suiting program',
   },
   {
     rowNum: 5,
@@ -313,7 +313,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Breathable cotton twill with responsive 5% spandex comfort stretch',
     colorCount: 4,
     colorways: COLORS_K03,
-    fitNote: 'Breathable cotton-rich twill short with subtle 5% stretch for active wear',
+    fitNote: 'Clean straight-leg cotton twill short with responsive 5% stretch and matte snap waist',
   },
   {
     rowNum: 24,
@@ -328,10 +328,10 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
-    stretchFeelNote: 'Substantial 330 GSM woven structure holding clean front pleats',
+    stretchFeelNote: 'Substantial 330 GSM woven structure holding clean front lines',
     colorCount: 4,
     colorways: COLORS_A82,
-    fitNote: 'Clean front-pleat tailored short crafted from structured 330 GSM A82 cloth',
+    fitNote: 'High-rise tailored short crafted from structured 330 GSM A82 suiting cloth',
   },
   {
     rowNum: 25,
@@ -346,10 +346,10 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
-    stretchFeelNote: 'Firm architectural drape supporting clean turn-up cuffs',
+    stretchFeelNote: 'Firm architectural drape supporting front darts and notched cuff hems',
     colorCount: 4,
     colorways: COLORS_A82,
-    fitNote: 'Relaxed A-line tailored short with crisp turn-up hem stability',
+    fitNote: 'High-rise A-line tailored short with twin front waist darts and side-notched cuff hems',
   },
   {
     rowNum: 26,
@@ -364,10 +364,10 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
-    stretchFeelNote: 'Smooth heavyweight finish engineered for culotte-proportion movement',
+    stretchFeelNote: 'Smooth heavyweight finish pairing clean front drape with elastic rear comfort',
     colorCount: 4,
     colorways: COLORS_A82,
-    fitNote: 'Longer culotte-proportioned short balancing structure and ease of movement',
+    fitNote: 'Clean flat-front A-line short engineered with a gathered elastic rear waistband',
   },
 
   // POLOS
@@ -387,7 +387,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Cool silk-smooth modal touch with 6% spandex 4-way recovery',
     colorCount: 8,
     colorways: COLORS_MODAL_NAM,
-    fitNote: 'Classic concealed-placket cotton-modal polo with cool, silk-smooth surface',
+    fitNote: 'Tailored 3-button box-placket polo in cool, silk-smooth cotton-modal jersey',
   },
   {
     rowNum: 7,
@@ -405,7 +405,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Cool silk-smooth modal touch with 6% spandex 4-way recovery',
     colorCount: 8,
     colorways: COLORS_MODAL_NAM,
-    fitNote: 'Minimalist short-sleeve polo featuring crisp flat-knit collar geometry',
+    fitNote: '2-button box-placket cotton-modal polo distinguished by a faux chest welt detail',
   },
   {
     rowNum: 8,
@@ -441,7 +441,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Cool silk-smooth modal touch with 6% spandex 4-way recovery',
     colorCount: 8,
     colorways: COLORS_MODAL_NAM,
-    fitNote: 'Modern relaxed-block polo highlighting fluid drape and 6% spandex recovery',
+    fitNote: 'Modern concealed-zip polo highlighting fluid drape and 6% spandex recovery',
   },
   {
     rowNum: 10,
@@ -477,7 +477,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Airy honeycomb micro-piqué texture with full 4-way stretch mobility',
     colorCount: 8,
     colorways: COLORS_PIQUE_NAM,
-    fitNote: 'Structured piqué polo with reinforced chest pocket and crisp collar stand',
+    fitNote: 'Structured 3-button micro-piqué polo with crisp ribbed collar and cuffs',
   },
   {
     rowNum: 12,
@@ -513,7 +513,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Airy honeycomb micro-piqué texture with full 4-way stretch mobility',
     colorCount: 8,
     colorways: COLORS_PIQUE_NAM,
-    fitNote: 'Clean open-placket piqué polo showcasing dimensional honeycomb texture',
+    fitNote: 'Minimalist concealed-zip piqué polo showcasing dimensional honeycomb texture',
   },
   {
     rowNum: 14,
@@ -531,7 +531,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Natural dry cotton hand-feel with organic irregular slub yarn texture',
     colorCount: 7,
     colorways: COLORS_SLUB20,
-    fitNote: 'Textured 100% cotton slub jersey polo offering organic visual depth',
+    fitNote: 'Textured 100% cotton slub 3-button polo offering organic visual depth',
   },
   {
     rowNum: 15,
@@ -549,7 +549,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Natural dry cotton hand-feel with organic irregular slub yarn texture',
     colorCount: 7,
     colorways: COLORS_SLUB20,
-    fitNote: 'Relaxed Slub 20 cotton polo with artisanal irregular yarn character',
+    fitNote: 'Relaxed Slub 20 cotton zip-placket polo with exposed metallic puller',
   },
   {
     rowNum: 27,
@@ -567,7 +567,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Ultra-soft modal blend with smooth fluid contour and stretch return',
     colorCount: 3,
     colorways: COLORS_MODAL_NU,
-    fitNote: 'Tailored women’s cotton-modal polo with sleek narrow placket and soft drape',
+    fitNote: 'Fitted 3/4-sleeve cotton-modal polo accented with an exposed gold-tone zip neck',
   },
   {
     rowNum: 28,
@@ -585,7 +585,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Ultra-soft modal blend with smooth fluid contour and stretch return',
     colorCount: 3,
     colorways: COLORS_MODAL_NU,
-    fitNote: 'Contour-friendly cotton-modal polo designed for all-day breathability',
+    fitNote: 'Contour-friendly cotton-modal polo with an elongated 5-button narrow placket',
   },
   {
     rowNum: 29,
@@ -603,7 +603,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Crisp quick-dry cotton-poly piqué with 5% stretch and high colorfastness',
     colorCount: 9,
     colorways: COLORS_PIQUE_YODY_NU,
-    fitNote: 'High-durability cotton-poly piqué knit offering moisture control across 9 shades',
+    fitNote: 'Slim-fit performance piqué polo with an elongated narrow button placket across 9 shades',
   },
   {
     rowNum: 30,
@@ -621,7 +621,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Crisp quick-dry cotton-poly piqué with 5% stretch and high colorfastness',
     colorCount: 9,
     colorways: COLORS_PIQUE_YODY_NU,
-    fitNote: 'Refined women’s piqué silhouette engineered for colorfastness and wash durability',
+    fitNote: 'Fitted performance piqué polo framed with crisp white contrast inner-placket piping',
   },
 
   // TEES & V-NECKS
@@ -659,7 +659,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Smooth moisture-wicking modal blend with 6% spandex body recovery',
     colorCount: 8,
     colorways: COLORS_MODAL_NAM,
-    fitNote: 'Architectural crew neck tee enhanced with reinforced chest patch pocket',
+    fitNote: 'Clean straight-fit cotton-modal Henley crew elevated with a 2-button neck placket',
   },
   {
     rowNum: 18,
@@ -677,7 +677,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Smooth moisture-wicking modal blend with 6% spandex body recovery',
     colorCount: 8,
     colorways: COLORS_MODAL_NAM,
-    fitNote: 'Slightly dropped-shoulder cotton-modal tee offering effortless drape',
+    fitNote: 'Cotton-modal 3-button Henley tee anchored by a crisp mitered chest pocket',
   },
   {
     rowNum: 19,
@@ -767,7 +767,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Ultra-soft modal blend with smooth fluid contour and stretch return',
     colorCount: 3,
     colorways: COLORS_MODAL_NU,
-    fitNote: 'Clean overlap V-neck collar paired with silky cotton-modal recovery',
+    fitNote: 'Cinched-waist overlap V-neck silhouette paired with silky cotton-modal recovery',
   },
   {
     rowNum: 32,
@@ -785,7 +785,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Ultra-soft modal blend with smooth fluid contour and stretch return',
     colorCount: 3,
     colorways: COLORS_MODAL_NU,
-    fitNote: 'Everyday fitted silhouette with high-resilience rib neckline',
+    fitNote: 'Contoured slim-fit silhouette with high-resilience rib crew neckline',
   },
   {
     rowNum: 33,
@@ -803,7 +803,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Ultra-soft modal blend with smooth fluid contour and stretch return',
     colorCount: 3,
     colorways: COLORS_MODAL_NU,
-    fitNote: 'Soft-draping regular fit cut for effortless monochrome layering',
+    fitNote: 'Straight-fit ringer-style crew tee edged with contrast navy sleeve and hem binding',
   },
   {
     rowNum: 34,
@@ -839,7 +839,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: 'Smooth combed 26s pure cotton with balanced 180–185 GSM structure',
     colorCount: 5,
     colorways: COLORS_CM26_NU,
-    fitNote: 'Boxier cropped-proportion cotton jersey tee for relaxed B2B styling',
+    fitNote: 'Tailored cinched-waist crew neck tee sculpted for clean close-to-body layering',
   },
   {
     rowNum: 36,
@@ -872,10 +872,10 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '100% Cotton',
     weightGsm: '125–130 GSM',
     fabricWidth: '155 cm',
-    stretchFeelNote: 'Featherweight 40s combed cotton jersey for breathable layering',
+    stretchFeelNote: 'Featherweight 40s combed cotton jersey for breathable drape',
     colorCount: 6,
     colorways: COLORS_CM40,
-    fitNote: 'Lightweight 125–130 GSM fine combed jersey offering smooth second-skin comfort',
+    fitNote: 'Relaxed oversized dropped-shoulder silhouette in airy 125–130 GSM combed cotton',
   },
   {
     rowNum: 38,
@@ -911,7 +911,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: '40s combed cotton + 30D elastane giving dense 4-way stretch & sleek surface',
     colorCount: 3,
     colorways: COLORS_AK005,
-    fitNote: 'Precision-cut fitted crew tee built on the AK005 4-way compact jersey program',
+    fitNote: 'Clean straight-cut crew tee showcasing smooth 4-way compact jersey drape',
   },
   {
     rowNum: 40,
@@ -929,7 +929,7 @@ const RAW_PRODUCTS: RawProductRow[] = [
     stretchFeelNote: '40s combed cotton + 30D elastane giving dense 4-way stretch & sleek surface',
     colorCount: 3,
     colorways: COLORS_AK005,
-    fitNote: 'Relaxed everyday variation in AK005 cotton-elastane with tonal cream & sage palette',
+    fitNote: 'Waist-skimming relaxed crop tee with 4-way elastane return and clean chest profile',
   },
 
   // SKIRTS
@@ -946,10 +946,10 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
-    stretchFeelNote: 'Structured 330 GSM cloth holding crisp A-line architectural volume',
+    stretchFeelNote: 'Structured 330 GSM cloth holding crisp asymmetrical wrap-front volume',
     colorCount: 4,
     colorways: COLORS_A82,
-    fitNote: 'Structured 330 GSM skirt silhouette engineered for clean waist-to-hem line',
+    fitNote: 'Asymmetric overlap wrap-front skort integrating concealed inner tailored shorts',
   },
   {
     rowNum: 42,
@@ -964,10 +964,10 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '95% Rayon-Poly, 5% Spandex',
     weightGsm: '330 GSM',
     fabricWidth: '152 cm',
-    stretchFeelNote: 'Structured 330 GSM drape supporting wrap-front pleat tension',
+    stretchFeelNote: 'Structured 330 GSM weave retaining clean low-rise A-line silhouette',
     colorCount: 4,
     colorways: COLORS_A82,
-    fitNote: 'Contemporary structured skirt with concealed interior button anchor and slit ease',
+    fitNote: 'Low-rise A-line skort tailored with front waist darts and concealed side zipper',
   },
   {
     rowNum: 43,
@@ -982,12 +982,444 @@ const RAW_PRODUCTS: RawProductRow[] = [
     composition: '76% Polyester, 18% Rayon, 6% Spandex',
     weightGsm: '203 GSM',
     fabricWidth: '57/58"',
-    stretchFeelNote: 'Lightweight 203 GSM fluid suiting weave pairing with WBL0001 trouser',
+    stretchFeelNote: 'Lightweight 203 GSM fluid suiting weave holding sharp knife pleats',
     colorCount: 2,
     colorways: COLORS_FTR76,
-    fitNote: 'Light 203 GSM fluid suiting skirt paired with the WBL0001 trouser program',
+    fitNote: 'A-line knife-pleated mini skirt paired with the WBL0001 fluid suiting program',
   },
 ];
+
+interface SkuCraftOverride {
+  stitchDensity?: string;
+  seamFinish?: string;
+  pocketConstruction?: string;
+  bulletConstruction?: string;
+  bulletDetail?: string;
+  detailHints?: {
+    pocket: string;
+    seam: string;
+    custom: string;
+  };
+}
+
+const SKU_CRAFT_OVERRIDES: Record<string, SkuCraftOverride> = {
+  MLPA82: {
+    seamFinish: 'Clean-bound internal outseams with curtained belt-loop waistband',
+    pocketConstruction: 'Slanted French side pockets + buttoned rear single-welt pocket with DT flag',
+    bulletConstruction:
+      'Built on a structured belt-loop waistband with concealed hook-and-bar zip fly and bound interior seams.',
+    bulletDetail:
+      'Finished with slanted side pockets and a buttoned rear single-welt pocket trimmed with a subtle DT woven flag.',
+    detailHints: {
+      pocket: 'Slanted pocket & DT flag closeup',
+      seam: 'Buttoned rear welt & waist closeup',
+      custom: 'Ankle taper & drape study',
+    },
+  },
+  MSPA28: {
+    seamFinish: 'Flat-pressed overlocked outseams with belt-loop waistband & matte snap fly',
+    pocketConstruction: 'Slanted side pockets + dual rear single-welt pockets with DT woven flag',
+    bulletConstruction:
+      'Constructed with flat-pressed outseams, reinforced belt loops, and a matte snap zip-fly closure.',
+    bulletDetail:
+      'Finished with deep slanted side pockets and twin rear single-welt pockets stamped with a DT woven tab.',
+    detailHints: {
+      pocket: 'Rear welt pocket & DT flag closeup',
+      seam: 'Back rise & dual welt construction',
+      custom: 'Front snap fly & slant pocket closeup',
+    },
+  },
+  MSPK03: {
+    seamFinish: 'Clean twin-stitched hems with matte button waist & reinforced belt loops',
+    pocketConstruction: 'Slanted side pockets + twin rear single-welt pockets with DT woven flag',
+    bulletConstruction:
+      'Topstitched at pocket stress points, belt loops, and zip-fly J-stitch for repeat wear stability.',
+    bulletDetail:
+      'Accented with twin rear single-welt pockets, matte top button, and signature DT black woven side tab.',
+    detailHints: {
+      pocket: 'Rear welt & DT tab closeup',
+      seam: 'Button fly & waistband closeup',
+      custom: 'Twill weave & hem topstitch',
+    },
+  },
+  'WBS0002-A82': {
+    seamFinish: 'Concealed invisible zipper & contoured beltless waist with front darts',
+    pocketConstruction: 'Pocketless sleek hip line; twin front darts & notched side-slit hem cuffs',
+    bulletConstruction:
+      'Shaped with twin front waist darts, a wide contoured waistband, and concealed back zip closure.',
+    bulletDetail:
+      'Distinguished by side-slit notched hem cuffs and a subtle DT woven flag anchored at the hip seam.',
+    detailHints: {
+      pocket: 'Front darts & notched cuff hem closeup',
+      seam: 'Contoured back waist & zip closeup',
+      custom: 'Side split cuff detail',
+    },
+  },
+  'WBS0003-A82': {
+    seamFinish: 'Smooth flat-front waistband paired with gathered elastic rear waist',
+    pocketConstruction: 'Slanted in-seam side pockets anchored neatly into the front panel',
+    bulletConstruction:
+      'Pairs a tailored flat-front waist with a gathered elastic back channel for adaptable waist comfort.',
+    bulletDetail:
+      'Finished with angled side-seam pockets and clean twin-needle hems that preserve an A-line flare.',
+    detailHints: {
+      pocket: 'Slanted side pocket closeup',
+      seam: 'Elastic-back waistband closeup',
+      custom: 'A-line side profile detail',
+    },
+  },
+  'MPOLO-MD1': {
+    seamFinish: 'Herringbone neck tape with flat-knit collar stand & cuffed sleeves',
+    pocketConstruction: 'Clean 3-button box placket (no chest pocket) with tonal DT monogram',
+    bulletConstruction:
+      'Engineered with an anti-curl flat-knit collar, herringbone neck tape, and crisp 3-button box placket.',
+    bulletDetail:
+      'Finished with tonal DT left-chest embroidery and ribbed sleeve bands over a clean pocketless torso.',
+    detailHints: {
+      pocket: '3-button placket & DT embroidery',
+      seam: 'Flat-knit collar & neck tape closeup',
+      custom: 'Sleeve cuff & drape detail',
+    },
+  },
+  'MPOLO-MD2': {
+    seamFinish: 'Ribbed flat-knit collar, herringbone neck tape & cuffed short sleeves',
+    pocketConstruction: '2-button box placket paired with faux chest welt trim ("DREAM TOMORROW")',
+    bulletConstruction:
+      'Constructed with a firm ribbed flat-knit collar and clean 2-button front placket backed by fusible stay.',
+    bulletDetail:
+      'Distinguished by a decorative faux chest welt bar stamped "DREAM TOMORROW" for subtle graphic structure.',
+    detailHints: {
+      pocket: 'Collar, placket & faux welt closeup',
+      seam: 'Shoulder seam & sleeve rib closeup',
+      custom: 'Body drape & cuff study',
+    },
+  },
+  'MPOLO-MD4': {
+    seamFinish: 'Concealed half-zip front placket with flat-knit collar & ribbed cuffs',
+    pocketConstruction: 'Minimalist hidden-zip neck closure with tonal DT left-chest embroidery',
+    bulletConstruction:
+      'Tailored with a smooth concealed half-zip front placket and structured flat-knit rib collar.',
+    bulletDetail:
+      'Completed with tonal embroidered DT chest branding and fine-gauge ribbed sleeve cuffs.',
+    detailHints: {
+      pocket: 'Concealed zip placket closeup',
+      seam: 'Collar & cuff rib closeup',
+      custom: 'Drape & silhouette detail',
+    },
+  },
+  'MPOLO-PQ2': {
+    seamFinish: 'Taped inner neck, reinforced side vents & fine ribbed sleeve cuffs',
+    pocketConstruction: '3-button box placket with DT chest embroidery & side-hem woven flag',
+    bulletConstruction:
+      'Built with an anti-curl ribbed collar, taped shoulder seams, and clean 3-button placket.',
+    bulletDetail:
+      'Accented with subtle DT left-chest embroidery, side-hem DT woven flag, and reinforced side vents.',
+    detailHints: {
+      pocket: '3-button placket & piqué grain',
+      seam: 'Side-hem slit & DT flag closeup',
+      custom: 'Collar & cuff rib finish',
+    },
+  },
+  'MPOLO-PQ4': {
+    seamFinish: 'Concealed silver-zip front placket with structured flat-knit collar',
+    pocketConstruction: 'Clean hidden half-zip collar closure with tonal DT chest embroidery',
+    bulletConstruction:
+      'Integrates a smooth silver-pull concealed zip placket into a dimensionally stable flat-knit collar.',
+    bulletDetail:
+      'Finished with ribbed sleeve cuffs, side vents, and tonal embroidered DT chest insignia.',
+    detailHints: {
+      pocket: 'Concealed zip pull & collar closeup',
+      seam: 'Micro-piqué rib cuff closeup',
+      custom: 'Body silhouette detail',
+    },
+  },
+  'MPOLO-SL201': {
+    seamFinish: 'Self-taped neck, open clean-hemmed sleeves & split side-vent bottom',
+    pocketConstruction: '3-button box placket with DT chest embroidery & sleeve woven flag',
+    bulletConstruction:
+      'Tailored with a crisp flat-knit collar, 3-button box placket, and open twin-needle sleeve hems.',
+    bulletDetail:
+      'Detailed with fine DT left-chest embroidery and a signature black DT flag tab on the left cuff.',
+    detailHints: {
+      pocket: '3-button placket & slub grain closeup',
+      seam: 'Sleeve flag & clean hem closeup',
+      custom: 'Drape & collar fit study',
+    },
+  },
+  'MPOLO-SL203': {
+    seamFinish: 'Exposed metallic zip-front placket with self-fabric collar & twin-needle hems',
+    pocketConstruction: 'Exposed silver zipper neck closure with DT chest embroidery & sleeve flag',
+    bulletConstruction:
+      'Replaces buttons with a smooth exposed silver zip placket anchored cleanly into the self-fabric collar.',
+    bulletDetail:
+      'Highlights raw 100% cotton slub striations paired with DT chest embroidery and a sleeve woven flag.',
+    detailHints: {
+      pocket: 'Exposed silver zip & slub closeup',
+      seam: 'Collar & sleeve flag closeup',
+      custom: 'Silhouette & drape detail',
+    },
+  },
+  'WPOLO-MD1': {
+    seamFinish: 'Slim 3/4-sleeve contoured cut with clean twin-needle cuffs & hem',
+    pocketConstruction: 'Exposed gold-tone half-zip front placket with tonal DREAM TOMORROW print',
+    bulletConstruction:
+      'Contoured with sculpted 3/4 sleeves and a pointed spread collar anchored by an exposed gold zipper.',
+    bulletDetail:
+      'Finished with tonal matte "DREAM TOMORROW" left-chest print and clean pocketless front panelling.',
+    detailHints: {
+      pocket: 'Gold-tone zip & chest print closeup',
+      seam: '3/4 sleeve & collar seam closeup',
+      custom: 'Fitted torso drape detail',
+    },
+  },
+  'WPOLO-MD2': {
+    seamFinish: 'Contour side seams, flat-knit collar & notched side-vent hem',
+    pocketConstruction: 'Elongated 5-button narrow box placket with DREAM TOMORROW chest print',
+    bulletConstruction:
+      'Tailored through the waist with a crisp flat-knit collar and slim 5-button placket.',
+    bulletDetail:
+      'Accented with left-chest "DREAM TOMORROW" lettering and a woven DT flag at the left sleeve cuff.',
+    detailHints: {
+      pocket: '5-button placket & print closeup',
+      seam: 'Cuff tab & hem vent closeup',
+      custom: 'Slim-fit profile study',
+    },
+  },
+  'WPOLO-YD1': {
+    seamFinish: 'Moisture-wicking flat seams with split side-vent hem & narrow placket',
+    pocketConstruction: '4-button narrow box placket with crisp DREAM TOMORROW chest print',
+    bulletConstruction:
+      'Engineered with a breathable piqué body, slim 4-button placket, and clean side-slit bottom vents.',
+    bulletDetail:
+      'Detailed with crisp high-contrast "DREAM TOMORROW" chest branding and quick-dry collar recovery.',
+    detailHints: {
+      pocket: '4-button placket & piqué closeup',
+      seam: 'Collar & side vent closeup',
+      custom: 'Silhouette fit study',
+    },
+  },
+  'WPOLO-YD2': {
+    seamFinish: 'Reinforced split side vents with contrast inner-placket woven piping',
+    pocketConstruction: '4-button contrast white-piped placket with DREAM TOMORROW chest print',
+    bulletConstruction:
+      'Framed along the inner placket and collar edge with crisp contrast white piping for clean definition.',
+    bulletDetail:
+      'Completed with a 4-button closure, clean twin-needle sleeve hems, and "DREAM TOMORROW" chest mark.',
+    detailHints: {
+      pocket: 'Contrast white-piped placket closeup',
+      seam: 'Collar trim & hem closeup',
+      custom: 'Silhouette & drape detail',
+    },
+  },
+  'MTSHIRT-MD1': {
+    seamFinish: 'Shoulder-to-shoulder twill tape with zero-torque twin-needle hems',
+    pocketConstruction: 'Clean pocketless crew neck with DT left-chest embroidery & sleeve flag',
+    bulletConstruction:
+      'Anchored with a durable 1x1 ribbed crew collar, inner neck tape, and twin-needle sleeve and bottom hems.',
+    bulletDetail:
+      'Signed with subtle DT left-chest embroidery and a signature black DT woven flag on the left cuff.',
+    detailHints: {
+      pocket: 'Ribbed crew neck & DT embroidery',
+      seam: 'Sleeve flag & shoulder seam closeup',
+      custom: 'Straight-fit body drape',
+    },
+  },
+  'MTSHIRT-MD2': {
+    seamFinish: 'Clean twin-needle hems paired with bound 2-button Henley neck placket',
+    pocketConstruction: '2-button Henley placket (clean pocketless chest) + DT embroidery & sleeve tab',
+    bulletConstruction:
+      'Updates the essential crew tee with a fused 2-button Henley neck placket and clean shoulder taping.',
+    bulletDetail:
+      'Finished with DT left-chest embroidery and a woven DT sleeve flag on a clean pocketless front.',
+    detailHints: {
+      pocket: '2-button Henley placket closeup',
+      seam: 'DT embroidery & sleeve tab closeup',
+      custom: 'Straight-fit chest drape',
+    },
+  },
+  'MTSHIRT-MD3': {
+    seamFinish: 'Shoulder twill neck tape with twin-needle hems & 3-button Henley placket',
+    pocketConstruction: '3-button Henley placket + mitered chest patch pocket embroidered DT',
+    bulletConstruction:
+      'Combines a structured 3-button Henley neckline with reinforced shoulder seams and clean twin-needle hems.',
+    bulletDetail:
+      'Grounded by a crisp bar-tacked left-chest patch pocket with DT embroidery and matching sleeve flag.',
+    detailHints: {
+      pocket: '3-button Henley & patch pocket closeup',
+      seam: 'Pocket bar-tack & DT sleeve tab',
+      custom: 'Relaxed fit & drape detail',
+    },
+  },
+  'MVNECK-CM26': {
+    seamFinish: 'Overlapping mitered V-neck rib collar with clean twin-needle hems',
+    pocketConstruction: 'Precision V-neck rib binding with DT chest embroidery & sleeve woven flag',
+    bulletConstruction:
+      'Engineered with an overlapping mitered V-neck rib that sits flat against the collarbone without gapping.',
+    bulletDetail:
+      'Detailed with sharp DT left-chest embroidery and a left-sleeve woven DT flag tab.',
+    detailHints: {
+      pocket: 'Mitered V-neck collar & DT mark',
+      seam: 'Sleeve flag & shoulder seam closeup',
+      custom: 'Clean drape & hem detail',
+    },
+  },
+  'MTSHIRT-CM36': {
+    seamFinish: 'Heavyweight 1x1 dense neck rib with clean shoulder tape & twin-needle hems',
+    pocketConstruction: 'Pocketless heavyweight crew profile with DT embroidery & sleeve woven flag',
+    bulletConstruction:
+      'Paired with a substantial ribbed neckline and flat twin-needle coverstitching built for 220 GSM fabric.',
+    bulletDetail:
+      'Signed with subtle DT left-chest embroidery and a signature DT sleeve cuff woven tab.',
+    detailHints: {
+      pocket: 'Dense neck rib & DT embroidery',
+      seam: 'Sleeve flag & compact knit closeup',
+      custom: 'Structured boxy silhouette',
+    },
+  },
+  'MTSHIRT-CM40': {
+    seamFinish: 'Fine single-jersey shoulder seams with clean 1x1 rib collar & twin-needle hems',
+    pocketConstruction: 'Featherweight pocketless crew cut with DT embroidery & sleeve woven flag',
+    bulletConstruction:
+      'Constructed with fine-needle coverstitch hems to keep seams light and flat against 125–130 GSM jersey.',
+    bulletDetail:
+      'Finished with tonal DT chest embroidery and a miniature DT woven flag tab on the sleeve cuff.',
+    detailHints: {
+      pocket: 'Fine neck rib & DT embroidery',
+      seam: 'Sleeve flag & jersey hand closeup',
+      custom: 'Breathable drape detail',
+    },
+  },
+  'WVNECK-MD': {
+    seamFinish: 'Contour side-seam shaping with flat mitered V-neck rib & twin-needle hems',
+    pocketConstruction: 'Sculpted V-neck rib profile with DREAM TOMORROW chest print & DT sleeve tab',
+    bulletConstruction:
+      'Patterned with subtle waist-cinching side seams and a smooth mitered V-neck binding.',
+    bulletDetail:
+      'Completed with left-chest "DREAM TOMORROW" print and a woven DT flag on the short sleeve.',
+    detailHints: {
+      pocket: 'Mitered V-neck & chest print closeup',
+      seam: 'Cinched waist & sleeve flag closeup',
+      custom: 'Contoured fit profile',
+    },
+  },
+  'WTSHIRT-MD1': {
+    seamFinish: 'High-recovery baby-rib crew collar with contour side seams & clean hems',
+    pocketConstruction: 'Minimalist crew silhouette with DREAM TOMORROW chest print & DT sleeve tab',
+    bulletConstruction:
+      'Built with a neat baby-rib collar and sculpted side seams that hold shape across repeated washes.',
+    bulletDetail:
+      'Finished with clean "DREAM TOMORROW" chest lettering and a left-sleeve black DT woven flag.',
+    detailHints: {
+      pocket: 'Crew neckline & chest print closeup',
+      seam: 'Back drape & sleeve flag closeup',
+      custom: 'Slim-fit contour detail',
+    },
+  },
+  'WTSHIRT-MD2': {
+    seamFinish: 'Fine twin-needle body seams framed by contrast navy binding on cuffs & hem',
+    pocketConstruction: 'Contrast navy ringer trim along short sleeve cuffs & bottom hem',
+    bulletConstruction:
+      'Framed with crisp navy contrast binding on the sleeve cuffs and bottom hem over a white modal body.',
+    bulletDetail:
+      'Clean unadorned front lets the ringer contrast trim and smooth body contour lead the silhouette.',
+    detailHints: {
+      pocket: 'Contrast sleeve & neck binding closeup',
+      seam: 'Contrast navy bottom hem closeup',
+      custom: 'Back & fitted profile study',
+    },
+  },
+  'WTSHIRT-CM262': {
+    seamFinish: 'Waist-tapered side seams with 1x1 rib crew neck & twin-needle coverstitch hems',
+    pocketConstruction: 'Contoured waist crew tee with DREAM TOMORROW chest print & DT sleeve flag',
+    bulletConstruction:
+      'Darted through the waist side seams over a fine 1x1 ribbed crew collar for a tailored, close line.',
+    bulletDetail:
+      'Signed with "DREAM TOMORROW" chest lettering and a woven DT sleeve tab.',
+    detailHints: {
+      pocket: 'Rib collar & chest wordmark closeup',
+      seam: 'DT sleeve flag & cuff seam closeup',
+      custom: 'Cinched waist silhouette',
+    },
+  },
+  'WTSHIRT-CM402': {
+    seamFinish: 'Dropped-shoulder seams with relaxed wide sleeve opening & twin-needle hems',
+    pocketConstruction: 'Clean minimalist pocketless front for uninterrupted fluid summer drape',
+    bulletConstruction:
+      'Cut with generous dropped shoulders, wider short sleeves, and crisp twin-needle coverstitch hems.',
+    bulletDetail:
+      'Left completely unbranded on the exterior chest for clean private-label CM / OEM / ODM programs.',
+    detailHints: {
+      pocket: 'Relaxed crew collar & shoulder closeup',
+      seam: 'Twin-needle hem & cuff closeup',
+      custom: 'Oversized airy drape study',
+    },
+  },
+  WTSHIRT1: {
+    seamFinish: 'Fine coverstitch hems & smooth baby-rib crew collar on 4-way stretch jersey',
+    pocketConstruction: 'Unbranded clean front panel with woven sleeve flag detail',
+    bulletConstruction:
+      'Constructed with elastic-core thread along the hems to flex cleanly with 4-way stretch recovery.',
+    bulletDetail:
+      'Minimalist clean-front aesthetic makes it an immediate canvas for custom B2B heat-transfer or embroidery.',
+    detailHints: {
+      pocket: 'Crew collar & matte surface closeup',
+      seam: 'Sleeve hem & coverstitch closeup',
+      custom: 'Straight-fit drape detail',
+    },
+  },
+  WTSHIRT2: {
+    seamFinish: 'Fine twin-needle cropped bottom hem & sleek bound crew neckline',
+    pocketConstruction: 'Cropped waist-skimming silhouette with DT chest embroidery & sleeve tab',
+    bulletConstruction:
+      'Cut to a clean cropped length with stretch-calibrated twin-needle bottom and sleeve hems.',
+    bulletDetail:
+      'Accented with delicate DT left-chest embroidery and a miniature DT woven flag on the cuff.',
+    detailHints: {
+      pocket: 'DT chest embroidery & collar closeup',
+      seam: 'Cropped hem & sleeve tab closeup',
+      custom: 'Waist-skimming proportion',
+    },
+  },
+  'WBSK001-A82': {
+    seamFinish: 'Concealed center-back invisible zipper with inner short lining & clean hem',
+    pocketConstruction: 'Slanted in-seam side pockets + dual rear single-welt pockets',
+    bulletConstruction:
+      'Engineered with an asymmetric wrap-front panel stitched neatly over a comfortable concealed inner short.',
+    bulletDetail:
+      'Equipped with slanted side-seam pockets, a center-back invisible zipper, and dual rear welt pockets.',
+    detailHints: {
+      pocket: 'Rear welt pockets & center-back zip',
+      seam: 'Slanted side pocket under wrap panel',
+      custom: 'Asymmetric wrap-front hem detail',
+    },
+  },
+  'WBSK002-A82': {
+    seamFinish: 'Concealed left-side invisible zipper, front waist darts & wide hem band',
+    pocketConstruction: 'Single rear single-welt pocket + woven DT hip flag (clean pocketless front)',
+    bulletConstruction:
+      'Tailored with twin front darts for smooth hip contouring, concealed side zipper, and deep hem band.',
+    bulletDetail:
+      'Finished on the back with a single sleek welt pocket and miniature DT woven hip seam flag.',
+    detailHints: {
+      pocket: 'Rear welt pocket & DT hip flag',
+      seam: 'Concealed side zip & dart closeup',
+      custom: 'Wide topstitched hem band',
+    },
+  },
+  WSP0001: {
+    seamFinish: 'Crisp heat-set knife pleats anchored into a smooth contoured waistband',
+    pocketConstruction: 'Clean concealed-zip side closure with uninterrupted pleated skirt fall',
+    bulletConstruction:
+      'Constructed with evenly spaced knife pleats pressed to hold crisp vertical geometry in motion.',
+    bulletDetail:
+      'Coordinates directly with WBL0001 suiting trousers in matching 203 GSM 76-series drape.',
+    detailHints: {
+      pocket: 'Knife pleat waist joinery closeup',
+      seam: 'Concealed zip & pleat edge closeup',
+      custom: 'Pleat movement & hem detail',
+    },
+  },
+};
 
 function getCraftDetails(row: RawProductRow): {
   stitchDensity: string;
@@ -996,110 +1428,177 @@ function getCraftDetails(row: RawProductRow): {
   moq: string;
   bullets: string[];
   features: string[];
+  detailHints: {
+    pocket: string;
+    seam: string;
+    custom: string;
+  };
 } {
+  const override = SKU_CRAFT_OVERRIDES[row.sku];
+
   if (row.category === 'Trousers') {
+    const seamFinish =
+      override?.seamFinish ?? 'Clean-bound internal outseams with curtained waistband tape';
+    const pocketConstruction =
+      override?.pocketConstruction ??
+      'Slanted French bearer side pockets with reinforced 32-stitch bar-tacks';
     return {
-      stitchDensity: '16–18 SPI',
-      seamFinish: 'Clean-bound internal outseams with curtained waistband tape',
-      pocketConstruction: 'Slanted French bearer side pockets with reinforced 32-stitch bar-tacks',
+      stitchDensity: override?.stitchDensity ?? '16–18 SPI',
+      seamFinish,
+      pocketConstruction,
       moq: '100 pcs / color (Placeholder)',
       bullets: [
         `Cut from ${row.composition} (${row.weightGsm}, ${row.fabricWidth} roll width) for structured drape and crease recovery.`,
-        `Finished with a curtained tailored waistband and bar-tacked pocket stress zones for extended B2B longevity.`,
-        `${row.fitNote}.`,
+        override?.bulletConstruction ??
+          'Finished with a curtained tailored waistband and bar-tacked stress zones for extended B2B longevity.',
+        override?.bulletDetail ??
+          'Reinforced French bearer side pockets and clean overlocked interior seams resist fray across wash cycles.',
       ],
       features: [
-        `Structured ${row.weightGsm} fabric architecture (${row.fabricCode}) retaining crisp leg crease`,
-        'Reinforced French bearer pockets with high-density pocket bag twill',
-        'Clean overlocked and bound interior seams preventing fray across industrial wash cycles',
+        `Structured ${row.weightGsm} fabric architecture (${row.fabricCode}) retaining crisp leg line`,
+        pocketConstruction,
+        seamFinish,
         `Offered in ${row.colorways.length} colorways across full graded sizing`,
       ],
+      detailHints: override?.detailHints ?? {
+        pocket: 'Pocket & waist closeup',
+        seam: 'Tailored seam & hem closeup',
+        custom: 'Silhouette & drape detail',
+      },
     };
   }
 
   if (row.category === 'Shorts') {
+    const seamFinish =
+      override?.seamFinish ?? 'Flat-pressed overlocked outseams with clean-bound inner waist';
+    const pocketConstruction =
+      override?.pocketConstruction ??
+      'Slanted side pockets and rear welt pockets with reinforced bar-tacks';
     return {
-      stitchDensity: '15–16 SPI',
-      seamFinish: 'Flat-pressed overlocked outseams with clean-bound inner waist',
-      pocketConstruction: 'Deep quarter-top side pockets and rear welt pockets with dual bar-tacks',
+      stitchDensity: override?.stitchDensity ?? '15–16 SPI',
+      seamFinish,
+      pocketConstruction,
       moq: '120 pcs / color (Placeholder)',
       bullets: [
         `Crafted from ${row.composition} (${row.weightGsm}) balancing breathable comfort with structured form.`,
-        `Reinforced at pocket openings, fly base, and belt loops with precision bar-tack anchoring.`,
-        `${row.fitNote}.`,
+        override?.bulletConstruction ??
+          'Cleanly finished interior waist and flat-pressed outseams maintain sharp profile through repeat wear.',
+        override?.bulletDetail ??
+          'Reinforced pocket corners and neat twin-needle hems deliver dependable daily durability.',
       ],
       features: [
-        `Recovery-engineered ${row.fabricCode} weave preventing knee and seat bagging`,
-        'High-tensile pocket bag lining anchored into the waistband seam',
-        'Single-needle topstitched waist and reinforced belt-loop joinery',
+        `Recovery-engineered ${row.fabricCode} weave preventing hip and seat bagging`,
+        pocketConstruction,
+        seamFinish,
         `Available across ${row.colorways.length} core monochrome & neutral shades`,
       ],
+      detailHints: override?.detailHints ?? {
+        pocket: 'Pocket & waist closeup',
+        seam: 'Seam & hem closeup',
+        custom: 'Fit & proportion detail',
+      },
     };
   }
 
   if (row.category === 'Polos') {
+    const seamFinish =
+      override?.seamFinish ??
+      'Herringbone-taped back neck & shoulder seams with twin-needle side vents';
+    const pocketConstruction =
+      override?.pocketConstruction ??
+      'Structured collar stand with reinforced box placket & internal stay';
     return {
-      stitchDensity: '18 SPI / 4-Thread Overlock',
-      seamFinish: 'Herringbone-taped back neck & shoulder seams with twin-needle side vents',
-      pocketConstruction: 'Optional mitered chest pocket + reinforced 2-button box placket with internal stay',
+      stitchDensity: override?.stitchDensity ?? '18 SPI / 4-Thread Overlock',
+      seamFinish,
+      pocketConstruction,
       moq: '150 pcs / color (Placeholder)',
       bullets: [
         `Knitted in ${row.composition} (${row.weightGsm}) combining breathable surface hand-feel with shape retention.`,
-        `Engineered with an anti-curl flat-knit collar and clean box placket backed by fusible interlining.`,
-        `${row.fitNote}.`,
+        override?.bulletConstruction ??
+          'Engineered with an anti-curl flat-knit collar and clean placket backed by fusible interlining.',
+        override?.bulletDetail ??
+          'Completed with split side-vent hems and crisp tonal chest or sleeve branding.',
       ],
       features: [
-        `Signature ${row.fabricCode} textile offering smooth drape and wash-after-wash collar stability`,
-        'Reinforced placket base bar-tack and herringbone twill neck taping',
-        'Split side-vent hems reinforced internally to resist tearing under tension',
+        `Signature ${row.fabricCode} textile offering smooth drape and collar stability`,
+        pocketConstruction,
+        seamFinish,
         `Offered in ${row.colorways.length} palette options from core neutrals to Pantone TCX accents`,
       ],
+      detailHints: override?.detailHints ?? {
+        pocket: 'Placket & chest mark closeup',
+        seam: 'Collar & cuff closeup',
+        custom: 'Fit & drape detail',
+      },
     };
   }
 
   if (row.category === 'Skirts') {
+    const seamFinish =
+      override?.seamFinish ??
+      'Concealed invisible zipper placket with clean bias-bound or 4-thread seams';
+    const pocketConstruction =
+      override?.pocketConstruction ??
+      'In-seam or rear welt pocket construction anchored cleanly into the waist';
     return {
-      stitchDensity: '18 SPI',
-      seamFinish: 'Concealed invisible zipper placket with clean bias-bound or 4-thread seams',
-      pocketConstruction: 'Hidden in-seam side pockets anchored directly into the waistband stay',
+      stitchDensity: override?.stitchDensity ?? '18 SPI',
+      seamFinish,
+      pocketConstruction,
       moq: '100 pcs / color (Placeholder)',
       bullets: [
         `Tailored from ${row.composition} (${row.weightGsm}, ${row.fabricWidth} width) for balanced structure and fluid movement.`,
-        `Constructed with anchored in-seam pockets that lie completely flat without hip pulling.`,
-        `${row.fitNote}.`,
+        override?.bulletConstruction ??
+          'Finished with a concealed invisible zipper closure and contoured waistband stay.',
+        override?.bulletDetail ??
+          'Clean hem construction and flat internal pocket anchoring eliminate hip pulling.',
       ],
       features: [
         `Matching ${row.fabricCode} suiting textile enabling cohesive coordinated B2B sets`,
-        'Waistband-anchored side pockets eliminating pocket bag sag',
-        'Blind-stitched bottom hem and smooth internal facing finish',
+        pocketConstruction,
+        seamFinish,
         `Produced in ${row.colorways.length} refined shades for versatile merchandising`,
       ],
+      detailHints: override?.detailHints ?? {
+        pocket: 'Waist & pocket closeup',
+        seam: 'Zipper & hem closeup',
+        custom: 'Silhouette & drape detail',
+      },
     };
   }
 
   const isVNeck = row.sku.includes('VNECK');
+  const seamFinish =
+    override?.seamFinish ??
+    'Shoulder-to-shoulder twill neck tape with zero-torque twin-needle hems';
+  const pocketConstruction =
+    override?.pocketConstruction ??
+    (isVNeck
+      ? 'Precision mitered V-neck rib collar engineered to lie flat without gapping'
+      : 'Clean seamless chest profile with high-recovery 1x1 rib crew collar');
+
   return {
-    stitchDensity: '18–20 SPI Coverstitch',
-    seamFinish: 'Shoulder-to-shoulder twill neck tape with zero-torque twin-needle hems',
-    pocketConstruction: row.sku.includes('MD2')
-      ? 'Clean mitered chest patch pocket with twin-bar-tack upper corners'
-      : isVNeck
-        ? 'Precision mitered V-neck rib collar engineered to lie flat without gapping'
-        : 'Clean seamless chest profile with high-recovery 1x1 rib crew collar',
+    stitchDensity: override?.stitchDensity ?? '18–20 SPI Coverstitch',
+    seamFinish,
+    pocketConstruction,
     moq: '150 pcs / color (Placeholder)',
     bullets: [
       `Crafted from ${row.composition} (${row.weightGsm}) with a smooth, breathable finish that moves comfortably with the body.`,
-      `Designed with a durable ribbed neckline that retains its shape wash after wash, paired with clean twin-needle sleeve and bottom hems.`,
-      `${row.fitNote}.`,
+      override?.bulletConstruction ??
+        'Designed with a durable ribbed neckline that retains its shape wash after wash, paired with clean twin-needle sleeve and bottom hems.',
+      override?.bulletDetail ??
+        'Four-thread overlocked internal seams and flat twin-needle coverstitching ensure zero torque and long-term durability.',
     ],
     features: [
       `Crafted on the ${row.fabricCode} textile roll (${row.fabricWidth} width) for uniform batch hand-feel`,
-      isVNeck
-        ? 'Reinforced overlapping V-neck rib binding preventing collar distortion'
-        : 'High-recovery ribbed crew collar backed by clean shoulder-to-shoulder taping',
-      'Four-thread overlocked internal seams and flat twin-needle coverstitch hems',
+      pocketConstruction,
+      seamFinish,
       `Available in ${row.colorways.length} colorway options for modular B2B assortment`,
     ],
+    detailHints: override?.detailHints ?? {
+      pocket: isVNeck ? 'Mitered V-neck closeup' : 'Neckline & chest mark closeup',
+      seam: 'Sleeve flag & hem closeup',
+      custom: 'Fit & drape detail',
+    },
   };
 }
 
@@ -1275,6 +1774,7 @@ export function createInitialGarments(): GarmentItem[] {
         wholesaleRef: 'CM / OEM / ODM Quote',
       },
       media,
+      detailHints: craft.detailHints,
     };
   });
 }

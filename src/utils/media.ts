@@ -71,12 +71,16 @@ export function parseVideoUrl(url: string): ParsedVideo {
   return { type: 'direct', embedUrl: trimmed };
 }
 
-export function normalizeImageCrop(crop?: Partial<ImageCrop>): ImageCrop {
+export function normalizeImageCrop(
+  crop?: Partial<ImageCrop>,
+  minScale = 1
+): Required<ImageCrop> {
+  const safeMin = typeof minScale === 'number' && Number.isFinite(minScale) ? Math.max(1, minScale) : 1;
   const rawScale = crop?.scale;
   const scale =
     typeof rawScale === 'number' && Number.isFinite(rawScale)
-      ? Math.min(3, Math.max(1, rawScale))
-      : 1;
+      ? Math.min(3.5, Math.max(safeMin, rawScale))
+      : safeMin;
   const maxPan = (50 * (scale - 1)) / scale;
   const rawX = crop?.x;
   const rawY = crop?.y;
@@ -88,14 +92,28 @@ export function normalizeImageCrop(crop?: Partial<ImageCrop>): ImageCrop {
     typeof rawY === 'number' && Number.isFinite(rawY)
       ? Math.min(maxPan, Math.max(-maxPan, rawY))
       : 0;
+  const rawPosX = crop?.posX;
+  const rawPosY = crop?.posY;
+  const posX =
+    typeof rawPosX === 'number' && Number.isFinite(rawPosX)
+      ? Math.min(100, Math.max(0, rawPosX))
+      : 50;
+  const posY =
+    typeof rawPosY === 'number' && Number.isFinite(rawPosY)
+      ? Math.min(100, Math.max(0, rawPosY))
+      : 50;
 
-  return { scale, x, y };
+  return { scale, x, y, posX, posY };
 }
 
-export function imageCropStyle(crop?: Partial<ImageCrop>): CSSProperties {
-  const normalized = normalizeImageCrop(crop);
+export function imageCropStyle(
+  crop?: Partial<ImageCrop>,
+  minScale = 1
+): CSSProperties {
+  const normalized = normalizeImageCrop(crop, minScale);
   return {
     transform: `translate(${normalized.x}%, ${normalized.y}%) scale(${normalized.scale})`,
     transformOrigin: 'center center',
+    objectPosition: `${normalized.posX}% ${normalized.posY}%`,
   };
 }

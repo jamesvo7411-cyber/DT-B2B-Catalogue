@@ -7,8 +7,15 @@ import type {
   PrintConfig,
 } from '../types/catalogue';
 import { imageCropStyle } from '../utils/media';
+import { RunningHeader } from './CatalogueNavigation';
 import { ProductSpecStrip } from './ProductSpecStrip';
-import { conciseSourceNote } from '../utils/productDisplay';
+import { SizeRunChips } from './SizeRunChips';
+import { getFactoryFabricColors } from '../data/factoryFabricColors';
+import {
+  getFabricFamilyName,
+  type CatalogueNavigationMap,
+} from '../utils/catalogueOrder';
+import { conciseSourceNote, displayMoq } from '../utils/productDisplay';
 import {
   BRAND_LOGO_PATH,
   CATEGORIES,
@@ -23,6 +30,7 @@ import {
 interface PrintSheetPreviewProps {
   garments: GarmentItem[];
   allGarments: GarmentItem[];
+  navMap?: CatalogueNavigationMap;
   meta: CatalogueMetadata;
   config: PrintConfig;
   coverCustomImage?: string;
@@ -91,16 +99,7 @@ const PrintPlateBox: React.FC<{
       ? slot.fallbackUrl
       : slot.url || slot.fallbackUrl || ''
     : '';
-  const cropBase = imageCropStyle(slot.crop);
-  const scaledStyle =
-    displayScale > 1
-      ? {
-          ...cropBase,
-          transform: cropBase.transform
-            ? `${cropBase.transform} scale(${displayScale})`
-            : `scale(${displayScale})`,
-        }
-      : cropBase;
+  const scaledStyle = imageCropStyle(slot.crop, displayScale);
 
   return (
     <div className={`flex flex-col ${fullHeight ? 'h-full flex-1' : ''}`}>
@@ -132,7 +131,7 @@ const PrintPlateBox: React.FC<{
             )}
             {imageOverlay && (
               overlayMode === 'card' ? (
-                <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 border border-[#DCDAD3]/90 bg-white/88 px-3.5 py-2.5 text-[#0A0A0A]">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#F7F6F2]/94 via-[#F7F6F2]/76 via-58% to-transparent px-4 pb-3 pt-16 text-[#0A0A0A]">
                   {imageOverlay}
                 </div>
               ) : (
@@ -185,6 +184,7 @@ const PrintPlateBox: React.FC<{
 export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
   garments,
   allGarments,
+  navMap,
   meta,
   config,
   coverCustomImage = '',
@@ -197,15 +197,25 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
   const showIndex = config.includeIndex && config.scope !== 'current';
   const showFabrics = config.includeFabrics && config.scope !== 'current';
 
-  const fabricPrograms = showFabrics ? buildFabricSwatchPrograms(allGarments) : [];
+  const fabricPrograms = showFabrics
+    ? navMap?.orderedFabrics ?? buildFabricSwatchPrograms(allGarments)
+    : [];
   const fabricChunks: typeof fabricPrograms[] = [];
   for (let i = 0; i < fabricPrograms.length; i += 4) {
     fabricChunks.push(fabricPrograms.slice(i, i + 4));
   }
 
+  const fabricPrintPageByCode = new Map<string, number>();
+  const coverSheetOffset = showCoverAndIndex ? 1 : 0;
+  const indexSheetOffset = showIndex ? 1 : 0;
+  fabricChunks.forEach((chunk, chunkIdx) => {
+    const sheetNum = coverSheetOffset + indexSheetOffset + chunkIdx + 1;
+    chunk.forEach((prog) => fabricPrintPageByCode.set(prog.fabricCode, sheetNum));
+  });
+
   const totalPages =
-    (showCoverAndIndex ? 1 : 0) +
-    (showIndex ? 1 : 0) +
+    coverSheetOffset +
+    indexSheetOffset +
     fabricChunks.length +
     garments.length;
 
@@ -337,10 +347,12 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                     className="pointer-events-none absolute inset-y-0 left-2 right-6 border border-dashed border-[var(--metallic-soft)]/70"
                   />
                 )}
-                <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 text-[10px] text-[#737373]">
-                  <span className="font-mono tracking-wider text-[#0A0A0A]">DREAM TOMORROW</span>
-                  <span>CM · OEM · ODM PORTFOLIO</span>
-                </div>
+                <RunningHeader
+                  sectionId="introduction"
+                  categoryLabel="OVERVIEW"
+                  pageLabel={`P.${String(pageCursor).padStart(2, '0')}A`}
+                  rightContext="CM · OEM · ODM PORTFOLIO"
+                />
 
                 <div className="my-auto space-y-4 py-4">
                   <div className="flex items-start justify-between gap-4">
@@ -406,10 +418,12 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                     className="pointer-events-none absolute inset-y-0 left-6 right-2 border border-dashed border-[var(--metallic-soft)]/70"
                   />
                 )}
-                <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 font-mono text-[10px] text-[#737373]">
-                  <span>COVER FOLIO · PLATE 00</span>
-                  <span>{garments.length} STYLES · 15 FABRICS</span>
-                </div>
+                <RunningHeader
+                  sectionId="introduction"
+                  categoryLabel="COVER PLATE"
+                  pageLabel={`P.${String(pageCursor).padStart(2, '0')}B`}
+                  rightContext={`${garments.length} STYLES · ${fabricPrograms.length || 15} FABRICS`}
+                />
 
                 <div className="my-auto py-4">
                   <div className="relative mx-auto aspect-[3/4] max-h-[540px] w-full overflow-hidden border border-[#DCDCDC] bg-[#FAF9F5]">
@@ -460,9 +474,13 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   />
                 )}
                 <div>
-                  <div className="mb-3 flex items-center justify-between border-b border-[#E5E5E5] pb-2.5 text-[10px] text-[#737373]">
-                    <span className="font-mono text-[#0A0A0A]">TABLE OF CONTENTS</span>
-                    <span>MEN&apos;S DIVISION (NAM · {menItems.length})</span>
+                  <div className="mb-3">
+                    <RunningHeader
+                      sectionId="introduction"
+                      categoryLabel="TABLE OF CONTENTS"
+                      pageLabel={`P.${String(pageCursor).padStart(2, '0')}A`}
+                      rightContext={`MEN'S LINE · ${menItems.length}`}
+                    />
                   </div>
 
                   <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[9.5px] text-[#525252]">
@@ -479,18 +497,18 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-baseline justify-between gap-2 py-1 text-[9.5px]"
+                          className="grid grid-cols-[18px_minmax(0,1fr)_auto_34px] items-baseline gap-2 py-1 text-[9.5px]"
                         >
-                          <div className="flex items-baseline gap-2 min-w-0">
-                            <span className="font-mono font-medium text-[#0A0A0A] tabular-nums shrink-0">
-                              {item.sku}
-                            </span>
-                            <span className="truncate text-[#262626]">{item.title}</span>
-                          </div>
-                          <div className="flex items-baseline gap-2 shrink-0 font-mono text-[9.5px] text-[#737373] tabular-nums">
-                            <span>{item.specs.fabricRollRef}</span>
-                            <span className="text-[#0A0A0A]">p.{String(itemPage).padStart(2, '0')}</span>
-                          </div>
+                          <span className="font-mono text-[8.5px] text-[#9A968E] tabular-nums">
+                            {String(item.index).padStart(2, '0')}
+                          </span>
+                          <span className="truncate font-medium text-[#171715]">{item.title}</span>
+                          <span className="shrink-0 font-mono text-[8px] font-normal text-[#9A968E] tabular-nums">
+                            {item.sku}
+                          </span>
+                          <span className="text-right font-mono text-[9px] text-[#0A0A0A] tabular-nums">
+                            p.{String(itemPage).padStart(2, '0')}
+                          </span>
                         </div>
                       );
                     })}
@@ -512,9 +530,13 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   />
                 )}
                 <div>
-                  <div className="mb-3 flex items-center justify-between border-b border-[#E5E5E5] pb-2.5 text-[10px] text-[#737373]">
-                    <span className="font-mono text-[#0A0A0A]">COLLECTION DIRECTORY</span>
-                    <span>WOMEN&apos;S DIVISION (NỮ · {womenItems.length})</span>
+                  <div className="mb-3">
+                    <RunningHeader
+                      sectionId="introduction"
+                      categoryLabel="WOMEN'S DIRECTORY"
+                      pageLabel={`P.${String(pageCursor).padStart(2, '0')}B`}
+                      rightContext={`NỮ · ${womenItems.length}`}
+                    />
                   </div>
 
                   <div className="divide-y divide-[#EFEFEF] border-t border-b border-[#E5E5E5]">
@@ -523,18 +545,18 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-baseline justify-between gap-2 py-1 text-[9.5px]"
+                          className="grid grid-cols-[18px_minmax(0,1fr)_auto_34px] items-baseline gap-2 py-1 text-[9.5px]"
                         >
-                          <div className="flex items-baseline gap-2 min-w-0">
-                            <span className="font-mono font-medium text-[#0A0A0A] tabular-nums shrink-0">
-                              {item.sku}
-                            </span>
-                            <span className="truncate text-[#262626]">{item.title}</span>
-                          </div>
-                          <div className="flex items-baseline gap-2 shrink-0 font-mono text-[9.5px] text-[#737373] tabular-nums">
-                            <span>{item.specs.fabricRollRef}</span>
-                            <span className="text-[#0A0A0A]">p.{String(itemPage).padStart(2, '0')}</span>
-                          </div>
+                          <span className="font-mono text-[8.5px] text-[#9A968E] tabular-nums">
+                            {String(item.index).padStart(2, '0')}
+                          </span>
+                          <span className="truncate font-medium text-[#171715]">{item.title}</span>
+                          <span className="shrink-0 font-mono text-[8px] font-normal text-[#9A968E] tabular-nums">
+                            {item.sku}
+                          </span>
+                          <span className="text-right font-mono text-[9px] text-[#0A0A0A] tabular-nums">
+                            p.{String(itemPage).padStart(2, '0')}
+                          </span>
                         </div>
                       );
                     })}
@@ -542,7 +564,7 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-[#E5E5E5] pt-2.5 font-mono text-[10px] text-[#737373] tabular-nums">
-                  <span>15 FABRIC PROGRAMS</span>
+                  <span>{fabricPrograms.length || 15} FABRIC PROGRAMS</span>
                   <span>
                     {String(pageCursor).padStart(2, '0')} / {String(totalPages).padStart(2, '0')}
                   </span>
@@ -560,6 +582,7 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
         pageCursor += 1;
         const leftProgs = chunk.slice(0, 2);
         const rightProgs = chunk.slice(2, 4);
+        const pageOffsetForFabrics = coverSheetOffset + indexSheetOffset + fabricChunks.length;
 
         const renderRollRow = (prog: (typeof chunk)[number]) => (
           <div key={prog.fabricCode} className="space-y-2 py-3">
@@ -581,17 +604,30 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
               </div>
               <div className="col-span-9 space-y-1 text-[9.5px]">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-mono text-[11px] font-semibold text-[#0A0A0A]">
-                    {prog.fabricCode}
-                  </p>
+                  <div>
+                    <p className="font-mono text-[7.5px] uppercase tracking-wider text-[#737373]">
+                      {getFabricFamilyName(prog.fabricCode)}
+                    </p>
+                    <p className="font-mono text-[11px] font-semibold text-[#0A0A0A]">
+                      {prog.fabricCode}
+                    </p>
+                  </div>
                   <span className="font-mono text-[#737373]">{prog.genders.join(' / ')}</span>
                 </div>
                 <p className="text-[#262626]">{prog.composition}</p>
                 <p className="font-mono text-[#525252] tabular-nums">
                   GSM: {prog.weightGsm} · Width: {prog.fabricWidth}
                 </p>
-                <p className="font-mono text-[9px] text-[#737373]">
-                  Styles: {prog.linkedSkus.join(', ')}
+                <p className="font-mono text-[8.5px] text-[#55534E]">
+                  Used By:{' '}
+                  {prog.linkedSkus
+                    .map((sku, idx) => {
+                      const styleIdx = prog.linkedIndices[idx];
+                      const gPos = garments.findIndex((item) => item.index === styleIdx);
+                      const pTag = gPos >= 0 ? ` P.${String(pageOffsetForFabrics + gPos + 1).padStart(2, '0')}` : '';
+                      return `${sku}${pTag}`;
+                    })
+                    .join(' · ')}
                 </p>
               </div>
             </div>
@@ -629,11 +665,13 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   />
                 )}
                 <div>
-                  <div className="mb-2 flex items-center justify-between border-b border-[#E5E5E5] pb-2 text-[10px] text-[#737373]">
-                    <span className="font-mono font-medium text-[#0A0A0A]">
-                      FABRIC SWATCH PROGRAM ({chunkIdx + 1}/{fabricChunks.length})
-                    </span>
-                    <span>VERSO</span>
+                  <div className="mb-2">
+                    <RunningHeader
+                      sectionId="fabrics"
+                      categoryLabel={`SWATCHES ${chunkIdx + 1}/${fabricChunks.length}`}
+                      pageLabel={`P.${String(pageCursor).padStart(2, '0')}A`}
+                      rightContext="VERSO"
+                    />
                   </div>
                   <div className="divide-y divide-[#E5E5E5]">{leftProgs.map(renderRollRow)}</div>
                 </div>
@@ -651,9 +689,13 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   />
                 )}
                 <div>
-                  <div className="mb-2 flex items-center justify-between border-b border-[#E5E5E5] pb-2 text-[10px] text-[#737373]">
-                    <span className="font-mono">PANTONE TCX &amp; MILL WIDTHS</span>
-                    <span>RECTO</span>
+                  <div className="mb-2">
+                    <RunningHeader
+                      sectionId="fabrics"
+                      categoryLabel="PANTONE TCX & WIDTHS"
+                      pageLabel={`P.${String(pageCursor).padStart(2, '0')}B`}
+                      rightContext="RECTO"
+                    />
                   </div>
                   <div className="divide-y divide-[#E5E5E5]">{rightProgs.map(renderRollRow)}</div>
                 </div>
@@ -674,49 +716,88 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
           ==================================================================== */}
       {garments.map((item) => {
         pageCursor += 1;
+        const pagePadded = String(pageCursor).padStart(2, '0');
+        const sectionId = item.gender === 'Women' ? 'women' : 'men';
+        const fabricSheetNum = fabricPrintPageByCode.get(item.specs.fabricRollRef);
+        const fabricPageLabel =
+          fabricSheetNum !== undefined
+            ? `P.${String(fabricSheetNum).padStart(2, '0')}`
+            : undefined;
+        const fabricFamilyName = getFabricFamilyName(item.specs.fabricRollRef);
+        const colorRefMap = new Map<string, string>();
+        getFactoryFabricColors(item.specs.fabricRollRef).forEach((entry) => {
+          const refText = entry.reference.trim() || entry.shadeCode.trim();
+          if (refText) {
+            colorRefMap.set(entry.colorName.trim().toLowerCase(), refText);
+            if (entry.factoryColorName.trim()) {
+              colorRefMap.set(entry.factoryColorName.trim().toLowerCase(), refText);
+            }
+          }
+        });
         const sourceNote = conciseSourceNote(item.dataFlags);
         const hasHero = Boolean(item.media.hero.url || item.media.hero.fallbackUrl);
         const detailSlots = [
-          { key: 'pocket' as const, label: 'Detail 01', hint: 'Pocket & trim closeup' },
-          { key: 'seam' as const, label: 'Detail 02', hint: 'Collar & seam closeup' },
-          { key: 'custom' as const, label: 'Detail 03', hint: 'Fit & construction detail' },
+          {
+            key: 'pocket' as const,
+            label: 'Detail 01',
+            hint: item.detailHints?.pocket ?? 'Pocket & trim closeup',
+          },
+          {
+            key: 'seam' as const,
+            label: 'Detail 02',
+            hint: item.detailHints?.seam ?? 'Collar & seam closeup',
+          },
           {
             key: 'swatch' as const,
             label: 'Fabric Image',
             hint: `Swatch ${item.specs.fabricRollRef}`,
           },
+          {
+            key: 'custom' as const,
+            label: 'Detail 03',
+            hint: item.detailHints?.custom ?? 'Fit & construction detail',
+          },
         ];
         const heroTopLockup = (
-          <div className="flex items-start justify-between gap-3">
-            <div className="inline-block border border-[#DCDAD3]/85 bg-white/85 px-2.5 py-1.5">
-              <span className="block font-serif text-3xl font-normal leading-none tracking-tight text-[#111111] tabular-nums">
-                {String(item.index).padStart(2, '0')}
+          <div className="space-y-2">
+            <RunningHeader
+              sectionId={sectionId}
+              categoryLabel={item.category}
+              pageLabel={`P.${pagePadded}A`}
+              rightContext={item.sku}
+              overImage={hasHero}
+            />
+            <div className="flex items-start justify-between gap-3 [text-shadow:0_1px_8px_rgba(247,246,242,0.9)]">
+              <div className="inline-block">
+                <span className="block font-serif text-3xl font-light leading-[0.88] tracking-tight text-[#111111] tabular-nums">
+                  {String(item.index).padStart(2, '0')}
+                </span>
+                <span className="mt-1 inline-block border-t border-[#111111]/25 pt-1 font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-[#3E3C37]">
+                  {item.gender} · {item.category}
+                </span>
+              </div>
+              <span className="pt-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.18em] text-[#33322F]">
+                {item.specs.fabricRollRef}
               </span>
-              <span className="mt-0.5 block font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#55534E]">
-                {item.gender} · {item.category}
-              </span>
-            </div>
-            <div className="inline-flex items-center border border-[#DCDAD3]/85 bg-white/85 px-2 py-1 font-mono text-[8px] font-semibold tracking-[0.14em] text-[#33322F]">
-              DREAM TOMORROW
             </div>
           </div>
         );
         const heroBottomCard = (
           <div>
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="font-serif text-xl font-normal leading-[1.08] tracking-tight text-[#0A0A0A]">
+              <h2 className="font-serif text-[22px] font-normal leading-[1.04] tracking-tight text-[#0A0A0A]">
                 {item.title}
               </h2>
-              <span className="shrink-0 font-mono text-[9.5px] font-semibold tracking-[0.12em] text-[#55534E] tabular-nums">
+              <span className="shrink-0 font-mono text-[9.5px] font-semibold tracking-[0.14em] text-[#3E3C37] tabular-nums">
                 {item.sku}
               </span>
             </div>
             <div className="mt-2">
-              <ProductSpecStrip item={item} overlay />
+              <ProductSpecStrip item={item} overlay fabricPageLabel={fabricPageLabel} />
             </div>
-            <div className="mt-1.5 flex items-center justify-between border-t border-[#E2E0DA]/90 pt-1 font-mono text-[8px] font-semibold text-[#66645F] tabular-nums">
-              <span>{String(pageCursor).padStart(2, '0')}A</span>
-              <span>{item.productGroupVi.toUpperCase()}</span>
+            <div className="mt-1.5 flex items-center justify-between border-t border-[#111111]/15 pt-1 font-mono text-[8px] font-semibold text-[#4E4C47] tabular-nums">
+              <span>P.{pagePadded}A</span>
+              <span>{fabricFamilyName.toUpperCase()}</span>
             </div>
           </div>
         );
@@ -768,7 +849,7 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                         {item.sku} · {item.specs.fabricRollRef}
                       </p>
                     </div>
-                    <div className="border border-[#DCDAD3] bg-white/95 px-3.5 py-2.5">
+                    <div className="pt-2">
                       {heroBottomCard}
                     </div>
                   </div>
@@ -783,10 +864,12 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   />
                 )}
 
-                <div className="flex items-center justify-between border-b border-[#E8E6E0] pb-2 font-mono text-[9px] text-[#77756F] tabular-nums">
-                  <span>CONSTRUCTION &amp; DETAILS</span>
-                  <span className="text-[#24231F]">{item.sku}</span>
-                </div>
+                <RunningHeader
+                  sectionId={sectionId}
+                  categoryLabel={`${item.category} · DETAILS`}
+                  pageLabel={`P.${pagePadded}B`}
+                  rightContext={item.sku}
+                />
 
                 <div className="my-2.5 flex flex-1 flex-col justify-between gap-3">
                   <div className="border-b border-[#E8E6E0] pb-3">
@@ -816,7 +899,7 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   <div className="border-b border-[#E8E6E0] pb-2.5">
                     <div className="mb-1.5 flex items-baseline justify-between gap-2">
                       <p className="font-mono text-[8px] font-semibold tracking-wider text-[#55534E]">
-                        COLORWAYS
+                        COLORWAYS · {item.specs.fabricRollRef}
                       </p>
                       <span className="font-mono text-[8px] text-[#77756F] tabular-nums">
                         {item.colorways.length} {item.colorways.length === 1 ? 'shade' : 'shades'}
@@ -825,6 +908,7 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                     <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
                       {item.colorways.map((color, index) => {
                         const hex = getColorSwatchHex(color);
+                        const refCode = colorRefMap.get(color.trim().toLowerCase());
                         return (
                           <div
                             key={`${color}-${index}`}
@@ -842,7 +926,14 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                                     }
                               }
                             />
-                            <span className="truncate">{color}</span>
+                            <span className="min-w-0 truncate">
+                              {color}
+                              {refCode && (
+                                <span className="ml-1 font-mono text-[7px] text-[#77756F]">
+                                  ({refCode})
+                                </span>
+                              )}
+                            </span>
                           </div>
                         );
                       })}
@@ -898,8 +989,11 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                         <dt className="font-mono text-[7.5px] uppercase tracking-wider text-[#77756F]">
                           Size Run · MOQ
                         </dt>
-                        <dd className="mt-0.5 font-mono text-[8.5px] font-semibold text-[#111111] tabular-nums">
-                          {item.specs.sizeRun} · {item.specs.moq}
+                        <dd className="mt-1 flex flex-col gap-1">
+                          <SizeRunChips sizeRun={item.specs.sizeRun} size="xs" />
+                          <span className="font-mono text-[8px] font-medium text-[#55534E] tabular-nums">
+                            MOQ {displayMoq(item.specs.moq)}
+                          </span>
                         </dd>
                       </div>
                     </dl>

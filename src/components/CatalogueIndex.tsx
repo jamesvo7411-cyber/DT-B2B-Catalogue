@@ -16,9 +16,11 @@ import type {
   MediaSlotKey,
 } from '../types/catalogue';
 import { CATEGORIES } from '../data/garments';
+import { formatSpreadPageCode, type CatalogueNavigationMap } from '../utils/catalogueOrder';
 
 interface CatalogueIndexProps {
   garments: GarmentItem[];
+  navMap?: CatalogueNavigationMap;
   activeCategory: GarmentCategory | 'All';
   onCategoryChange: (cat: GarmentCategory | 'All') => void;
   shortlist: string[];
@@ -81,6 +83,7 @@ const IndexHeroImage: React.FC<{ item: GarmentItem }> = ({ item }) => {
 
 export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
   garments,
+  navMap,
   activeCategory,
   onCategoryChange,
   shortlist,
@@ -89,6 +92,7 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
   onSelectFabricCode,
   onEditGarment,
 }) => {
+  const orderedGarments = navMap?.orderedGarments ?? garments;
   const [search, setSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState<'All' | GarmentGender>('All');
   const [fabricFilter, setFabricFilter] = useState<string>('All');
@@ -98,13 +102,13 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
 
   const fabricCodes = useMemo(() => {
     const set = new Set<string>();
-    garments.forEach((g) => set.add(g.specs.fabricRollRef));
+    orderedGarments.forEach((g) => set.add(g.specs.fabricRollRef));
     return Array.from(set);
-  }, [garments]);
+  }, [orderedGarments]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return garments.filter((g) => {
+    return orderedGarments.filter((g) => {
       if (activeCategory !== 'All' && g.category !== activeCategory) return false;
       if (genderFilter !== 'All' && g.gender !== genderFilter) return false;
       if (fabricFilter !== 'All' && g.specs.fabricRollRef !== fabricFilter) return false;
@@ -126,10 +130,10 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
         g.colorways.some((c) => c.toLowerCase().includes(q))
       );
     });
-  }, [garments, activeCategory, genderFilter, fabricFilter, search, stageFilter, shortlistOnly, shortlist]);
+  }, [orderedGarments, activeCategory, genderFilter, fabricFilter, search, stageFilter, shortlistOnly, shortlist]);
 
-  const menCount = garments.filter((g) => g.gender === 'Men').length;
-  const womenCount = garments.filter((g) => g.gender === 'Women').length;
+  const menCount = orderedGarments.filter((g) => g.gender === 'Men').length;
+  const womenCount = orderedGarments.filter((g) => g.gender === 'Women').length;
 
   return (
     <section aria-label="Collection index" className="mx-auto max-w-[1360px] px-6 py-10 lg:px-10 lg:py-14">
@@ -348,6 +352,14 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
         <div className="mt-8 grid grid-cols-1 gap-x-7 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item) => {
             const isShortlisted = shortlist.includes(item.id);
+            const spreadIdx = navMap?.garmentPageById.get(item.id);
+            const spreadLabel =
+              spreadIdx !== undefined
+                ? formatSpreadPageCode(spreadIdx)
+                : `P.${String(item.index).padStart(2, '0')}`;
+            const fabricSpreadIdx = navMap?.fabricPageByCode.get(item.specs.fabricRollRef);
+            const fabricLabel =
+              fabricSpreadIdx !== undefined ? ` · ${formatSpreadPageCode(fabricSpreadIdx)}` : '';
 
             return (
               <article key={item.id} className="group flex flex-col">
@@ -365,7 +377,7 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
                   </span>
                   <button
                     type="button"
-                    onClick={(e) => {
+                    onClick={() => {
                       onToggleShortlist(item.id);
                     }}
                     aria-label={isShortlisted ? 'Remove from saved styles' : 'Save this style'}
@@ -400,11 +412,12 @@ export const CatalogueIndex: React.FC<CatalogueIndexProps> = ({
                   className="mt-2 w-fit font-mono text-[10px] text-[#55534E] underline decoration-[#B8B5AD] underline-offset-2"
                 >
                   Fabric {item.specs.fabricRollRef}
+                  {fabricLabel}
                 </button>
 
                 <div className="mt-4 flex items-center justify-between border-t border-[#EAE8E3] pt-3 text-[11px] text-[#8A877F]">
                   <span className="inline-flex items-center gap-2 tabular-nums">
-                    <span className="font-mono">pp. {String(item.index * 2 - 1).padStart(2, '0')}–{String(item.index * 2).padStart(2, '0')}</span>
+                    <span className="font-mono font-medium text-[#55534E]">{spreadLabel}</span>
                     {item.dataFlags && item.dataFlags.length > 0 && (
                       <span title={item.dataFlags[0]} className="text-[var(--metallic-strong)]">
                         <AlertTriangle className="h-3 w-3" />

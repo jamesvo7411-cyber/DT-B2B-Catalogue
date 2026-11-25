@@ -16,21 +16,24 @@ import type {
   MetallicTheme,
 } from '../types/catalogue';
 import {
-  buildFabricSwatchPrograms,
   BRAND_LOGO_PATH,
-  CATEGORIES,
   CM_OEM_ODM_PILLARS,
   COVER_ATELIER_ILLUSTRATION,
   METALLIC_THEMES,
   PRINT_PRODUCTION_SPEC,
-  getFabricSwatchSpreadCount,
-  getProductSpreadOffset,
 } from '../data/garments';
 import {
   getFactoryColorImageKey,
   getPreferredFactoryFabricImage,
 } from '../data/factoryFabricColors';
 import { readImageFileAsDataUrl } from '../utils/media';
+import {
+  buildCatalogueNavigationMap,
+  getFabricFamilyName,
+  type CatalogueNavigationMap,
+  type SectionId,
+} from '../utils/catalogueOrder';
+import { RunningHeader } from './CatalogueNavigation';
 import { FabricColorwayTile } from './FabricColorwayTile';
 import { GarmentSpread, type SpreadLeafSide } from './GarmentSpread';
 
@@ -38,6 +41,8 @@ export interface SpreadPagesProps {
   pageIndex: number; // 0..totalSpreads-1
   totalSpreads: number;
   garments: GarmentItem[];
+  navMap?: CatalogueNavigationMap;
+  demoMode?: boolean;
   meta: CatalogueMetadata;
   metallicTheme: MetallicTheme;
   editMode: boolean;
@@ -65,13 +70,16 @@ export interface SpreadPagesProps {
   onExportJson: () => void;
   onTriggerImportCsv: () => void;
   onTriggerImportJson: () => void;
+  onOpenFabricColorPicker?: (garment: GarmentItem) => void;
 }
 
 const LeafShell: React.FC<{
   side: 'verso' | 'recto';
   showSafeZones?: boolean;
-  headerLeft: React.ReactNode;
-  headerRight: React.ReactNode;
+  sectionId: SectionId;
+  categoryLabel: string;
+  pageLabel: string;
+  rightContext?: React.ReactNode;
   footerLeft: React.ReactNode;
   footerRight: React.ReactNode;
   bgClass?: string;
@@ -79,8 +87,10 @@ const LeafShell: React.FC<{
 }> = ({
   side,
   showSafeZones = false,
-  headerLeft,
-  headerRight,
+  sectionId,
+  categoryLabel,
+  pageLabel,
+  rightContext,
   footerLeft,
   footerRight,
   bgClass = 'bg-white',
@@ -115,9 +125,13 @@ const LeafShell: React.FC<{
       )}
 
       {/* Leaf Running Header */}
-      <div className="relative z-10 mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#EFEFEF] pb-2.5 font-mono text-[10.5px] text-[#737373]">
-        <span>{headerLeft}</span>
-        <span>{headerRight}</span>
+      <div className="relative z-10 mb-4">
+        <RunningHeader
+          sectionId={sectionId}
+          categoryLabel={categoryLabel}
+          pageLabel={pageLabel}
+          rightContext={rightContext}
+        />
       </div>
 
       {/* Leaf Main Safe Zone Content */}
@@ -136,6 +150,8 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   pageIndex,
   totalSpreads,
   garments,
+  navMap,
+  demoMode = false,
   meta,
   metallicTheme,
   editMode,
@@ -163,16 +179,21 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   onExportJson,
   onTriggerImportCsv,
   onTriggerImportJson,
+  onOpenFabricColorPicker,
 }) => {
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [coverDragging, setCoverDragging] = useState(false);
   const showGuides = Boolean(showSafeZones && !classicMode);
 
-  const swatchPrograms = buildFabricSwatchPrograms(garments);
-  const swatchSpreadCount = getFabricSwatchSpreadCount(garments);
-  const productOffset = getProductSpreadOffset(garments);
-  const menItems = garments.filter((g) => g.gender === 'Men');
-  const womenItems = garments.filter((g) => g.gender === 'Women');
+  const effectiveNavMap =
+    navMap ?? buildCatalogueNavigationMap(garments, demoMode, fabricColorImages);
+  const orderedGarments = effectiveNavMap.orderedGarments;
+  const swatchPrograms = effectiveNavMap.orderedFabrics;
+  const swatchSpreadCount = swatchPrograms.length;
+  const productOffset = effectiveNavMap.productOffset;
+  const effectiveTotalSpreads = totalSpreads || effectiveNavMap.totalSpreads;
+  const menItems = orderedGarments.filter((g) => g.gender === 'Men');
+  const womenItems = orderedGarments.filter((g) => g.gender === 'Women');
 
   const handleCoverDropFiles = async (files: FileList | null) => {
     if (isPreviewLayer || classicMode || !files || files.length === 0) return;
@@ -207,9 +228,11 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       <LeafShell
         side="verso"
         showSafeZones={showGuides}
-        headerLeft="DREAM TOMORROW · DT"
-        headerRight="CM · OEM · ODM MONOGRAPH"
-        footerLeft="SPREAD 01A"
+        sectionId="introduction"
+        categoryLabel="OVERVIEW"
+        pageLabel="P.01A"
+        rightContext="CM · OEM · ODM"
+        footerLeft="P. 01A"
         footerRight="MANUFACTURING SCOPE"
       >
         <div className="flex flex-1 flex-col justify-between py-1">
@@ -347,10 +370,12 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         side="recto"
         bgClass="bg-[#FAF9F5]"
         showSafeZones={showGuides}
-        headerLeft="COVER FOLIO · PLATE 00"
-        headerRight={`${garments.length} STYLES · ${swatchPrograms.length} FABRICS`}
+        sectionId="introduction"
+        categoryLabel="COVER FOLIO"
+        pageLabel="P.01B"
+        rightContext={`${orderedGarments.length} STYLES · ${swatchPrograms.length} FABRICS`}
         footerLeft="ATELIER MONOGRAPH"
-        footerRight="SPREAD 01B"
+        footerRight="P. 01B"
       >
         <div className="flex flex-1 flex-col justify-between gap-4">
           <div
@@ -472,101 +497,110 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       <LeafShell
         side="verso"
         showSafeZones={showGuides}
-        headerLeft="THE COLLECTION"
-        headerRight={`${garments.length} STYLES · 5 CHAPTERS`}
+        sectionId="introduction"
+        categoryLabel="TABLE OF CONTENTS"
+        pageLabel="P.02A"
+        rightContext={`${orderedGarments.length} STYLES · 5 SECTIONS`}
         footerLeft="P. 02A"
         footerRight="DREAM TOMORROW"
       >
         <div>
-          <div className="mb-4">
-            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--metallic-strong)]">
-              A guide to the pieces
-            </p>
-            <h2 className="mt-1 font-serif text-3xl font-normal leading-none tracking-tight text-[#171715]">
-              Find your next favourite.
-            </h2>
-          </div>
-
-          <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 border-y border-[#EAE8E3] py-2 text-[9px] text-[#77736D]">
-            <button
-              type="button"
-              disabled={isPreviewLayer}
-              onClick={() => onGoToPage(0)}
-              className="transition-colors hover:text-[#171715] cursor-pointer"
-            >
-              The introduction <span className="ml-1 font-mono">01</span>
-            </button>
-            <button
-              type="button"
-              disabled={isPreviewLayer}
-              onClick={() => onGoToPage(2)}
-              className="transition-colors hover:text-[#171715] cursor-pointer"
-            >
-              Fabrics &amp; colour{' '}
-              <span className="ml-1 font-mono">
-                03–{String(productOffset).padStart(2, '0')}
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--metallic-strong)]">
+                Style &amp; fabric index
+              </p>
+              <h2 className="mt-1 font-serif text-3xl font-normal leading-none tracking-tight text-[#171715]">
+                Table of Contents
+              </h2>
+            </div>
+            {demoMode && (
+              <span className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-[#4C5D68]">
+                Demo Order · Showcase First
               </span>
-            </button>
-            <button
-              type="button"
-              disabled={isPreviewLayer}
-              onClick={() => onGoToPage(totalSpreads - 1)}
-              className="transition-colors hover:text-[#171715] cursor-pointer"
-            >
-              Production notes <span className="ml-1 font-mono">{totalSpreads}</span>
-            </button>
+            )}
           </div>
 
+          {/* 5 Color-Coded Catalogue Sections */}
+          <div className="mb-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-y border-[#EAE8E3] py-2 sm:grid-cols-3">
+            {effectiveNavMap.sections.map((sec) => (
+              <button
+                key={sec.id}
+                type="button"
+                disabled={isPreviewLayer}
+                onClick={() => onGoToPage(sec.startSpreadPage)}
+                className="flex items-center justify-between gap-2 text-left text-[9.5px] text-[#55534E] transition-colors hover:text-[#111111] cursor-pointer"
+              >
+                <span className="flex min-w-0 items-center gap-1.5 truncate">
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-[2.5px] shrink-0"
+                    style={{ backgroundColor: sec.markerColor }}
+                  />
+                  <span className="truncate font-medium">{sec.shortLabel}</span>
+                </span>
+                <span className="shrink-0 font-mono text-[8.5px] text-[#8E8B82] tabular-nums">
+                  P.{String(sec.startSpreadPage + 1).padStart(2, '0')}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Garment Categories */}
           <div className="divide-y divide-[#EEECE7]">
-            {CATEGORIES.map((c) => {
-              const firstInCat = garments.find((g) => g.category === c.name);
-              const startNum = productOffset + Number(c.range.split(' ')[0]);
-              const endNum = productOffset + Number(c.range.split(' ').pop());
+            {effectiveNavMap.categoryRanges.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                disabled={isPreviewLayer}
+                onClick={() => onGoToPage(c.firstPage)}
+                className="group flex w-full items-center justify-between gap-3 py-1.5 text-left transition-colors hover:bg-[#F8F7F4] cursor-pointer"
+              >
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="font-serif text-lg italic text-[var(--metallic-strong)]">{c.numeral}</span>
+                  <span className="truncate text-[10.5px] font-medium text-[#292824]">{c.name}</span>
+                  <span className="shrink-0 text-[8.5px] text-[#8E8B82]">{c.count} styles</span>
+                </span>
+                <span className="shrink-0 font-mono text-[8.5px] text-[#8E8B82] tabular-nums group-hover:text-[#171715]">
+                  {c.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Men's Collection Index: 01 Name   SKU   p.18 */}
+          <div className="mt-3.5 border-t border-[#EAE8E3] pt-2.5">
+            <h3 className="mb-1.5 flex items-baseline justify-between gap-2">
+              <span className="font-serif text-lg text-[#171715]">Men&apos;s Collection</span>
+              <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[#8E8B82]">
+                Nam · {menItems.length} styles
+              </span>
+            </h3>
+            {menItems.map((item) => {
+              const targetSpread = effectiveNavMap.garmentPageById.get(item.id) ?? productOffset;
               return (
                 <button
-                  key={c.name}
+                  key={item.id}
                   type="button"
                   disabled={isPreviewLayer}
-                  onClick={() => firstInCat && onGoToPage(productOffset + firstInCat.index - 1)}
-                  className="group flex w-full items-center justify-between gap-3 py-2 text-left transition-colors hover:bg-[#F8F7F4] cursor-pointer"
+                  onClick={() => onGoToPage(targetSpread)}
+                  className="group grid w-full grid-cols-[18px_minmax(0,1fr)_auto_40px] items-baseline gap-2 border-b border-[#F2F0EB] py-[3px] text-left transition-colors hover:bg-[#F8F7F4] cursor-pointer"
                 >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span className="font-serif text-xl italic text-[var(--metallic-strong)]">{c.numeral}</span>
-                    <span className="truncate text-[11px] font-medium text-[#292824]">{c.name}</span>
-                    <span className="shrink-0 text-[9px] text-[#8A877F]">{c.count} styles</span>
+                  <span className="font-mono text-[8.5px] text-[#9A968E] tabular-nums">
+                    {String(item.index).padStart(2, '0')}
                   </span>
-                  <span className="shrink-0 font-mono text-[9px] text-[#8A877F] group-hover:text-[#171715]">
-                    {String(startNum).padStart(2, '0')}–{String(endNum).padStart(2, '0')}
+                  <span className="truncate text-[10px] font-medium text-[#171715]">
+                    {item.title}
+                  </span>
+                  <span className="shrink-0 font-mono text-[8px] font-normal tracking-wide text-[#9A968E] tabular-nums group-hover:text-[#66645F]">
+                    {item.sku}
+                  </span>
+                  <span className="text-right font-mono text-[9px] text-[#55534E] tabular-nums group-hover:text-[#0A0A0A]">
+                    p.{String(targetSpread + 1).padStart(2, '0')}
                   </span>
                 </button>
               );
             })}
-          </div>
-
-          <div className="mt-4 border-t border-[#EAE8E3] pt-3">
-            <h3 className="mb-1.5 flex items-baseline justify-between gap-2">
-              <span className="font-serif text-xl text-[#171715]">Men&apos;s line</span>
-              <span className="text-[9px] uppercase tracking-[0.14em] text-[#8A877F]">
-                Nam · {menItems.length} styles
-              </span>
-            </h3>
-            {menItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                disabled={isPreviewLayer}
-                onClick={() => onGoToPage(productOffset + item.index - 1)}
-                className="flex w-full items-baseline justify-between gap-2 border-b border-[#F2F0EB] py-1 text-left text-[10px] transition-colors hover:bg-[#F8F7F4] cursor-pointer"
-              >
-                <span className="flex min-w-0 items-baseline gap-2 truncate">
-                  <span className="font-mono text-[9px] text-[#8A877F]">{String(item.index).padStart(2, '0')}</span>
-                  <span className="font-medium text-[#292824]">{item.title}</span>
-                </span>
-                <span className="shrink-0 font-mono text-[9px] text-[#8A877F] tabular-nums">
-                  p. {String(productOffset + item.index).padStart(2, '0')}
-                </span>
-              </button>
-            ))}
           </div>
         </div>
       </LeafShell>
@@ -576,41 +610,51 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       <LeafShell
         side="recto"
         showSafeZones={showGuides}
-        headerLeft="THE COLLECTION"
-        headerRight="WOMEN'S LINE"
+        sectionId="introduction"
+        categoryLabel="WOMEN'S COLLECTION"
+        pageLabel="P.02B"
+        rightContext={`NỮ · ${womenItems.length} STYLES`}
         footerLeft="DREAM TOMORROW · DT"
         footerRight="P. 02B"
       >
         <div className="flex h-full flex-col">
-          <div className="mb-5 border-b border-[#EAE8E3] pb-4">
+          <div className="mb-4 border-b border-[#EAE8E3] pb-3.5">
             <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-[var(--metallic-strong)]">
-              The women&apos;s edit
+              Quick-reference style directory
             </p>
-            <h3 className="mt-1 font-serif text-4xl font-normal leading-none tracking-tight text-[#171715]">
-              Women&apos;s line<span className="text-[var(--metallic-strong)]">.</span>
+            <h3 className="mt-1 font-serif text-3xl font-normal leading-none tracking-tight text-[#171715]">
+              Women&apos;s Collection<span className="text-[var(--metallic-strong)]">.</span>
             </h3>
-            <p className="mt-2 text-[10px] leading-relaxed text-[#77736D]">
-              {womenItems.length} styles to browse. Choose a piece to turn straight to its story.
+            <p className="mt-1.5 text-[10px] leading-relaxed text-[#77736D]">
+              {womenItems.length} styles indexed with factory style codes and exact folio spreads.
             </p>
           </div>
-          <div className="divide-y divide-[#EEECE7] border-t border-[#EAE8E3]">
-            {womenItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                disabled={isPreviewLayer}
-                onClick={() => onGoToPage(productOffset + item.index - 1)}
-                className="flex w-full items-baseline justify-between gap-3 py-2.5 text-left text-[11px] transition-colors hover:bg-[#F8F7F4] cursor-pointer"
-              >
-                <span className="flex min-w-0 items-baseline gap-3 truncate">
-                  <span className="font-mono text-[9px] text-[#8A877F]">{String(item.index).padStart(2, '0')}</span>
-                  <span className="font-serif text-xs leading-tight text-[#292824]">{item.title}</span>
-                </span>
-                <span className="shrink-0 font-mono text-[9px] text-[#8A877F] tabular-nums">
-                  p. {String(productOffset + item.index).padStart(2, '0')}
-                </span>
-              </button>
-            ))}
+          <div className="divide-y divide-[#EEECE7] border-y border-[#EAE8E3]">
+            {womenItems.map((item) => {
+              const targetSpread = effectiveNavMap.garmentPageById.get(item.id) ?? productOffset;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={isPreviewLayer}
+                  onClick={() => onGoToPage(targetSpread)}
+                  className="group grid w-full grid-cols-[20px_minmax(0,1fr)_auto_44px] items-baseline gap-2.5 py-2 text-left transition-colors hover:bg-[#F8F7F4] cursor-pointer"
+                >
+                  <span className="font-mono text-[9px] text-[#9A968E] tabular-nums">
+                    {String(item.index).padStart(2, '0')}
+                  </span>
+                  <span className="truncate font-sans text-[11px] font-medium text-[#171715]">
+                    {item.title}
+                  </span>
+                  <span className="shrink-0 font-mono text-[8.5px] font-normal tracking-wide text-[#9A968E] tabular-nums group-hover:text-[#66645F]">
+                    {item.sku}
+                  </span>
+                  <span className="text-right font-mono text-[9.5px] text-[#55534E] tabular-nums group-hover:text-[#0A0A0A]">
+                    p.{String(targetSpread + 1).padStart(2, '0')}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </LeafShell>
@@ -660,13 +704,26 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
           : 'aspect-square';
     const isExpandedTile = shadeCount <= 6;
 
+    const spreadPadded = String(pageIndex + 1).padStart(2, '0');
+    const fabricFamilyName = getFabricFamilyName(program.fabricCode);
+
     const renderFabricLeaf = (leafSide: 'verso' | 'recto') => (
       <LeafShell
         side={leafSide}
         showSafeZones={showGuides}
-        headerLeft={`SWATCHBOOK TEXTILES · SPREAD ${String(swatchSpreadNum).padStart(2, '0')}/${String(swatchSpreadCount).padStart(2, '0')}`}
-        headerRight={`${program.fabricCode} · ${program.colorCount} COLORWAYS`}
-        footerLeft={`P. ${String(pageIndex + 1).padStart(2, '0')}${leafSide === 'verso' ? 'A' : 'B'}`}
+        sectionId="fabrics"
+        categoryLabel={
+          leafSide === 'verso'
+            ? `${program.fabricCode} · ${program.colorCount} SHADES`
+            : `${program.fabricCode} · COLORWAYS`
+        }
+        pageLabel={`P.${spreadPadded}${leafSide === 'verso' ? 'A' : 'B'}`}
+        rightContext={
+          leafSide === 'verso'
+            ? `SWATCH ${String(swatchSpreadNum).padStart(2, '0')}/${String(swatchSpreadCount).padStart(2, '0')}`
+            : 'PANTONE TCX ARCHIVE'
+        }
+        footerLeft={`P. ${spreadPadded}${leafSide === 'verso' ? 'A' : 'B'}`}
         footerRight={leafSide === 'verso' ? 'FABRIC SPECIFICATION' : 'COLORWAY GALLERY'}
       >
         {leafSide === 'verso' ? (
@@ -674,7 +731,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             <div className="flex items-end justify-between gap-3">
               <div>
                 <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--metallic-strong)]">
-                  Fabric family
+                  Fabric Family · {fabricFamilyName}
                 </p>
                 <h2 className="mt-1 font-serif text-4xl font-normal leading-none tracking-tight text-[#111111]">
                   {program.fabricCode}
@@ -788,26 +845,39 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
             </div>
 
             <section className="mt-auto border-t border-[#EAE8E3] pt-2.5">
-              <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                <h3 className="font-mono text-[9px] font-bold uppercase tracking-wide text-[#33322F]">
-                  Styles using this fabric
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <h3 className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#33322F]">
+                  Used By
                 </h3>
                 <span className="font-mono text-[8px] text-[#77756F] tabular-nums">
-                  {linkedProducts.length} linked
+                  {linkedProducts.length} {linkedProducts.length === 1 ? 'style' : 'styles'}
                 </span>
               </div>
-              <div className="flex max-h-32 flex-wrap content-start gap-x-3 gap-y-1.5 overflow-y-auto">
-                {linkedProducts.map(({ garment, sku }) => (
-                  <button
-                    key={garment.id}
-                    type="button"
-                    disabled={isPreviewLayer}
-                    onClick={() => onGoToPage(productOffset + garment.index - 1)}
-                    className="text-left text-[9.5px] leading-snug text-[#292824] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#111111] disabled:cursor-default cursor-pointer"
-                  >
-                    {garment.title} <span className="font-mono font-bold">({sku})</span>
-                  </button>
-                ))}
+              <div className="grid max-h-36 grid-cols-1 gap-x-4 gap-y-1.5 overflow-y-auto sm:grid-cols-2">
+                {linkedProducts.map(({ garment, sku }) => {
+                  const targetPage = effectiveNavMap.garmentPageById.get(garment.id) ?? productOffset;
+                  return (
+                    <button
+                      key={garment.id}
+                      type="button"
+                      disabled={isPreviewLayer}
+                      onClick={() => onGoToPage(targetPage)}
+                      className="group border-b border-[#EFECE6] pb-1 text-left transition-colors hover:border-[#111111] disabled:cursor-default cursor-pointer"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-mono text-[9.5px] font-bold text-[#111111]">
+                          {sku}
+                        </span>
+                        <span className="font-mono text-[8.5px] font-semibold text-[#66645F] tabular-nums group-hover:text-[#0A0A0A]">
+                          P.{String(targetPage + 1).padStart(2, '0')}
+                        </span>
+                      </div>
+                      <p className="truncate text-[9.5px] text-[#4E4C47] group-hover:text-[#0A0A0A]">
+                        {garment.title}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -858,12 +928,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   /* ========================================================================
      PRODUCT SPREADS
      ======================================================================== */
-  if (pageIndex >= productOffset && pageIndex < productOffset + garments.length) {
-    const product = garments[pageIndex - productOffset];
+  if (pageIndex >= productOffset && pageIndex < productOffset + orderedGarments.length) {
+    const product = orderedGarments[pageIndex - productOffset];
     return (
       <GarmentSpread
         garment={product}
-        allGarments={garments}
+        allGarments={orderedGarments}
+        spreadNumber={pageIndex + 1}
+        navMap={effectiveNavMap}
         editMode={editMode}
         classicMode={classicMode}
         isShortlisted={shortlist.includes(product.id)}
@@ -871,9 +943,19 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         side={side}
         showSafeZones={showGuides}
         isPreviewLayer={isPreviewLayer}
-        onPrev={() => onGoToPage(pageIndex <= 0 ? totalSpreads - 1 : pageIndex - 1)}
-        onNext={() => onGoToPage(pageIndex >= totalSpreads - 1 ? 0 : pageIndex + 1)}
-        onJumpToIndex={(idx) => onGoToPage(productOffset + idx - 1)}
+        onPrev={() => onGoToPage(pageIndex <= 0 ? effectiveTotalSpreads - 1 : pageIndex - 1)}
+        onNext={() => onGoToPage(pageIndex >= effectiveTotalSpreads - 1 ? 0 : pageIndex + 1)}
+        onJumpToIndex={(idx) => {
+          const match = orderedGarments.find((g) => g.index === idx);
+          if (match) {
+            onGoToPage(effectiveNavMap.garmentPageById.get(match.id) ?? productOffset);
+          } else {
+            onGoToPage(productOffset + idx - 1);
+          }
+        }}
+        onJumpToGarmentId={(garmentId) =>
+          onGoToPage(effectiveNavMap.garmentPageById.get(garmentId) ?? productOffset)
+        }
         onToggleShortlist={onToggleShortlist}
         onReplaceFile={onReplaceFile}
         onUpdateCrop={onUpdateCrop}
@@ -882,6 +964,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
         onOpenVideo={onOpenVideo}
         onExportCurrentPdf={() => onExportCurrentPdf(product.index)}
         onSelectFabricCode={onSelectFabricCode}
+        onOpenFabricColorPicker={onOpenFabricColorPicker}
       />
     );
   }
@@ -889,13 +972,17 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
   /* ========================================================================
      FINAL SPREAD: ASSET READINESS, PRINT PRODUCTION SPECS & CSV / JSON SWAP
      ======================================================================== */
+  const techPadded = String(effectiveTotalSpreads).padStart(2, '0');
+
   const backVerso = (
     <LeafShell
       side="verso"
       showSafeZones={showGuides}
-      headerLeft="ASSET & PRINT PRODUCTION SPECS"
-      headerRight="STATIC / PRE-PRESS READY"
-      footerLeft={`P. ${totalSpreads}A`}
+      sectionId="technical"
+      categoryLabel="PRODUCTION NOTES"
+      pageLabel={`P.${techPadded}A`}
+      rightContext="PRE-PRESS PROFILE"
+      footerLeft={`P. ${techPadded}A`}
       footerRight="300 DPI & CMYK READY"
     >
       <div className="space-y-5">
@@ -964,10 +1051,12 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     <LeafShell
       side="recto"
       showSafeZones={showGuides}
-      headerLeft={classicMode ? 'DREAM TOMORROW · DT' : 'STRUCTURED DATA SWAP'}
-      headerRight={classicMode ? meta.edition : 'CSV / JSON MANIFEST'}
+      sectionId="technical"
+      categoryLabel={classicMode ? 'ARCHIVE COLOPHON' : 'STRUCTURED DATA SWAP'}
+      pageLabel={`P.${techPadded}B`}
+      rightContext={classicMode ? meta.edition : 'CSV / JSON MANIFEST'}
       footerLeft="FLAT @MEDIA PRINT READY"
-      footerRight={`P. ${totalSpreads}B`}
+      footerRight={`P. ${techPadded}B`}
     >
       <div className="flex flex-1 flex-col justify-between">
         {classicMode ? (

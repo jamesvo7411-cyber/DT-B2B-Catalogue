@@ -12,6 +12,7 @@ interface SlotEditorDrawerProps {
   initialFocusSlot?: MediaSlotKey;
   onClose: () => void;
   onUpdateGarment: (updated: GarmentItem) => void;
+  onOpenFabricColorPicker?: (garment: GarmentItem) => void;
 }
 
 const SLOT_META: { key: MediaSlotKey; label: string; hint: string }[] = [
@@ -27,6 +28,7 @@ export const SlotEditorDrawer: React.FC<SlotEditorDrawerProps> = ({
   initialFocusSlot,
   onClose,
   onUpdateGarment,
+  onOpenFabricColorPicker,
 }) => {
   const [activeTab, setActiveTab] = useState<'media' | 'specs'>(
     initialFocusSlot ? 'media' : 'media'
@@ -194,11 +196,22 @@ export const SlotEditorDrawer: React.FC<SlotEditorDrawerProps> = ({
                       </div>
 
                       {isFactoryLinked ? (
-                        <p className="flex-1 text-[11px] leading-relaxed text-[#55534E]">
-                          {slot.url
-                            ? `Shared from the ${garment.specs.fabricRollRef} fabric family.`
-                            : `No image linked to ${garment.specs.fabricRollRef} yet. Add one in the Fabric Library.`}
-                        </p>
+                        <div className="flex-1 space-y-2">
+                          <p className="text-[11px] leading-relaxed text-[#55534E]">
+                            {slot.url
+                              ? `${slot.note || `Shared from the ${garment.specs.fabricRollRef} fabric family.`}`
+                              : `No image linked to ${garment.specs.fabricRollRef} yet. Add one in the Fabric Library.`}
+                          </p>
+                          {onOpenFabricColorPicker && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenFabricColorPicker(garment)}
+                              className="inline-flex items-center gap-1.5 border border-[#0A0A0A] bg-white px-3 py-1.5 text-[11px] font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white cursor-pointer"
+                            >
+                              Switch {garment.specs.fabricRollRef} Color Swatch
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-2">

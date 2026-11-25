@@ -1,14 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowUpRight, ImagePlus, Search, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, ImagePlus, Search, Sparkles, Upload } from 'lucide-react';
 import type { FactoryFabricColor, FabricSwatchProgram, GarmentItem } from '../types/catalogue';
 import { buildFabricSwatchPrograms, getColorSwatchHex } from '../data/garments';
 import { getFactoryColorImageKey } from '../data/factoryFabricColors';
+import {
+  formatSpreadPageCode,
+  getFabricFamilyName,
+  type CatalogueNavigationMap,
+} from '../utils/catalogueOrder';
 import { getBuyerFacingColorNote, getDisplayColorName } from '../utils/fabricDisplay';
 import { readImageFileAsDataUrl } from '../utils/media';
+import { RunningHeader } from './CatalogueNavigation';
 import { ColorSwatchList } from './ColorSwatchList';
 
 interface FabricSwatchBoardProps {
   garments: GarmentItem[];
+  navMap?: CatalogueNavigationMap;
+  demoMode?: boolean;
+  onToggleDemoMode?: () => void;
   onReplaceFabricSwatch: (fabricCode: string, dataUrl: string) => void;
   onSelectStyleIndex: (index: number) => void;
   fabricColorImages?: Record<string, string>;
@@ -260,6 +269,9 @@ const FabricSwatchTile: React.FC<{
 
 export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
   garments,
+  navMap,
+  demoMode = false,
+  onToggleDemoMode,
   onReplaceFabricSwatch,
   onSelectStyleIndex,
   fabricColorImages = {},
@@ -272,10 +284,11 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
   isPreviewLayer = false,
 }) => {
   const [query, setQuery] = useState('');
-  const allPrograms = buildFabricSwatchPrograms(garments);
+  const allPrograms = navMap?.orderedFabrics ?? buildFabricSwatchPrograms(garments);
   const programs = sliceRange
     ? allPrograms.slice(sliceRange[0], sliceRange[1])
     : allPrograms;
+  const orderedGarments = navMap?.orderedGarments ?? garments;
 
   if (!embeddedInFlipbook) {
     const normalizedQuery = query.trim().toLowerCase();
@@ -318,10 +331,17 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
     return (
       <div className="mx-auto max-w-[1360px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
         <header className="mb-8 border-b border-[#E5E3DE] pb-6">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#77756F]">
-            Dream Tomorrow · Fabric Library
-          </p>
-          <div className="mt-2 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+          <RunningHeader
+            sectionId="fabrics"
+            categoryLabel="TEXTILE & COLOR ARCHIVE"
+            pageLabel={
+              navMap
+                ? `P.03–${String(navMap.productOffset).padStart(2, '0')}`
+                : 'P.03–17'
+            }
+            rightContext={`${allPrograms.length} FABRIC PROGRAMS`}
+          />
+          <div className="mt-4 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <div>
               <h1 className="font-sans text-3xl font-semibold tracking-tight text-[#171715] sm:text-4xl">
                 Fabric &amp; Color Availability
@@ -351,17 +371,34 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
               </div>
             </div>
           </div>
-          <label className="mt-5 flex max-w-xl items-center gap-2 border border-[#D8D6D0] bg-white px-3 py-2.5">
-            <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[#77756F]" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search fabric, style, color, shade code, or TCX"
-              className="w-full bg-transparent text-sm text-[#171715] outline-none placeholder:text-[#99968E]"
-              aria-label="Search fabric programs and colors"
-            />
-          </label>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex min-w-[260px] flex-1 max-w-xl items-center gap-2 border border-[#D8D6D0] bg-white px-3 py-2.5">
+              <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[#77756F]" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search fabric, style, color, shade code, or TCX"
+                className="w-full bg-transparent text-sm text-[#171715] outline-none placeholder:text-[#99968E]"
+                aria-label="Search fabric programs and colors"
+              />
+            </label>
+            {onToggleDemoMode && (
+              <button
+                type="button"
+                onClick={onToggleDemoMode}
+                aria-pressed={demoMode}
+                className={`inline-flex items-center gap-1.5 border px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
+                  demoMode
+                    ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
+                    : 'border-[#DCDAD3] bg-white text-[#4A4843] hover:border-[#0A0A0A]'
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{demoMode ? 'Demo Mode: On' : 'Demo Mode'}</span>
+              </button>
+            )}
+          </div>
           {canEditColorImages && (
             <p className="mt-2 text-[11px] text-[#77756F]">
               Workbench: drop or upload a different generated fabric image on each color card.
@@ -370,7 +407,11 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
         </header>
 
         <div className="space-y-8">
-          {visiblePrograms.map(({ program, colors }) => (
+          {visiblePrograms.map(({ program, colors }) => {
+            const fabricSpreadIdx = navMap?.fabricPageByCode.get(program.fabricCode);
+            const fabricPageCode =
+              fabricSpreadIdx !== undefined ? formatSpreadPageCode(fabricSpreadIdx) : undefined;
+            return (
             <article
               key={program.fabricCode}
               className="border border-[#E5E3DE] bg-white"
@@ -379,7 +420,8 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                 <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                   <div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#77756F]">
-                      Factory fabric / roll code
+                      {getFabricFamilyName(program.fabricCode)}
+                      {fabricPageCode ? ` · Folio ${fabricPageCode}` : ''}
                     </p>
                     <h2 className="mt-1 font-mono text-lg font-semibold text-[#171715]">
                       {program.fabricCode}
@@ -411,22 +453,40 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[#E5E3DE] pt-3">
-                  <span className="text-[10px] uppercase tracking-wide text-[#77756F]">
-                    Styles using this fabric:
+                <div className="mt-3 border-t border-[#E5E3DE] pt-3">
+                  <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#55534E]">
+                    Used By
                   </span>
-                  {program.linkedSkus.map((sku, index) => (
-                    <button
-                      key={sku}
-                      type="button"
-                      disabled={isPreviewLayer}
-                      onClick={() => onSelectStyleIndex(program.linkedIndices[index])}
-                      className="inline-flex items-center gap-1 font-mono text-[10px] font-medium text-[#171715] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#171715] disabled:cursor-default"
-                    >
-                      {sku}
-                      <ArrowUpRight aria-hidden="true" className="h-2.5 w-2.5" />
-                    </button>
-                  ))}
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {program.linkedSkus.map((sku, index) => {
+                      const styleIdx = program.linkedIndices[index];
+                      const styleObj = orderedGarments.find((item) => item.index === styleIdx);
+                      const spreadIdx = styleObj ? navMap?.garmentPageById.get(styleObj.id) : undefined;
+                      const pageTag = spreadIdx !== undefined ? formatSpreadPageCode(spreadIdx) : '';
+                      return (
+                        <button
+                          key={sku}
+                          type="button"
+                          disabled={isPreviewLayer}
+                          onClick={() => onSelectStyleIndex(styleIdx)}
+                          className="group flex items-baseline justify-between gap-2 border-b border-[#EAE8E2] pb-1 text-left transition-colors hover:border-[#171715] disabled:cursor-default cursor-pointer"
+                        >
+                          <span className="min-w-0 truncate text-[11px] text-[#171715]">
+                            <span className="font-mono font-bold">{sku}</span>{' '}
+                            {styleObj && (
+                              <span className="text-[#55534E] group-hover:text-[#171715]">
+                                · {styleObj.title}
+                              </span>
+                            )}
+                          </span>
+                          <span className="inline-flex shrink-0 items-center gap-0.5 font-mono text-[10px] font-semibold text-[#66645F] tabular-nums group-hover:text-[#171715]">
+                            {pageTag}
+                            <ArrowUpRight aria-hidden="true" className="h-2.5 w-2.5" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -514,7 +574,8 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                 })}
               </div>
             </article>
-          ))}
+            );
+          })}
           {visiblePrograms.length === 0 && (
             <p className="border border-dashed border-[#D8D6D0] bg-white px-4 py-8 text-center text-sm text-[#77756F]">
               No fabric colors match that search.
@@ -626,7 +687,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     })}
                   </div>
                 </div>
-                <ColorSwatchList colorways={prog.colorways} compact />
+                <ColorSwatchList colorways={prog.colorways} fabricCode={prog.fabricCode} compact />
               </div>
             </article>
           ) : (
@@ -688,9 +749,9 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
 
                 {/* Linked Style Codes */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[11px]">
-                  <span className="text-[#737373]">Styles ({prog.linkedSkus.length}):</span>
+                  <span className="text-[#737373]">Used By ({prog.linkedSkus.length}):</span>
                   {prog.linkedIndices.map((styleIndex, idx) => {
-                    const style = garments.find((item) => item.index === styleIndex);
+                    const style = orderedGarments.find((item) => item.index === styleIndex);
                     const sku = prog.linkedSkus[idx];
                     return (
                       <button
@@ -718,7 +779,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                     Pantone TCX &amp; swatchbook shade references
                   </span>
                 </div>
-                <ColorSwatchList colorways={prog.colorways} compact />
+                <ColorSwatchList colorways={prog.colorways} fabricCode={prog.fabricCode} compact />
               </div>
             </article>
           )
