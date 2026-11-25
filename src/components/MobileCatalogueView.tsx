@@ -299,7 +299,7 @@ export const MobileCatalogueView: React.FC<MobileCatalogueViewProps> = ({
               ))}
             </dl>
             {conciseSourceNote(garment.dataFlags) && (
-              <p className="mt-2 border-l-2 border-[#A6A39B] pl-3 text-xs leading-relaxed text-[#55534E]">
+              <p className="mt-2 border-t border-[#DAD8D2] pt-2 text-xs leading-relaxed text-[#55534E]">
                 {conciseSourceNote(garment.dataFlags)}
               </p>
             )}

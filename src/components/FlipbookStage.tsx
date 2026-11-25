@@ -240,6 +240,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
   }
 
   return (
+    <div className={classicMode ? 'min-h-[calc(100vh-4rem)] bg-[#F4F3EF] pb-8 pt-2' : ''}>
     <section
       aria-label={
         classicMode
@@ -247,7 +248,7 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
           : 'Workbench page-curl catalogue'
       }
       className={`mx-auto max-w-[1380px] px-4 sm:px-6 lg:px-10 ${
-        classicMode ? 'py-1 lg:py-2' : 'py-6 lg:py-7'
+        classicMode ? 'py-2 lg:py-3' : 'py-6 lg:py-7'
       }`}
     >
       {/* ====================================================================
@@ -717,5 +718,6 @@ export const FlipbookStage: React.FC<FlipbookStageProps> = ({
       </div>
       )}
     </section>
+    </div>
   );
 };

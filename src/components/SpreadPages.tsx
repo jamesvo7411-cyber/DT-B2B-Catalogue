@@ -20,6 +20,7 @@ import {
   BRAND_LOGO_PATH,
   CATEGORIES,
   CM_OEM_ODM_PILLARS,
+  COVER_ATELIER_ILLUSTRATION,
   METALLIC_THEMES,
   PRINT_PRODUCTION_SPEC,
   getFabricSwatchSpreadCount,
@@ -89,7 +90,7 @@ const LeafShell: React.FC<{
 
   return (
     <div
-      className={`relative flex h-full min-h-[700px] flex-col justify-between ${bgClass} ${
+      className={`relative flex h-full min-h-[660px] flex-col justify-between ${bgClass} ${
         isVerso
           ? 'py-6 pl-6 pr-8 sm:py-7 sm:pl-8 sm:pr-11 lg:py-8 lg:pl-9 lg:pr-14'
           : 'py-6 pl-8 pr-6 sm:py-7 sm:pl-11 sm:pr-8 lg:py-8 lg:pl-14 lg:pr-9'
@@ -200,65 +201,128 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
      SPREAD 01: COVER & CM / OEM / ODM CAPABILITY OVERVIEW
      ======================================================================== */
   if (pageIndex === 0) {
+    const activeCoverSrc = coverCustomImage || COVER_ATELIER_ILLUSTRATION;
+
     const coverVerso = (
       <LeafShell
         side="verso"
         showSafeZones={showGuides}
         headerLeft="DREAM TOMORROW · DT"
-        headerRight="CM · OEM · ODM B2B PORTFOLIO"
+        headerRight="CM · OEM · ODM MONOGRAPH"
         footerLeft="SPREAD 01A"
-        footerRight="B2B LINE MONOGRAPH"
+        footerRight="MANUFACTURING SCOPE"
       >
-        <div className="flex flex-1 flex-col justify-between py-2">
+        <div className="flex flex-1 flex-col justify-between py-1">
           <div>
-            <h1 className="mt-2 font-sans text-4xl font-semibold tracking-tight text-[#0A0A0A] sm:text-5xl lg:leading-[1.04]">
-              Dream Tomorrow
-            </h1>
-            <p className="mt-2 font-mono text-xs tracking-wide text-[var(--metallic-strong)]">
-              {meta.edition}
-            </p>
-            <div className="mt-5 h-px w-20 metallic-rule" />
-            <p className="mt-5 max-w-[56ch] text-sm leading-relaxed text-[#404040]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[var(--metallic-strong)]">
+                  B2B Apparel &amp; Textile Portfolio
+                </p>
+                <h1 className="mt-1.5 font-serif text-4xl font-normal tracking-tight text-[#0A0A0A] sm:text-[42px] lg:leading-[1.02]">
+                  Dream Tomorrow
+                </h1>
+              </div>
+              <img
+                src={BRAND_LOGO_PATH}
+                alt="Dream Tomorrow DT Monogram"
+                className="mt-1 h-9 w-auto shrink-0 object-contain opacity-90"
+              />
+            </div>
+
+            <div className="mt-3.5 flex items-center gap-3">
+              <div className="h-px w-14 metallic-rule" />
+              <p className="font-mono text-[10px] tracking-wide text-[#525252]">
+                {meta.edition}
+              </p>
+            </div>
+
+            <p className="mt-3 max-w-[60ch] text-[12px] leading-relaxed text-[#404040]">
               {meta.subtitle}
             </p>
 
-            {/* CM / OEM / ODM Manufacturing Capabilities */}
-            <div className="mt-7 grid grid-cols-1 gap-5 border-t border-[#EFEFEF] pt-6 sm:grid-cols-3">
-              {CM_OEM_ODM_PILLARS.map((p) => (
-                <div key={p.code} className="space-y-1.5">
-                  <span className="font-mono text-[11px] font-semibold text-[var(--metallic-strong)]">
-                    {p.code}
-                  </span>
-                  <h2 className="font-sans text-xs font-semibold text-[#0A0A0A]">{p.title}</h2>
-                  <p className="text-[11px] leading-relaxed text-[#525252]">{p.detail}</p>
-                </div>
-              ))}
+            {/* Illustrated CM / OEM / ODM Manufacturing Engagement Models */}
+            <div className="mt-5 border-t border-[#E6E4DE] pt-4">
+              <div className="mb-3 flex items-baseline justify-between gap-2">
+                <h2 className="font-serif text-lg font-normal tracking-tight text-[#141412]">
+                  Three Manufacturing Models
+                </h2>
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#737373]">
+                  CM · OEM · ODM
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {CM_OEM_ODM_PILLARS.map((p) => (
+                  <article key={p.code} className="flex flex-col">
+                    <div className="aspect-[4/3] w-full overflow-hidden border border-[#E6E4DE] bg-[#FAF9F5]">
+                      <img
+                        src={p.illustration}
+                        alt={`${p.code} — ${p.title} editorial illustration`}
+                        referrerPolicy="no-referrer"
+                        className={`h-full w-full object-cover ${p.cropScaleClass}`}
+                      />
+                    </div>
+
+                    <div className="mt-2.5 flex items-baseline justify-between gap-1 border-b border-[#EFECE6] pb-1.5">
+                      <span className="font-mono text-[10.5px] font-semibold tracking-wide text-[#0A0A0A]">
+                        {p.index} · {p.code}
+                      </span>
+                      <span className="truncate font-mono text-[8.5px] text-[var(--metallic-strong)]">
+                        {p.subtitle}
+                      </span>
+                    </div>
+
+                    <h3 className="mt-1.5 font-sans text-[12px] font-semibold tracking-tight text-[#0A0A0A]">
+                      {p.title}
+                    </h3>
+                    <p className="mt-1 text-[10.5px] leading-relaxed text-[#525252]">
+                      {p.detail}
+                    </p>
+
+                    <dl className="mt-auto space-y-1 border-t border-[#EFECE6] pt-2 text-[9.5px] leading-snug">
+                      <div>
+                        <dt className="inline font-mono text-[8.5px] uppercase tracking-wider text-[#737373]">
+                          Client:{' '}
+                        </dt>
+                        <dd className="inline text-[#292824]">{p.buyerSupplies}</dd>
+                      </div>
+                      <div>
+                        <dt className="inline font-mono text-[8.5px] uppercase tracking-wider text-[#737373]">
+                          DT:{' '}
+                        </dt>
+                        <dd className="inline font-medium text-[#0A0A0A]">{p.dtDelivers}</dd>
+                      </div>
+                    </dl>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#EFEFEF] pt-5">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[#EAE8E3] pt-4">
             {!classicMode && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-[11px] text-[#737373]">Accent:</span>
+                <span className="mr-1 text-[11px] text-[#737373]">Finish:</span>
                 {METALLIC_THEMES.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  disabled={isPreviewLayer || classicMode}
-                  onClick={() => onChangeMetallicTheme(theme.id)}
-                  className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-medium cursor-pointer ${
-                    metallicTheme === theme.id
-                      ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
-                      : 'border-[#E5E5E5] bg-white text-[#404040] hover:border-[#0A0A0A]'
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 border border-black/15"
-                    style={{ backgroundColor: theme.swatch }}
-                  />
-                  <span>{theme.label}</span>
-                </button>
+                  <button
+                    key={theme.id}
+                    type="button"
+                    disabled={isPreviewLayer || classicMode}
+                    onClick={() => onChangeMetallicTheme(theme.id)}
+                    className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-medium cursor-pointer ${
+                      metallicTheme === theme.id
+                        ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white'
+                        : 'border-[#E5E5E5] bg-white text-[#404040] hover:border-[#0A0A0A]'
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 border border-black/15"
+                      style={{ backgroundColor: theme.swatch }}
+                    />
+                    <span>{theme.label}</span>
+                  </button>
                 ))}
               </div>
             )}
@@ -267,7 +331,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               <button
                 type="button"
                 onClick={() => onGoToPage(1)}
-                className="inline-flex items-center gap-2 bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#262626] whitespace-nowrap cursor-pointer"
+                className="ml-auto inline-flex items-center gap-2 bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#262626] whitespace-nowrap cursor-pointer"
               >
                 <span>Open Table of Contents</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -281,14 +345,14 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
     const coverRecto = (
       <LeafShell
         side="recto"
-        bgClass="bg-[#FCFCFC]"
+        bgClass="bg-[#FAF9F5]"
         showSafeZones={showGuides}
-        headerLeft="COVER FOLIO"
-        headerRight="43 STYLES · 15 FABRICS"
-        footerLeft="PRINT-READY SPINE MARGIN"
+        headerLeft="COVER FOLIO · PLATE 00"
+        headerRight={`${garments.length} STYLES · ${swatchPrograms.length} FABRICS`}
+        footerLeft="ATELIER MONOGRAPH"
         footerRight="SPREAD 01B"
       >
-        <div className="flex flex-1 flex-col justify-between gap-5">
+        <div className="flex flex-1 flex-col justify-between gap-4">
           <div
             role={isPreviewLayer || classicMode ? undefined : 'button'}
             tabIndex={isPreviewLayer || classicMode ? undefined : 0}
@@ -321,12 +385,12 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                     handleCoverDropFiles(e.dataTransfer.files);
                   }
             }
-            className={`group relative flex min-h-[400px] flex-1 flex-col items-center justify-center overflow-hidden border p-6 text-center transition-colors ${
+            className={`group relative flex min-h-[430px] flex-1 flex-col items-center justify-center overflow-hidden border transition-colors ${
               isPreviewLayer || classicMode ? '' : 'cursor-pointer'
             } ${
               coverDragging
-                ? 'border-[#0A0A0A] bg-[#F2F2F2]'
-                : 'border-[#E5E5E5] bg-white hover:border-[var(--metallic)]'
+                ? 'border-[#0A0A0A] bg-[#F0EFEA]'
+                : 'border-[#E6E4DE] bg-[#FAF9F5] hover:border-[var(--metallic)]'
             }`}
           >
             {!isPreviewLayer && !classicMode && (
@@ -342,53 +406,55 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
               />
             )}
 
-            {coverCustomImage ? (
-              <>
-                <img
-                  src={coverCustomImage}
-                  alt="Dream Tomorrow Custom Cover"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                {!classicMode && (
-                  <div className="relative z-10 bg-white/90 px-4 py-2 text-xs font-medium text-[#0A0A0A]">
-                    Session Cover Preview · Drop image to replace
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <img
-                  src={BRAND_LOGO_PATH}
-                  alt="Dream Tomorrow DT Monogram"
-                  className="h-24 w-auto object-contain"
-                />
-                <div className="mt-6 h-px w-14 metallic-rule" />
-                <p className="mt-4 font-serif text-lg italic text-[#404040]">
-                  Knitwear &amp; Woven Manufacturing Monograph
-                </p>
-                {!classicMode && <p className="mt-2 font-mono text-[11px] text-[#737373]">
-                  Drop cover campaign image here (optional)
-                </p>}
-              </>
+            <img
+              src={activeCoverSrc}
+              alt={
+                coverCustomImage
+                  ? 'Dream Tomorrow Custom Cover'
+                  : 'Dream Tomorrow Knitwear & Woven Atelier Monograph Illustration'
+              }
+              referrerPolicy="no-referrer"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+
+            {!classicMode && !isPreviewLayer && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between bg-gradient-to-t from-black/60 via-black/25 to-transparent px-4 pb-3 pt-10 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <span className="font-mono text-[10px] tracking-wide">
+                  {coverCustomImage
+                    ? 'Session cover active · Drop or click to replace'
+                    : 'Atelier cover plate · Drop custom photo to override'}
+                </span>
+              </div>
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4 border-t border-[#EAEAEA] pt-3 text-center">
+          <div className="flex items-baseline justify-between gap-3 pt-0.5">
+            <span className="font-serif text-sm italic text-[#404040]">
+              Fig. 00 — Knitwear &amp; Woven Manufacturing Monograph
+            </span>
+            <span className="font-mono text-[9.5px] text-[#737373] tabular-nums">
+              DT Atelier
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 border-t border-[#E6E4DE] pt-3 text-center">
             <div>
               <p className="font-mono text-sm font-medium text-[#0A0A0A] tabular-nums">
                 {menItems.length}
               </p>
-              <p className="text-[11px] text-[#737373]">Men&apos;s (Nam)</p>
+              <p className="text-[11px] text-[#66645F]">Men&apos;s (Nam)</p>
             </div>
             <div>
               <p className="font-mono text-sm font-medium text-[#0A0A0A] tabular-nums">
                 {womenItems.length}
               </p>
-              <p className="text-[11px] text-[#737373]">Women&apos;s (Nữ)</p>
+              <p className="text-[11px] text-[#66645F]">Women&apos;s (Nữ)</p>
             </div>
             <div>
-              <p className="font-mono text-sm font-medium text-[#0A0A0A] tabular-nums">15</p>
-              <p className="text-[11px] text-[#737373]">Fabric Rolls</p>
+              <p className="font-mono text-sm font-medium text-[#0A0A0A] tabular-nums">
+                {swatchPrograms.length}
+              </p>
+              <p className="text-[11px] text-[#66645F]">Fabric Rolls</p>
             </div>
           </div>
         </div>
@@ -573,6 +639,26 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       program.factoryColors.map((color) => color.lotWidth.trim()).filter(Boolean)
     );
     const hasLotVariation = uniqueLotGsm.size > 1 || uniqueLotWidths.size > 1;
+    const programCategories = Array.from(
+      new Set(linkedProducts.map(({ garment }) => garment.category))
+    ).join(' · ');
+    const programGenders = Array.from(
+      new Set(linkedProducts.map(({ garment }) => garment.gender))
+    ).join(' / ');
+    const shadeCount = program.factoryColors.length;
+    const colorwayGridClass =
+      shadeCount <= 6
+        ? 'grid flex-1 grid-cols-2 content-start gap-3 sm:gap-3.5'
+        : shadeCount <= 12
+          ? 'grid flex-1 grid-cols-3 content-start gap-2.5'
+          : 'grid flex-1 grid-cols-3 sm:grid-cols-4 content-start gap-2';
+    const tileAspectClass =
+      shadeCount <= 4
+        ? 'aspect-[5/4]'
+        : shadeCount <= 12
+          ? 'aspect-[4/3]'
+          : 'aspect-square';
+    const isExpandedTile = shadeCount <= 6;
 
     const renderFabricLeaf = (leafSide: 'verso' | 'recto') => (
       <LeafShell
@@ -585,30 +671,53 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
       >
         {leafSide === 'verso' ? (
           <div className="flex flex-1 flex-col gap-3">
-            <div>
-              <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--metallic-strong)]">
-                Fabric family
-              </p>
-              <h2 className="mt-1 font-sans text-3xl font-extrabold leading-none tracking-tight text-[#111111]">
-                {program.fabricCode}
-              </h2>
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--metallic-strong)]">
+                  Fabric family
+                </p>
+                <h2 className="mt-1 font-serif text-4xl font-normal leading-none tracking-tight text-[#111111]">
+                  {program.fabricCode}
+                </h2>
+              </div>
+              {programGenders && (
+                <span className="font-mono text-[9px] font-semibold uppercase tracking-wider text-[#66645F]">
+                  {programGenders}
+                </span>
+              )}
             </div>
 
             {heroImage ? (
-              <img
-                src={heroImage.imageUrl}
-                alt={`${program.fabricCode} fabric drape`}
-                loading="lazy"
-                decoding="async"
-                className="aspect-[16/10] w-full border border-[#E5E3DE] bg-[#F7F6F2] object-cover"
-              />
+              <div>
+                <div className="aspect-[4/3] w-full overflow-hidden bg-[#F5F4F0]">
+                  <img
+                    src={heroImage.imageUrl}
+                    alt={`${program.fabricCode} close-up fabric texture`}
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full scale-[1.65] object-cover"
+                  />
+                </div>
+                <div className="mt-1.5 flex items-baseline justify-between gap-2 font-mono text-[9px] font-semibold uppercase tracking-wide text-[#33322F]">
+                  <span>Fabric Image</span>
+                  <span className="text-[8px] font-medium text-[#77756F]">
+                    Macro Weave · {heroImage.colorName}
+                  </span>
+                </div>
+              </div>
             ) : (
-              <div className="flex aspect-[16/10] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#F7F6F2] px-4 text-center">
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#33322F]">
-                  Fabric hero image not supplied
-                </p>
-                <p className="mt-1 max-w-[36ch] text-[10px] leading-relaxed text-[#68665F]">
-                  Add a verified {program.fabricCode} fabric drape in the Fabric Library.
+              <div>
+                <div className="flex aspect-[4/3] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#FAF9F5] px-4 text-center">
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#33322F]">
+                    Fabric hero image not supplied
+                  </p>
+                  <p className="mt-1 max-w-[36ch] text-[10px] leading-relaxed text-[#68665F]">
+                    Add a verified {program.fabricCode} fabric drape in the Fabric Library.
+                  </p>
+                </div>
+                <p className="mt-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-[#33322F]">
+                  Fabric Image
                 </p>
               </div>
             )}
@@ -626,7 +735,7 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
                   Weight
                 </dt>
-                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111]">
+                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111] tabular-nums">
                   {program.weightGsm || 'Not listed'}
                 </dd>
               </div>
@@ -634,11 +743,30 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 <dt className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
                   Roll width
                 </dt>
-                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111]">
+                <dd className="mt-0.5 font-mono text-[12px] font-bold text-[#111111] tabular-nums">
                   {program.fabricWidth || 'Not listed'}
                 </dd>
               </div>
             </dl>
+
+            <div className="grid grid-cols-3 gap-2 border-b border-[#EAE8E3] pb-2.5 text-[9.5px]">
+              <div className="col-span-2">
+                <p className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
+                  Program coverage
+                </p>
+                <p className="mt-0.5 truncate font-medium text-[#111111]">
+                  {programCategories || 'Core garment line'}
+                </p>
+              </div>
+              <div>
+                <p className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#77756F]">
+                  Verified shades
+                </p>
+                <p className="mt-0.5 font-mono font-bold text-[#111111] tabular-nums">
+                  {shadeCount} {shadeCount === 1 ? 'shade' : 'shades'}
+                </p>
+              </div>
+            </div>
 
             <div>
               <h3 className="font-mono text-[9px] font-bold uppercase tracking-wide text-[#33322F]">
@@ -648,12 +776,12 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 {program.stretchFeelNote || 'No fabric characteristic note supplied.'}
               </p>
               {hasLotVariation && (
-                <p className="mt-1 border-l-2 border-[#A6A39B] pl-2 text-[9px] leading-snug text-[#68665F]">
+                <p className="mt-2 border-t border-[#EAE8E3] pt-1.5 text-[9px] leading-snug text-[#68665F]">
                   Factory color-lot GSM or width entries vary; confirm the selected shade and lot before ordering.
                 </p>
               )}
               {program.dataFlags[0] && (
-                <p className="mt-1 border-l-2 border-[#A6A39B] pl-2 text-[9px] leading-snug text-[#68665F]">
+                <p className="mt-1.5 border-t border-[#EAE8E3] pt-1.5 text-[9px] leading-snug text-[#68665F]">
                   {program.dataFlags[0]}
                 </p>
               )}
@@ -664,18 +792,18 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                 <h3 className="font-mono text-[9px] font-bold uppercase tracking-wide text-[#33322F]">
                   Styles using this fabric
                 </h3>
-                <span className="font-mono text-[8px] text-[#77756F]">
+                <span className="font-mono text-[8px] text-[#77756F] tabular-nums">
                   {linkedProducts.length} linked
                 </span>
               </div>
-              <div className="flex max-h-24 flex-wrap content-start gap-x-3 gap-y-1 overflow-y-auto">
+              <div className="flex max-h-32 flex-wrap content-start gap-x-3 gap-y-1.5 overflow-y-auto">
                 {linkedProducts.map(({ garment, sku }) => (
                   <button
                     key={garment.id}
                     type="button"
                     disabled={isPreviewLayer}
                     onClick={() => onGoToPage(productOffset + garment.index - 1)}
-                    className="text-left text-[9px] leading-snug text-[#292824] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#111111] disabled:cursor-default"
+                    className="text-left text-[9.5px] leading-snug text-[#292824] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#111111] disabled:cursor-default cursor-pointer"
                   >
                     {garment.title} <span className="font-mono font-bold">({sku})</span>
                   </button>
@@ -694,11 +822,11 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                   {program.fabricCode} colorways
                 </h2>
               </div>
-              <span className="shrink-0 font-mono text-[9px] font-semibold text-[#33322F]">
-                {program.factoryColors.length} shades
+              <span className="shrink-0 font-mono text-[9px] font-semibold text-[#33322F] tabular-nums">
+                {shadeCount} {shadeCount === 1 ? 'shade' : 'shades'}
               </span>
             </div>
-            <div className="grid flex-1 grid-cols-3 content-start gap-2 sm:gap-2.5">
+            <div className={colorwayGridClass}>
               {program.factoryColors.map((color, colorIndex) => {
                 const imageKey = getFactoryColorImageKey(program.fabricCode, color.colorName);
                 const imageUrl = fabricColorImages[imageKey] || color.swatchImageUrl || '';
@@ -707,6 +835,8 @@ export const SpreadPages: React.FC<SpreadPagesProps> = ({
                     key={`${program.fabricCode}-${color.colorName}-${colorIndex}`}
                     color={color}
                     imageUrl={imageUrl}
+                    aspectClass={tileAspectClass}
+                    expanded={isExpandedTile}
                     interactive={!classicMode && !isPreviewLayer}
                     onReplace={onReplaceFabricColorImage}
                     onError={onImageUploadError}

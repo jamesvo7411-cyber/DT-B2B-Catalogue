@@ -11,11 +11,14 @@ import { getExpectedImageFile, PRODUCT_ASSETS } from './productAssets';
 
 export const BRAND_LOGO_PATH = '/assets/aistudio/image_d4ceae1f.png';
 
+export const COVER_ATELIER_ILLUSTRATION =
+  '/src/assets/images/cover_atelier_plate_1795580913741.jpg';
+
 export const DEFAULT_CATALOGUE_META: CatalogueMetadata = {
   season: 'Dream Tomorrow (DT) — B2B Landscape Catalogue',
   edition: 'CM · OEM · ODM Capability & 43-Style Line Book',
   subtitle:
-    'A modular monochrome B2B lookbook and technical specification portfolio for Dream Tomorrow (DT), built for CM, OEM, and ODM wholesale buyers and leadership review.',
+    'A modular monochrome B2B lookbook and technical specification portfolio for Dream Tomorrow (DT), structured for CM, OEM, and ODM wholesale partners.',
   presentationNote:
     'Visual frames are initialized as architectural blank plates mapped to each real style code and swatchbook fabric roll. Drag and drop local images onto any slot to preview live in-browser (session-only unless saved to project assets or exported).',
   contactEmail: 'wholesale@dreamtomorrow.studio',
@@ -68,22 +71,40 @@ export const CATEGORIES: {
 
 export const CM_OEM_ODM_PILLARS = [
   {
+    index: '01',
     code: 'CM',
-    title: 'Cut & Make (CM)',
+    title: 'Cut & Make',
+    subtitle: 'Buyer-Supplied Fabrics',
+    illustration: '/src/assets/images/pillar_cm_illustration_1795580914784.jpg',
+    cropScaleClass: 'scale-[1.13]',
+    buyerSupplies: 'Fabric rolls, trims & graded tech pack',
+    dtDelivers: 'Precision cutting, assembly & inline SPI QC',
     detail:
-      'Precision cutting, grading, bar-tacking, and flatlock/coverstitch assembly for buyer-supplied fabric rolls with inline SPI inspection.',
+      'Precision cutting, grading, bar-tacking, and flatlock/coverstitch assembly for client-supplied fabric rolls with inline SPI inspection.',
   },
   {
+    index: '02',
     code: 'OEM',
-    title: 'Original Equipment (OEM)',
+    title: 'Original Equipment',
+    subtitle: 'Full-Package Sourcing',
+    illustration: '/src/assets/images/pillar_oem_illustration_1795580915075.jpg',
+    cropScaleClass: 'scale-[1.03]',
+    buyerSupplies: 'Target spec sheet & Pantone TCX palette',
+    dtDelivers: '15-mill program sourcing, lab dips & bulk',
     detail:
-      'Full-package sourcing from our 15 verified swatchbook knit and woven programs (Modal, 4-Way Piqué, Slub 20, A-Series Suiting) to tech-pack spec.',
+      'End-to-end mill sourcing across our 15 verified knit & woven programs (Modal, 4-Way Piqué, Slub 20, A-Series Suiting) to your exact tech pack.',
   },
   {
+    index: '03',
     code: 'ODM',
-    title: 'Original Design (ODM)',
+    title: 'Original Design',
+    subtitle: 'Turnkey Branded Blocks',
+    illustration: '/src/assets/images/pillar_odm_illustration_1795580916550.jpg',
+    cropScaleClass: 'scale-[1.03]',
+    buyerSupplies: 'Brand labels, colorway choice & volume',
+    dtDelivers: '43 engineered Men’s & Women’s styles',
     detail:
-      '43 pre-engineered Men’s (Nam) and Women’s (Nữ) silhouettes ready for rapid private-label branding, Pantone TCX lab dips, and showroom sampling.',
+      '43 pre-engineered Men’s (Nam) and Women’s (Nữ) silhouettes ready for private-label branding, custom colorways, and rapid showroom sampling.',
   },
 ];
 
@@ -1169,6 +1190,10 @@ export function createInitialGarments(): GarmentItem[] {
       media.hero = {
         ...media.hero,
         url: `/catalogue-media/${encodeURIComponent(assetMapping.heroFile)}`,
+        fallbackUrl:
+          row.sku === 'WTSHIRT-MD2'
+            ? '/assets/aistudio/WTSHIRT-MD2_Hero_acd4d06e.jpg'
+            : undefined,
         stage: 'studio-final',
         caption: `${media.hero.caption} · ${assetMapping.heroFile}`,
         note: `Local image file: ${assetMapping.heroFile}`,

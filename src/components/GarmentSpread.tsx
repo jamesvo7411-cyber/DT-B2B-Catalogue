@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -75,12 +75,33 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
       item.specs.fabricRollRef.toLowerCase() === garment.specs.fabricRollRef.toLowerCase()
   );
   const sourceNote = conciseSourceNote(garment.dataFlags);
-  const productDetailSlots: { key: MediaSlotKey; label: string }[] = [
-    { key: 'pocket', label: 'Detail 01' },
-    { key: 'seam', label: 'Detail 02' },
-    { key: 'swatch', label: 'Fabric Image' },
-    { key: 'custom', label: 'Detail 03' },
+  const [unavailableSlots, setUnavailableSlots] = useState<Partial<Record<MediaSlotKey, boolean>>>({});
+
+  useEffect(() => {
+    setUnavailableSlots({});
+  }, [
+    garment.id,
+    garment.media.hero.url,
+    garment.media.hero.fallbackUrl,
+    garment.media.pocket.url,
+    garment.media.seam.url,
+    garment.media.swatch.url,
+    garment.media.custom.url,
+  ]);
+
+  const markSlotUnavailable = (slotKey: MediaSlotKey) => {
+    setUnavailableSlots((prev) => (prev[slotKey] ? prev : { ...prev, [slotKey]: true }));
+  };
+
+  const productDetailSlots: { key: MediaSlotKey; label: string; hint: string }[] = [
+    { key: 'pocket', label: 'Detail 01', hint: 'Pocket & trim closeup' },
+    { key: 'seam', label: 'Detail 02', hint: 'Collar & seam closeup' },
+    { key: 'custom', label: 'Detail 03', hint: 'Fit & construction detail' },
+    { key: 'swatch', label: 'Fabric Image', hint: `Swatch ${garment.specs.fabricRollRef}` },
   ];
+  const hasHeroAsset =
+    Boolean(garment.media.hero.url || garment.media.hero.fallbackUrl) &&
+    !unavailableSlots.hero;
 
   const renderMedia = (
     slotKey: MediaSlotKey,
@@ -88,10 +109,13 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
     aspectClass: string,
     compact = false,
     imageOverlay?: React.ReactNode,
-    displayScale = 1
+    displayScale = 1,
+    topOverlay?: React.ReactNode,
+    overlayMode: 'gradient' | 'card' = 'gradient',
+    fullHeight = false
   ) => {
     const slot = garment.media[slotKey];
-    if (classicMode && !slot.url) return null;
+    if (classicMode && !slot.url && !slot.fallbackUrl) return null;
     const canEditSlot = !classicMode && slotKey !== 'swatch';
 
     return (
@@ -105,8 +129,12 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
         editable={canEditSlot}
         showBlankGuides={canEditSlot}
         compact={compact || classicMode}
+        fullHeight={fullHeight}
         displayScale={displayScale}
+        topOverlay={topOverlay}
         imageOverlay={imageOverlay}
+        overlayMode={overlayMode}
+        onImageUnavailable={markSlotUnavailable}
         onReplaceFile={
           isPreviewLayer || !canEditSlot
             ? undefined
@@ -127,34 +155,44 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
     );
   };
 
-  const renderClassicDetail = (slotKey: MediaSlotKey, label: string) => {
-    const hasImage = Boolean(garment.media[slotKey].url);
-    const missingLabel =
-      slotKey === 'swatch' ? 'Fabric image not supplied' : 'Detail image not supplied';
+  const renderClassicDetail = (
+    slotKey: MediaSlotKey,
+    label: string,
+    hint: string,
+    aspectClass = 'aspect-[16/10] w-full'
+  ) => {
+    const slot = garment.media[slotKey];
+    const hasLoadedAsset =
+      Boolean(slot.url || slot.fallbackUrl) && !unavailableSlots[slotKey];
+
     return (
       <div key={slotKey} className="min-w-0">
-        {hasImage ? (
+        {hasLoadedAsset ? (
           renderMedia(
             slotKey,
             `${garment.sku} ${label}`,
-            'aspect-[4/3] w-full',
+            aspectClass,
             true,
             undefined,
             slotKey === 'swatch' ? 1.65 : 1
           )
         ) : (
-          <div className="flex aspect-[4/3] w-full flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#F7F6F2] px-2 text-center">
-            <span className="font-mono text-[8px] font-semibold uppercase tracking-wide text-[#55534E]">
-              {missingLabel}
+          <div
+            className={`flex ${aspectClass} flex-col items-center justify-center border border-dashed border-[#D8D6D0] bg-[#FAF9F5] px-2.5 text-center`}
+          >
+            <span aria-hidden="true" className="relative mb-1.5 block h-4 w-4">
+              <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#C8C5BE]" />
+              <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#C8C5BE]" />
             </span>
-            {slotKey === 'swatch' && (
-              <span className="mt-1 text-[8px] leading-snug text-[#77756F]">
-                Add a {garment.specs.fabricRollRef} image in the Fabric Library.
-              </span>
-            )}
+            <span className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-[#55534E]">
+              {label}
+            </span>
+            <span className="mt-0.5 text-[8px] leading-snug text-[#77756F]">
+              {hint}
+            </span>
           </div>
         )}
-        <p className="mt-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-[#33322F]">
+        <p className="mt-1 font-mono text-[8.5px] font-semibold uppercase tracking-wide text-[#33322F]">
           {label}
         </p>
       </div>
@@ -165,7 +203,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
     const verso = leafSide === 'verso';
     return (
       <div
-        className={`relative flex h-full min-h-[700px] flex-col bg-white py-6 sm:py-7 lg:py-8 ${
+        className={`relative flex h-full min-h-[660px] flex-col bg-white py-5 sm:py-6 lg:py-7 ${
           verso
             ? 'pl-6 pr-8 sm:pl-8 sm:pr-11 lg:pl-9 lg:pr-14'
             : 'pl-8 pr-6 sm:pl-11 sm:pr-8 lg:pl-14 lg:pr-9'
@@ -190,159 +228,312 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
     );
   };
 
-  const versoLeaf = leafShell(
-    'verso',
-    <>
-      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] font-semibold tracking-wide text-[#111111]">
-        <span>DREAM TOMORROW</span>
-        <span className="text-right font-bold">
-          {garment.gender.toUpperCase()} · {garment.category.toUpperCase()}
+  const heroTopLockup = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="inline-block border border-[#DCDAD3]/85 bg-white/82 px-3 py-2 backdrop-blur-sm">
+        <span className="block font-serif text-4xl font-normal leading-none tracking-tight text-[#111111] tabular-nums sm:text-[42px]">
+          {paddedNumber}
         </span>
-      </header>
+        <span className="mt-1 block font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em] text-[#55534E]">
+          {garment.gender} · {garment.category}
+        </span>
+      </div>
+      {classicMode && (
+        <div className="inline-flex items-center border border-[#DCDAD3]/85 bg-white/82 px-2.5 py-1.5 backdrop-blur-sm font-mono text-[8.5px] font-semibold tracking-[0.14em] text-[#33322F]">
+          DREAM TOMORROW
+        </div>
+      )}
+    </div>
+  );
 
-      <main className="relative z-10 flex flex-1 flex-col gap-4">
-        {renderMedia(
-          'hero',
-          'Primary image',
-          'aspect-[13/12]',
-          classicMode,
-          classicMode ? undefined : (
-            <div className="max-w-[38ch]">
-              <p className="font-mono text-[10px] font-bold tracking-[0.12em]">
-                {garment.sku} <span className="mx-1.5 opacity-70">/</span>{' '}
-                {garment.category.toUpperCase()}
-              </p>
-              <h1 className="mt-1 font-sans text-3xl font-extrabold leading-[0.98] tracking-tight sm:text-4xl">
-                {garment.title}
-              </h1>
-            </div>
-          )
-        )}
-
-        {classicMode && (
-          <div className="flex items-center gap-4 border-b border-[#EFEDE8] pb-3">
-            <span className="font-sans text-5xl font-extrabold leading-none tracking-[-0.06em] text-[#111111]">
-              {paddedNumber}
-            </span>
-            <div className="min-w-0">
-              <p className="font-mono text-[10px] font-bold tracking-wide text-[#111111]">
-                {garment.gender.toUpperCase()} · {garment.category.toUpperCase()}
-              </p>
-              <h1 className="mt-1 font-sans text-2xl font-extrabold leading-tight tracking-tight text-[#111111] sm:text-3xl">
-                {garment.title}
-              </h1>
-            </div>
-          </div>
-        )}
-
+  const heroBottomCard = (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <h1 className="font-serif text-[22px] font-normal leading-[1.08] tracking-tight text-[#0A0A0A] sm:text-[25px]">
+          {garment.title}
+        </h1>
+        <span className="shrink-0 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#55534E] tabular-nums">
+          {garment.sku}
+        </span>
+      </div>
+      <div className="mt-2">
         <ProductSpecStrip
           item={garment}
+          overlay
           onSelectFabricCode={onSelectFabricCode}
           disabled={isPreviewLayer}
         />
+      </div>
+      {classicMode && (
+        <div className="mt-2 flex items-center justify-between border-t border-[#E2E0DA]/90 pt-1.5 font-mono text-[8.5px] font-semibold text-[#66645F] tabular-nums">
+          <span>P. {versoPage}</span>
+          <span>
+            {paddedNumber}.A · {garment.productGroupVi.toUpperCase()}
+          </span>
+        </div>
+      )}
+    </div>
+  );
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFEDE8] pb-3">
-          {sourceNote ? (
-            <p className="flex max-w-[65ch] items-start gap-1.5 text-[9px] leading-relaxed text-[#77756F]">
-              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>{sourceNote}</span>
-            </p>
-          ) : (
-            <span />
-          )}
-          {embeddedInFlipbook && !isPreviewLayer && !classicMode && (
-            <div className="flex shrink-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={() => onToggleShortlist(garment.id)}
-                className="inline-flex items-center gap-1.5 text-[10px] text-[#55534E] transition-colors hover:text-[#111]"
-              >
-                {isShortlisted ? <Check className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
-                <span>{isShortlisted ? 'Saved' : 'Save style'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenEditor()}
-                className="inline-flex items-center gap-1.5 text-[10px] text-[#55534E] transition-colors hover:text-[#111]"
-              >
-                <SlidersHorizontal className="h-3 w-3" />
-                <span>Edit</span>
-              </button>
-            </div>
+  const versoLeaf = classicMode ? (
+    <div className="relative flex h-full min-h-[660px] w-full flex-col overflow-hidden bg-[#FAF9F5]">
+      <div
+        aria-hidden="true"
+        className="spine-verso-shadow pointer-events-none absolute inset-y-0 right-0 z-30 w-14"
+      />
+      {hasHeroAsset ? (
+        <div className="relative flex h-full min-h-[660px] w-full flex-1 flex-col">
+          {renderMedia(
+            'hero',
+            'Primary image',
+            'h-full w-full flex-1',
+            true,
+            heroBottomCard,
+            1,
+            heroTopLockup,
+            'card',
+            true
           )}
         </div>
-
-        {!classicMode && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#111111]">
-          <div className="flex items-center gap-4">
-            {garment.videoUrl && !classicMode && (
-              <button
-                type="button"
-                disabled={isPreviewLayer}
-                onClick={() => onOpenVideo(garment)}
-                className="inline-flex items-center gap-1.5 transition-colors hover:text-[#111]"
-              >
-                <Film className="h-3 w-3" />
-                <span>{garment.videoTitle || 'View video'}</span>
-              </button>
-            )}
-            {garment.productUrl && (
-              <a
-                href={garment.productUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 transition-colors hover:text-[#111]"
-              >
-                <ExternalLink className="h-3 w-3" />
-                <span>Product source</span>
-              </a>
-            )}
+      ) : (
+        <div className="relative flex h-full min-h-[660px] w-full flex-1 flex-col justify-between bg-[#FAF9F5] p-5 sm:p-6">
+          {heroTopLockup}
+          <div className="my-auto px-6 py-10 text-center">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#77756F]">
+              Studio Hero Photography Pending
+            </p>
+            <p className="mt-1.5 font-serif text-xl italic text-[#404040]">
+              {garment.sku} · {garment.specs.fabricRollRef}
+            </p>
           </div>
-          {!classicMode && (
+          <div className="border border-[#DCDAD3] bg-white/95 px-4 py-3">
+            {heroBottomCard}
+          </div>
+        </div>
+      )}
+    </div>
+  ) : (
+    leafShell(
+      'verso',
+      <>
+        <header className="relative z-10 mb-3 flex items-center justify-between gap-3 border-b border-[#E8E6E0] pb-2 font-mono text-[9px] font-semibold tracking-wide text-[#111111]">
+          <span>DREAM TOMORROW</span>
+          <span className="text-right font-bold">
+            {garment.gender.toUpperCase()} · {garment.category.toUpperCase()}
+          </span>
+        </header>
+
+        <main className="relative z-10 flex flex-1 flex-col gap-3">
+          {renderMedia(
+            'hero',
+            'Primary image',
+            'min-h-[460px] w-full flex-1',
+            false,
+            heroBottomCard,
+            1,
+            heroTopLockup,
+            'card',
+            true
+          )}
+
+          {(sourceNote || (embeddedInFlipbook && !isPreviewLayer)) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+              {sourceNote ? (
+                <p className="flex max-w-[65ch] items-start gap-1.5 text-[9px] leading-relaxed text-[#77756F]">
+                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                  <span>{sourceNote}</span>
+                </p>
+              ) : (
+                <span />
+              )}
+              {embeddedInFlipbook && !isPreviewLayer && (
+                <div className="flex shrink-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onToggleShortlist(garment.id)}
+                    className="inline-flex items-center gap-1.5 text-[10px] text-[#55534E] transition-colors hover:text-[#111] cursor-pointer"
+                  >
+                    {isShortlisted ? <Check className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
+                    <span>{isShortlisted ? 'Saved' : 'Save style'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenEditor()}
+                    className="inline-flex items-center gap-1.5 text-[10px] text-[#55534E] transition-colors hover:text-[#111] cursor-pointer"
+                  >
+                    <SlidersHorizontal className="h-3 w-3" />
+                    <span>Edit</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E8E6E0] pt-2 text-[10px] text-[#111111]">
+            <div className="flex items-center gap-4">
+              {garment.videoUrl && (
+                <button
+                  type="button"
+                  disabled={isPreviewLayer}
+                  onClick={() => onOpenVideo(garment)}
+                  className="inline-flex items-center gap-1.5 transition-colors hover:text-[#111] cursor-pointer"
+                >
+                  <Film className="h-3 w-3" />
+                  <span>{garment.videoTitle || 'View video'}</span>
+                </button>
+              )}
+              {garment.productUrl && (
+                <a
+                  href={garment.productUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 transition-colors hover:text-[#111]"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span>Product source</span>
+                </a>
+              )}
+            </div>
             <span className="font-mono text-[9px] font-semibold text-[#111111]">
               {populatedCount}/5 images
             </span>
-          )}
-        </div>
-        )}
-      </main>
+          </div>
+        </main>
 
-      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] font-semibold text-[#111111] tabular-nums">
-        <span>P. {versoPage}</span>
-        <span>{paddedNumber}.A · {garment.productGroupVi.toUpperCase()}</span>
-      </footer>
-    </>
+        <footer className="relative z-10 mt-3 flex items-center justify-between border-t border-[#E8E6E0] pt-2 font-mono text-[9px] font-semibold text-[#111111] tabular-nums">
+          <span>P. {versoPage}</span>
+          <span>{paddedNumber}.A · {garment.productGroupVi.toUpperCase()}</span>
+        </footer>
+      </>
+    )
   );
 
   const rectoLeaf = leafShell(
     'recto',
     <>
-      <header className="relative z-10 mb-4 flex items-center justify-between gap-3 border-b border-[#EFEDE8] pb-2.5 font-mono text-[9px] font-semibold tracking-wide text-[#111111]">
-        <span>DETAILS</span>
+      <header className="relative z-10 mb-3 flex items-center justify-between gap-3 border-b border-[#E8E6E0] pb-2 font-mono text-[9px] font-semibold tracking-wide text-[#111111]">
+        <span>CONSTRUCTION &amp; DETAILS</span>
         <span className="font-bold">{garment.sku}</span>
       </header>
 
-      <main className="relative z-10 flex flex-1 flex-col gap-4">
+      <main className="relative z-10 flex flex-1 flex-col justify-between gap-3.5">
         {classicMode ? (
           <>
-            <section className="border-b border-[#E8E6E0] pb-4">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <h2 className="font-sans text-2xl font-extrabold tracking-tight text-[#111111]">
-                  Construction &amp; fabric
+            {/* 4-Plate Craftsmanship & Fabric Macro Grid (3 Closeup Details + 1 Fabric Image) */}
+            <section className="border-b border-[#E8E6E0] pb-3">
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <h2 className="font-serif text-[22px] font-normal leading-none tracking-tight text-[#141412]">
+                  Construction &amp; Craftsmanship
                 </h2>
-                <span className="font-mono text-[10px] font-semibold text-[#111111]">
-                  4 IMAGE PANELS
+                <span className="font-mono text-[8.5px] font-medium tracking-[0.12em] text-[#66645F]">
+                  4 PLATES
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {productDetailSlots.map(({ key, label }) => renderClassicDetail(key, label))}
+              <div className="grid grid-cols-2 gap-2.5">
+                {productDetailSlots.map(({ key, label, hint }) =>
+                  renderClassicDetail(key, label, hint, 'aspect-[16/10] w-full')
+                )}
               </div>
             </section>
-            <section className="border-t border-[#E8E6E0] pt-3">
-              <h3 className="mb-2 font-sans text-sm font-bold uppercase tracking-wide text-[#111111]">
-                Colorways
-              </h3>
+
+            {/* Colorways */}
+            <section className="border-b border-[#E8E6E0] pb-3.5">
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#55534E]">
+                  Colorways
+                </h3>
+                <span className="font-mono text-[9px] text-[#77756F] tabular-nums">
+                  {garment.colorways.length} {garment.colorways.length === 1 ? 'shade' : 'shades'}
+                </span>
+              </div>
               <ColorSwatchList colorways={garment.colorways} compact editorial />
+            </section>
+
+            {/* Silhouette Summary, Craft Notes & Production Specs */}
+            <section className="flex flex-1 flex-col justify-between gap-3">
+              <div>
+                <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#55534E]">
+                  Silhouette &amp; Production Notes
+                </h3>
+                <p className="mt-1.5 font-serif text-[15px] italic leading-snug text-[#1F1E1B]">
+                  {garment.summary}
+                </p>
+                <ul className="mt-2.5 space-y-1.5 text-[10.5px] leading-relaxed text-[#404040]">
+                  {garment.descriptionBullets.slice(0, 3).map((bullet, idx) => (
+                    <li key={idx} className="flex items-baseline gap-2">
+                      <span className="font-mono text-[8.5px] text-[var(--metallic-strong)] tabular-nums">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-[#E8E6E0] pt-3 text-[10px]">
+                <div>
+                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
+                    Stitch Density
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-[#111111]">
+                    {garment.specs.stitchDensity}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
+                    Seam Finish
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-[#111111]">
+                    {garment.specs.seamFinish}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
+                    Pocket &amp; Trim
+                  </dt>
+                  <dd className="mt-0.5 font-medium text-[#111111]">
+                    {garment.specs.pocketConstruction}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-mono text-[8px] uppercase tracking-wider text-[#77756F]">
+                    Size Run · MOQ
+                  </dt>
+                  <dd className="mt-0.5 font-mono text-[9.5px] font-semibold text-[#111111] tabular-nums">
+                    {garment.specs.sizeRun} · {garment.specs.moq}
+                  </dd>
+                </div>
+              </dl>
+
+              {fabricSiblings.length > 0 && (
+                <div className="border-t border-[#E8E6E0] pt-2 text-[9.5px] text-[#66645F]">
+                  <span>
+                    Shared fabric{' '}
+                    <button
+                      type="button"
+                      disabled={isPreviewLayer}
+                      onClick={() => onSelectFabricCode(garment.specs.fabricRollRef)}
+                      className="font-mono font-semibold text-[#111111] underline decoration-[#B8B5AD] underline-offset-2 hover:decoration-[#111111] cursor-pointer disabled:no-underline"
+                    >
+                      {garment.specs.fabricRollRef}
+                    </button>
+                    :{' '}
+                  </span>
+                  {fabricSiblings.map((sibling, index) => (
+                    <React.Fragment key={sibling.id}>
+                      {index > 0 && <span className="mx-1">·</span>}
+                      <button
+                        type="button"
+                        disabled={isPreviewLayer}
+                        onClick={() => onJumpToIndex(sibling.index)}
+                        className="font-mono text-[#292824] underline decoration-[#D4D1CA] underline-offset-2 hover:decoration-[#111111] cursor-pointer disabled:no-underline"
+                      >
+                        {sibling.sku}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
             </section>
           </>
         ) : (
@@ -354,18 +545,18 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
                   IMAGE DETAILS
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3.5">
                 {renderMedia('pocket', 'Detail 01', 'aspect-[4/3]')}
                 {renderMedia('seam', 'Detail 02', 'aspect-[4/3]')}
               </div>
             </div>
 
-            <div className="border-t border-[#EFEDE8] pt-3">
+            <div className="border-t border-[#E8E6E0] pt-2.5">
               <h3 className="mb-2 font-mono text-[9px] tracking-[0.12em] text-[#77756F]">COLORWAYS</h3>
               <ColorSwatchList colorways={garment.colorways} compact editorial />
             </div>
 
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-4 border-t border-[#EFEDE8] pt-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-3.5 border-t border-[#E8E6E0] pt-2.5">
               <div>
                 <p className="mb-1.5 font-mono text-[8px] tracking-[0.1em] text-[#77756F]">
                   FABRIC IMAGE
@@ -391,8 +582,17 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
               </div>
             </div>
 
+            <div className="border-t border-[#E8E6E0] pt-2.5">
+              <p className="font-serif text-[13px] italic leading-snug text-[#33322F]">
+                {garment.summary}
+              </p>
+              <p className="mt-1 font-mono text-[9px] text-[#66645F]">
+                {garment.specs.stitchDensity} · {garment.specs.sizeRun} · {garment.specs.moq}
+              </p>
+            </div>
+
             {fabricSiblings.length > 0 && (
-              <div className="border-t border-[#EFEDE8] pt-2.5 text-[9px] text-[#77756F]">
+              <div className="border-t border-[#E8E6E0] pt-2 text-[9px] text-[#77756F]">
                 <span>
                   More styles in{' '}
                   <button
@@ -423,7 +623,7 @@ export const GarmentSpread: React.FC<GarmentSpreadProps> = ({
         )}
       </main>
 
-      <footer className="relative z-10 mt-4 flex items-center justify-between border-t border-[#EFEDE8] pt-2.5 font-mono text-[9px] font-semibold text-[#111111] tabular-nums">
+      <footer className="relative z-10 mt-3 flex items-center justify-between border-t border-[#E8E6E0] pt-2 font-mono text-[9px] font-semibold text-[#111111] tabular-nums">
         <span>{paddedNumber}.B–E</span>
         <span>P. {rectoPage}</span>
       </footer>

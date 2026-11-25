@@ -14,12 +14,16 @@ interface MediaPlateProps {
   editable?: boolean;
   showBlankGuides?: boolean;
   compact?: boolean;
+  fullHeight?: boolean;
   displayScale?: number;
+  topOverlay?: React.ReactNode;
   imageOverlay?: React.ReactNode;
+  overlayMode?: 'gradient' | 'card';
   onReplaceFile?: (slotKey: MediaSlotKey, dataUrl: string) => void;
   onUpdateCrop?: (slotKey: MediaSlotKey, crop: ImageCrop) => void;
   onInspect?: (slot: MediaSlot, titleLabel: string) => void;
   onOpenEditor?: (slotKey: MediaSlotKey) => void;
+  onImageUnavailable?: (slotKey: MediaSlotKey) => void;
 }
 
 export const MediaPlate: React.FC<MediaPlateProps> = ({
@@ -32,12 +36,16 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   editable = true,
   showBlankGuides = true,
   compact = false,
+  fullHeight = false,
   displayScale = 1,
+  topOverlay,
   imageOverlay,
+  overlayMode = 'gradient',
   onReplaceFile,
   onUpdateCrop,
   onInspect,
   onOpenEditor,
+  onImageUnavailable,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dragRef = useRef<{
@@ -51,12 +59,14 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   const cropDraftRef = useRef(normalizeImageCrop(slot.crop));
   const [isDragging, setIsDragging] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
   const [cropMode, setCropMode] = useState(false);
   const [cropDraft, setCropDraft] = useState(() => normalizeImageCrop(slot.crop));
 
   useEffect(() => {
     setImgError(false);
-  }, [slot.url]);
+    setUseFallback(false);
+  }, [slot.url, slot.fallbackUrl]);
 
   useEffect(() => {
     const crop = normalizeImageCrop(slot.crop);
@@ -68,8 +78,9 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
     if (!editMode) setCropMode(false);
   }, [editMode]);
 
-  const hasImage = Boolean(slot.url && !imgError);
-  const isSessionLocal = slot.isSessionDrop || slot.url.startsWith('data:');
+  const activeUrl = useFallback && slot.fallbackUrl ? slot.fallbackUrl : slot.url;
+  const hasImage = Boolean(activeUrl && !imgError);
+  const isSessionLocal = slot.isSessionDrop || activeUrl.startsWith('data:');
   const currentCrop = normalizeImageCrop(cropMode ? cropDraft : slot.crop);
   const displayedImageStyle = imageCropStyle({
     ...currentCrop,
@@ -153,7 +164,7 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
   };
 
   return (
-    <figure className="flex flex-col">
+    <figure className={`flex flex-col ${fullHeight ? 'h-full w-full flex-1' : ''}`}>
       <div
         role="group"
         aria-label={titleLabel}
@@ -168,6 +179,8 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
         onDragLeave={interactive && editable ? () => setIsDragging(false) : undefined}
         onDrop={interactive && editable ? handleDrop : undefined}
         className={`group relative w-full overflow-hidden transition-colors duration-200 ${
+          fullHeight ? 'h-full flex-1' : ''
+        } ${
           interactive && (editable || hasImage)
             ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]'
             : 'cursor-default'
@@ -178,7 +191,7 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
               ? 'bg-[#F5F4F0]'
               : showBlankGuides
                 ? 'plate-blueprint-bg'
-                : 'bg-[#EEF0FF]'
+                : 'bg-[#FAF9F5]'
         }`}
       >
         {interactive && editable && (
@@ -218,12 +231,19 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
         {hasImage ? (
           <>
             <img
-              src={slot.url}
+              src={activeUrl}
               alt={`${titleLabel} — ${slot.caption}`}
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
-              onError={() => setImgError(true)}
+              onError={() => {
+                if (!useFallback && slot.fallbackUrl) {
+                  setUseFallback(true);
+                } else {
+                  setImgError(true);
+                  onImageUnavailable?.(slotKey);
+                }
+              }}
               style={displayedImageStyle}
               className={`h-full w-full object-cover ${cropMode ? 'transition-none' : 'transition-transform duration-300 ease-out'}`}
             />
@@ -269,14 +289,28 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
           </div>
         )}
 
-        {imageOverlay && (
-          <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t px-4 pb-4 pt-12 ${
-              hasImage ? 'from-black/70 to-transparent text-white' : 'from-white/95 to-transparent text-[#0A0A0A]'
-            }`}
-          >
-            {imageOverlay}
+        {topOverlay && (
+          <div className="pointer-events-none absolute inset-x-4 top-4 z-10">
+            {topOverlay}
           </div>
+        )}
+
+        {imageOverlay && (
+          overlayMode === 'card' ? (
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20">
+              <div className="pointer-events-auto border border-[#DCDAD3]/90 bg-white/86 px-4 py-3 text-[#0A0A0A] backdrop-blur-md">
+                {imageOverlay}
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t px-4 pb-4 pt-12 ${
+                hasImage ? 'from-black/70 to-transparent text-white' : 'from-white/95 to-transparent text-[#0A0A0A]'
+              }`}
+            >
+              {imageOverlay}
+            </div>
+          )
         )}
 
         {editMode && editable && hasImage && (
@@ -350,16 +384,23 @@ export const MediaPlate: React.FC<MediaPlateProps> = ({
         )}
 
         {interactive && hasImage && !cropMode && (
-          <div className="no-print pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between bg-gradient-to-t from-black/55 to-transparent px-3 pb-2.5 pt-6 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-            <span className="text-[10px] font-medium text-white">
-              {editMode ? 'Drop or click to replace' : 'Inspect image'}
-            </span>
-            {editMode ? (
-              <Replace className="h-3 w-3 text-white" />
-            ) : (
-              <Maximize2 className="h-3 w-3 text-white" />
-            )}
-          </div>
+          overlayMode === 'card' ? (
+            <div className="no-print pointer-events-none absolute top-3 right-3 z-20 inline-flex items-center gap-1.5 border border-[#DCDAD3] bg-white/90 px-2.5 py-1 text-[10px] font-medium text-[#111111] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span>{editMode ? 'Replace' : 'Inspect'}</span>
+              {editMode ? <Replace className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            </div>
+          ) : (
+            <div className="no-print pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between bg-gradient-to-t from-black/55 to-transparent px-3 pb-2.5 pt-6 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span className="text-[10px] font-medium text-white">
+                {editMode ? 'Drop or click to replace' : 'Inspect image'}
+              </span>
+              {editMode ? (
+                <Replace className="h-3 w-3 text-white" />
+              ) : (
+                <Maximize2 className="h-3 w-3 text-white" />
+              )}
+            </div>
+          )
         )}
 
         {cropMode && (

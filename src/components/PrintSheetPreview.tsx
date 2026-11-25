@@ -13,6 +13,7 @@ import {
   BRAND_LOGO_PATH,
   CATEGORIES,
   CM_OEM_ODM_PILLARS,
+  COVER_ATELIER_ILLUSTRATION,
   PRINT_PRODUCTION_SPEC,
   STAGE_LABELS,
   buildFabricSwatchPrograms,
@@ -59,46 +60,127 @@ const PrintPlateBox: React.FC<{
   label: string;
   aspectClass: string;
   showBlankGuides: boolean;
+  fullHeight?: boolean;
+  displayScale?: number;
+  hint?: string;
+  topOverlay?: React.ReactNode;
   imageOverlay?: React.ReactNode;
-}> = ({ slot, label, aspectClass, showBlankGuides, imageOverlay }) => (
-  <div className="flex flex-col">
-    <div
-      className={`relative w-full overflow-hidden bg-[#F5F4F0] ${aspectClass}`}
-    >
-      {slot.url ? (
-        <>
-          <img
-            src={slot.url}
-            alt={`${label} — ${slot.caption}`}
-            referrerPolicy="no-referrer"
-            style={imageCropStyle(slot.crop)}
-            className="h-full w-full object-cover"
-          />
-          {imageOverlay && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-10 text-white">
-              {imageOverlay}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="plate-blueprint-bg flex h-full w-full flex-col items-center justify-center p-2.5 text-center">
-          {showBlankGuides && (
-            <>
-              <span className="font-sans text-[11px] font-medium text-[#262626]">{label}</span>
-              <span className="mt-0.5 font-mono text-[9.5px] text-[#737373] tabular-nums">
-                {slot.aspectLabel}
-              </span>
-            </>
-          )}
+  overlayMode?: 'gradient' | 'card';
+}> = ({
+  slot,
+  label,
+  aspectClass,
+  showBlankGuides,
+  fullHeight = false,
+  displayScale = 1,
+  hint,
+  topOverlay,
+  imageOverlay,
+  overlayMode = 'gradient',
+}) => {
+  const [useFallback, setUseFallback] = React.useState(false);
+  const [imgError, setImgError] = React.useState(false);
+
+  React.useEffect(() => {
+    setUseFallback(false);
+    setImgError(false);
+  }, [slot.url, slot.fallbackUrl]);
+
+  const imageSrc = !imgError
+    ? useFallback && slot.fallbackUrl
+      ? slot.fallbackUrl
+      : slot.url || slot.fallbackUrl || ''
+    : '';
+  const cropBase = imageCropStyle(slot.crop);
+  const scaledStyle =
+    displayScale > 1
+      ? {
+          ...cropBase,
+          transform: cropBase.transform
+            ? `${cropBase.transform} scale(${displayScale})`
+            : `scale(${displayScale})`,
+        }
+      : cropBase;
+
+  return (
+    <div className={`flex flex-col ${fullHeight ? 'h-full flex-1' : ''}`}>
+      <div
+        className={`relative w-full overflow-hidden bg-[#FAF9F5] ${
+          fullHeight ? 'h-full flex-1' : ''
+        } ${aspectClass}`}
+      >
+        {imageSrc ? (
+          <>
+            <img
+              src={imageSrc}
+              alt={`${label} — ${slot.caption}`}
+              referrerPolicy="no-referrer"
+              onError={() => {
+                if (!useFallback && slot.fallbackUrl) {
+                  setUseFallback(true);
+                } else {
+                  setImgError(true);
+                }
+              }}
+              style={scaledStyle}
+              className="h-full w-full object-cover"
+            />
+            {topOverlay && (
+              <div className="pointer-events-none absolute top-3 left-3 right-3 z-20">
+                {topOverlay}
+              </div>
+            )}
+            {imageOverlay && (
+              overlayMode === 'card' ? (
+                <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 border border-[#DCDAD3]/90 bg-white/88 px-3.5 py-2.5 text-[#0A0A0A]">
+                  {imageOverlay}
+                </div>
+              ) : (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-10 text-white">
+                  {imageOverlay}
+                </div>
+              )
+            )}
+          </>
+        ) : (
+          <div
+            className={`${
+              showBlankGuides
+                ? 'plate-blueprint-bg'
+                : 'border border-dashed border-[#D8D6D0] bg-[#FAF9F5]'
+            } flex h-full w-full flex-col items-center justify-center p-2.5 text-center`}
+          >
+            {showBlankGuides ? (
+              <>
+                <span className="font-sans text-[11px] font-medium text-[#262626]">{label}</span>
+                <span className="mt-0.5 font-mono text-[9.5px] text-[#737373] tabular-nums">
+                  {slot.aspectLabel}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-[#55534E]">
+                  {label}
+                </span>
+                {hint && (
+                  <span className="mt-0.5 text-[8px] leading-snug text-[#77756F]">
+                    {hint}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      {overlayMode !== 'card' && (
+        <div className="mt-1 flex items-baseline justify-between gap-2 text-[9.5px]">
+          <span className="font-serif italic text-[#404040] truncate">{slot.caption}</span>
+          <span className="font-mono text-[#737373] shrink-0">{STAGE_LABELS[slot.stage]}</span>
         </div>
       )}
     </div>
-    <div className="mt-1 flex items-baseline justify-between gap-2 text-[9.5px]">
-      <span className="font-serif italic text-[#404040] truncate">{slot.caption}</span>
-      <span className="font-mono text-[#737373] shrink-0">{STAGE_LABELS[slot.stage]}</span>
-    </div>
-  </div>
-);
+  );
+};
 
 export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
   garments,
@@ -260,26 +342,51 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   <span>CM · OEM · ODM PORTFOLIO</span>
                 </div>
 
-                <div className="my-auto space-y-5 py-6">
-                  <img
-                    src={BRAND_LOGO_PATH}
-                    alt="Dream Tomorrow Monogram"
-                    className="h-12 w-auto object-contain"
-                  />
-                  <h2 className="font-sans text-4xl font-semibold tracking-tight text-[#0A0A0A]">
-                    Dream Tomorrow
-                  </h2>
-                  <p className="font-mono text-xs text-[var(--metallic-strong)]">{meta.edition}</p>
+                <div className="my-auto space-y-4 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--metallic-strong)]">
+                        B2B Apparel &amp; Textile Portfolio
+                      </p>
+                      <h2 className="mt-1 font-serif text-4xl font-normal tracking-tight text-[#0A0A0A]">
+                        Dream Tomorrow
+                      </h2>
+                    </div>
+                    <img
+                      src={BRAND_LOGO_PATH}
+                      alt="Dream Tomorrow Monogram"
+                      className="h-10 w-auto object-contain"
+                    />
+                  </div>
+                  <p className="font-mono text-[10.5px] text-[var(--metallic-strong)]">{meta.edition}</p>
                   <div className="h-px w-16 metallic-rule" />
-                  <p className="max-w-[52ch] text-xs leading-relaxed text-[#525252]">
+                  <p className="max-w-[54ch] text-xs leading-relaxed text-[#525252]">
                     {meta.subtitle}
                   </p>
 
-                  <div className="grid grid-cols-3 gap-3 border-t border-[#E5E5E5] pt-4 text-[10px]">
+                  <div className="grid grid-cols-3 gap-3 border-t border-[#E5E5E5] pt-3.5 text-[9.5px]">
                     {CM_OEM_ODM_PILLARS.map((p) => (
-                      <div key={p.code}>
-                        <p className="font-mono font-semibold text-[#0A0A0A]">{p.title}</p>
+                      <div key={p.code} className="flex flex-col">
+                        <div className="aspect-[4/3] w-full overflow-hidden border border-[#E6E4DE] bg-[#FAF9F5]">
+                          <img
+                            src={p.illustration}
+                            alt={`${p.code} — ${p.title}`}
+                            referrerPolicy="no-referrer"
+                            className={`h-full w-full object-cover ${p.cropScaleClass}`}
+                          />
+                        </div>
+                        <p className="mt-2 font-mono text-[9.5px] font-semibold text-[#0A0A0A]">
+                          {p.index} · {p.code} — {p.title}
+                        </p>
                         <p className="mt-1 leading-relaxed text-[#525252]">{p.detail}</p>
+                        <p className="mt-1.5 border-t border-[#EFEFEF] pt-1 text-[8.5px] text-[#404040]">
+                          <span className="font-mono uppercase text-[#737373]">Client: </span>
+                          {p.buyerSupplies}
+                        </p>
+                        <p className="text-[8.5px] text-[#0A0A0A]">
+                          <span className="font-mono uppercase text-[#737373]">DT: </span>
+                          {p.dtDelivers}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -300,34 +407,22 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                   />
                 )}
                 <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3 font-mono text-[10px] text-[#737373]">
-                  <span>COVER FOLIO</span>
+                  <span>COVER FOLIO · PLATE 00</span>
                   <span>{garments.length} STYLES · 15 FABRICS</span>
                 </div>
 
                 <div className="my-auto py-4">
-                  <div className="relative mx-auto aspect-[3/4] max-h-[540px] w-full overflow-hidden border border-[#DCDCDC] bg-[#FAFAFA]">
-                    {coverCustomImage ? (
-                      <img
-                        src={coverCustomImage}
-                        alt="Dream Tomorrow Cover"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="plate-blueprint-bg flex h-full w-full flex-col items-center justify-center p-6 text-center">
-                        <img
-                          src={BRAND_LOGO_PATH}
-                          alt="DT"
-                          className="h-20 w-auto object-contain"
-                        />
-                        <span className="mt-4 font-serif text-base italic text-[#404040]">
-                          Knitwear &amp; Woven Manufacturing Monograph
-                        </span>
-                        <span className="mt-2 font-mono text-[10.5px] text-[#525252]">
-                          {garments.length} STYLES · 15 SWATCHBOOK FABRICS
-                        </span>
-                      </div>
-                    )}
+                  <div className="relative mx-auto aspect-[3/4] max-h-[540px] w-full overflow-hidden border border-[#DCDCDC] bg-[#FAF9F5]">
+                    <img
+                      src={coverCustomImage || COVER_ATELIER_ILLUSTRATION}
+                      alt="Dream Tomorrow Cover"
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
+                  <p className="mt-2 text-center font-serif text-xs italic text-[#404040]">
+                    Fig. 00 — Knitwear &amp; Woven Manufacturing Monograph
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-[#E5E5E5] pt-3 font-mono text-[10px] text-[#737373] tabular-nums">
@@ -475,7 +570,7 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                     <img
                       src={prog.swatchImageUrl}
                       alt={prog.fabricCode}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full scale-[1.65] object-cover"
                     />
                   ) : (
                     <div className="plate-blueprint-bg flex h-full w-full items-center justify-center p-1 text-center font-mono text-[8.5px] text-[#737373]">
@@ -580,58 +675,104 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
       {garments.map((item) => {
         pageCursor += 1;
         const sourceNote = conciseSourceNote(item.dataFlags);
+        const hasHero = Boolean(item.media.hero.url || item.media.hero.fallbackUrl);
+        const detailSlots = [
+          { key: 'pocket' as const, label: 'Detail 01', hint: 'Pocket & trim closeup' },
+          { key: 'seam' as const, label: 'Detail 02', hint: 'Collar & seam closeup' },
+          { key: 'custom' as const, label: 'Detail 03', hint: 'Fit & construction detail' },
+          {
+            key: 'swatch' as const,
+            label: 'Fabric Image',
+            hint: `Swatch ${item.specs.fabricRollRef}`,
+          },
+        ];
+        const heroTopLockup = (
+          <div className="flex items-start justify-between gap-3">
+            <div className="inline-block border border-[#DCDAD3]/85 bg-white/85 px-2.5 py-1.5">
+              <span className="block font-serif text-3xl font-normal leading-none tracking-tight text-[#111111] tabular-nums">
+                {String(item.index).padStart(2, '0')}
+              </span>
+              <span className="mt-0.5 block font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#55534E]">
+                {item.gender} · {item.category}
+              </span>
+            </div>
+            <div className="inline-flex items-center border border-[#DCDAD3]/85 bg-white/85 px-2 py-1 font-mono text-[8px] font-semibold tracking-[0.14em] text-[#33322F]">
+              DREAM TOMORROW
+            </div>
+          </div>
+        );
+        const heroBottomCard = (
+          <div>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-serif text-xl font-normal leading-[1.08] tracking-tight text-[#0A0A0A]">
+                {item.title}
+              </h2>
+              <span className="shrink-0 font-mono text-[9.5px] font-semibold tracking-[0.12em] text-[#55534E] tabular-nums">
+                {item.sku}
+              </span>
+            </div>
+            <div className="mt-2">
+              <ProductSpecStrip item={item} overlay />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between border-t border-[#E2E0DA]/90 pt-1 font-mono text-[8px] font-semibold text-[#66645F] tabular-nums">
+              <span>{String(pageCursor).padStart(2, '0')}A</span>
+              <span>{item.productGroupVi.toUpperCase()}</span>
+            </div>
+          </div>
+        );
         return (
           <section key={item.id} className={sheetBaseClass}>
             {config.showCropMarks && <CropAndSpineMarks isLandscape={isLandscape} />}
 
             <div className={`grid flex-1 ${isLandscape ? 'grid-cols-2' : 'grid-cols-1 gap-6'}`}>
-              <div className={versoSafeCls}>
+              <div
+                className={
+                  !config.showBlankGuides && isLandscape
+                    ? 'relative flex h-full flex-col overflow-hidden border-r border-dashed border-[#E5E5E5] bg-[#FAF9F5]'
+                    : versoSafeCls
+                }
+              >
                 {config.showSafeZones && (
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 left-2 right-6 border border-dashed border-[var(--metallic-soft)]/70"
+                    className="pointer-events-none absolute inset-y-0 left-2 right-6 z-30 border border-dashed border-[var(--metallic-soft)]/70"
                   />
                 )}
 
-                <div className="flex items-center justify-between border-b border-[#E8E6E0] pb-2 text-[9px] text-[#77756F]">
-                  <div className="flex items-center gap-2">
-                    <img src={BRAND_LOGO_PATH} alt="DT" className="h-3.5 w-auto object-contain" />
-                    <span className="font-mono font-medium text-[#24231F]">DREAM TOMORROW</span>
-                  </div>
-                  <span className="font-mono">
-                    {item.gender.toUpperCase()} · {item.category.toUpperCase()}
-                  </span>
-                </div>
-
-                <div className="my-2.5 flex flex-1 flex-col gap-3">
-                  {!item.media.hero.url && (
-                    <h2 className="font-serif text-xl leading-tight tracking-tight text-[#24231F]">
-                      {item.title}
-                    </h2>
-                  )}
-                  <PrintPlateBox
-                    slot={item.media.hero}
-                    label="Primary image"
-                    aspectClass="aspect-[5/4]"
-                    showBlankGuides={config.showBlankGuides}
-                    imageOverlay={
-                      <div>
-                        <p className="font-mono text-[8px] tracking-[0.12em]">{item.sku}</p>
-                        <p className="mt-1 font-serif text-2xl leading-none">{item.title}</p>
+                {hasHero || config.showBlankGuides ? (
+                  <div className="flex h-full flex-1 flex-col">
+                    <PrintPlateBox
+                      slot={item.media.hero}
+                      label="Primary image"
+                      aspectClass="h-full w-full flex-1"
+                      fullHeight
+                      showBlankGuides={config.showBlankGuides}
+                      topOverlay={heroTopLockup}
+                      imageOverlay={heroBottomCard}
+                      overlayMode="card"
+                    />
+                    {!hasHero && (
+                      <div className="mt-2 border-t border-[#E8E6E0] pt-2">
+                        {heroBottomCard}
                       </div>
-                    }
-                  />
-                  <ProductSpecStrip item={item} compact />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 border-t border-[#E8E6E0] pt-2 font-mono text-[8.5px] text-[#77756F] tabular-nums">
-                  <span>{String(pageCursor).padStart(2, '0')}A</span>
-                  {item.productUrl && (
-                    <a href={item.productUrl} className="max-w-[70%] truncate underline underline-offset-2">
-                      Product source
-                    </a>
-                  )}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full flex-1 flex-col justify-between bg-[#FAF9F5] p-5">
+                    {heroTopLockup}
+                    <div className="my-auto py-6 text-center">
+                      <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-[#77756F]">
+                        Studio Hero Photography Pending
+                      </p>
+                      <p className="mt-1 font-serif text-base italic text-[#55534E]">
+                        {item.sku} · {item.specs.fabricRollRef}
+                      </p>
+                    </div>
+                    <div className="border border-[#DCDAD3] bg-white/95 px-3.5 py-2.5">
+                      {heroBottomCard}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className={rectoSafeCls}>
@@ -643,90 +784,131 @@ export const PrintSheetPreview: React.FC<PrintSheetPreviewProps> = ({
                 )}
 
                 <div className="flex items-center justify-between border-b border-[#E8E6E0] pb-2 font-mono text-[9px] text-[#77756F] tabular-nums">
-                  <span>IMAGE DETAILS</span>
+                  <span>CONSTRUCTION &amp; DETAILS</span>
                   <span className="text-[#24231F]">{item.sku}</span>
                 </div>
 
-                <div className="my-2.5 flex flex-1 flex-col gap-3">
-                  {sourceNote && (
-                    <p className="text-[8.5px] leading-relaxed text-[#77756F]">
-                      {sourceNote}
-                    </p>
-                  )}
-
-                  <div>
-                    <h3 className="mb-2 font-serif text-lg tracking-tight text-[#24231F]">
-                      In close view
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <PrintPlateBox
-                        slot={item.media.pocket}
-                        label="Detail 01"
-                        aspectClass="aspect-[4/3]"
-                        showBlankGuides={config.showBlankGuides}
-                      />
-                      <PrintPlateBox
-                        slot={item.media.seam}
-                        label="Detail 02"
-                        aspectClass="aspect-[4/3]"
-                        showBlankGuides={config.showBlankGuides}
-                      />
+                <div className="my-2.5 flex flex-1 flex-col justify-between gap-3">
+                  <div className="border-b border-[#E8E6E0] pb-3">
+                    <div className="mb-2 flex items-baseline justify-between gap-2">
+                      <h3 className="font-serif text-lg tracking-tight text-[#24231F]">
+                        Construction &amp; Craftsmanship
+                      </h3>
+                      <span className="font-mono text-[8px] tracking-wider text-[#77756F]">
+                        4 PLATES
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {detailSlots.map(({ key, label, hint }) => (
+                        <PrintPlateBox
+                          key={key}
+                          slot={item.media[key]}
+                          label={label}
+                          hint={hint}
+                          aspectClass="aspect-[16/10]"
+                          displayScale={key === 'swatch' ? 1.65 : 1}
+                          showBlankGuides={config.showBlankGuides}
+                        />
+                      ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 items-start gap-3 border-t border-[#E8E6E0] pt-3">
-                    <div className="col-span-1">
-                      <p className="mb-1 font-mono text-[7.5px] tracking-wide text-[#77756F]">
-                        FABRIC
-                      </p>
-                      <PrintPlateBox
-                        slot={item.media.swatch}
-                        label="Fabric image"
-                        aspectClass="aspect-square"
-                        showBlankGuides={config.showBlankGuides}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <p className="mb-2 font-mono text-[7.5px] tracking-wide text-[#77756F]">
+                  <div className="border-b border-[#E8E6E0] pb-2.5">
+                    <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                      <p className="font-mono text-[8px] font-semibold tracking-wider text-[#55534E]">
                         COLORWAYS
                       </p>
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
-                        {item.colorways.map((color, index) => {
-                          const hex = getColorSwatchHex(color);
-                          return (
-                            <div
-                              key={`${color}-${index}`}
-                              className="flex min-w-0 items-center gap-1.5 text-[8px] text-[#33322F]"
-                            >
-                              <span
-                                aria-hidden="true"
-                                className="h-2.5 w-3 shrink-0 border border-black/15"
-                                style={
-                                  hex
-                                    ? { backgroundColor: hex }
-                                    : {
-                                        backgroundImage:
-                                          'repeating-linear-gradient(45deg, #F0F0F0, #F0F0F0 3px, #FFFFFF 3px, #FFFFFF 6px)',
-                                      }
-                                }
-                              />
-                              <span className="truncate">{color}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <span className="font-mono text-[8px] text-[#77756F] tabular-nums">
+                        {item.colorways.length} {item.colorways.length === 1 ? 'shade' : 'shades'}
+                      </span>
                     </div>
-                    <div className="col-span-1">
-                      <p className="mb-1 font-mono text-[7.5px] tracking-wide text-[#77756F]">
-                        DETAIL 03
+                    <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
+                      {item.colorways.map((color, index) => {
+                        const hex = getColorSwatchHex(color);
+                        return (
+                          <div
+                            key={`${color}-${index}`}
+                            className="flex min-w-0 items-center gap-1.5 text-[8.5px] text-[#33322F]"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="h-2.5 w-3 shrink-0 border border-black/15"
+                              style={
+                                hex
+                                  ? { backgroundColor: hex }
+                                  : {
+                                      backgroundImage:
+                                        'repeating-linear-gradient(45deg, #F0F0F0, #F0F0F0 3px, #FFFFFF 3px, #FFFFFF 6px)',
+                                    }
+                              }
+                            />
+                            <span className="truncate">{color}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-col justify-between gap-2.5">
+                    <div>
+                      <p className="font-mono text-[8px] font-semibold uppercase tracking-wider text-[#55534E]">
+                        Silhouette &amp; Production Notes
                       </p>
-                      <PrintPlateBox
-                        slot={item.media.custom}
-                        label="Detail 03"
-                        aspectClass="aspect-square"
-                        showBlankGuides={config.showBlankGuides}
-                      />
+                      <p className="mt-1 font-serif text-[13.5px] italic leading-snug text-[#1F1E1B]">
+                        {item.summary}
+                      </p>
+                      <ul className="mt-2 space-y-1 text-[9.5px] leading-relaxed text-[#404040]">
+                        {item.descriptionBullets.slice(0, 3).map((bullet, idx) => (
+                          <li key={idx} className="flex items-baseline gap-2">
+                            <span className="font-mono text-[8px] text-[var(--metallic-strong)] tabular-nums">
+                              {String(idx + 1).padStart(2, '0')}
+                            </span>
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
+
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-[#E8E6E0] pt-2.5 text-[9px]">
+                      <div>
+                        <dt className="font-mono text-[7.5px] uppercase tracking-wider text-[#77756F]">
+                          Stitch Density
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-[#111111]">
+                          {item.specs.stitchDensity}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-mono text-[7.5px] uppercase tracking-wider text-[#77756F]">
+                          Seam Finish
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-[#111111]">
+                          {item.specs.seamFinish}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-mono text-[7.5px] uppercase tracking-wider text-[#77756F]">
+                          Pocket &amp; Trim
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-[#111111]">
+                          {item.specs.pocketConstruction}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-mono text-[7.5px] uppercase tracking-wider text-[#77756F]">
+                          Size Run · MOQ
+                        </dt>
+                        <dd className="mt-0.5 font-mono text-[8.5px] font-semibold text-[#111111] tabular-nums">
+                          {item.specs.sizeRun} · {item.specs.moq}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {sourceNote && (
+                      <p className="border-t border-[#E8E6E0] pt-1.5 text-[8.5px] leading-relaxed text-[#77756F]">
+                        {sourceNote}
+                      </p>
+                    )}
                   </div>
                 </div>
 

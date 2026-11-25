@@ -607,17 +607,17 @@ export default function App() {
     <div
       role="group"
       aria-label="Catalogue viewing mode"
-      className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-[#D5D5D5] bg-[#F3F3F3] p-1"
+      className="inline-flex shrink-0 items-center gap-0.5 border border-[#DCDAD3] bg-[#F5F4F0] p-0.5"
     >
       <button
         type="button"
         aria-label="Workbench"
         aria-pressed={viewMode === 'interactive'}
         onClick={() => handleViewModeChange('interactive')}
-        className={`rounded-full px-1.5 py-1 text-[9px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-[11px] ${
+        className={`px-2 py-1 text-[10px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer sm:px-3 sm:py-1.5 sm:text-[11px] ${
           viewMode === 'interactive'
-            ? 'bg-[#111111] text-white shadow-sm'
-            : 'text-[#555555] hover:text-[#111111]'
+            ? 'bg-[#0A0A0A] text-white'
+            : 'text-[#555555] hover:text-[#0A0A0A]'
         }`}
       >
         <span className="sm:hidden">Work</span>
@@ -628,10 +628,10 @@ export default function App() {
         aria-label="Buyer"
         aria-pressed={viewMode === 'classic'}
         onClick={() => handleViewModeChange('classic')}
-        className={`rounded-full px-1.5 py-1 text-[9px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-[11px] ${
+        className={`px-2 py-1 text-[10px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer sm:px-3 sm:py-1.5 sm:text-[11px] ${
           viewMode === 'classic'
-            ? 'bg-[#111111] text-white shadow-sm'
-            : 'text-[#555555] hover:text-[#111111]'
+            ? 'bg-[#0A0A0A] text-white'
+            : 'text-[#555555] hover:text-[#0A0A0A]'
         }`}
       >
         Buyer
@@ -641,10 +641,10 @@ export default function App() {
         aria-label="Editorial"
         aria-pressed={viewMode === 'closeup'}
         onClick={() => handleViewModeChange('closeup')}
-        className={`rounded-full px-1.5 py-1 text-[9px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-[11px] ${
+        className={`px-2 py-1 text-[10px] font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer sm:px-3 sm:py-1.5 sm:text-[11px] ${
           viewMode === 'closeup'
-            ? 'bg-[#111111] text-white shadow-sm'
-            : 'text-[#555555] hover:text-[#111111]'
+            ? 'bg-[#0A0A0A] text-white'
+            : 'text-[#555555] hover:text-[#0A0A0A]'
         }`}
       >
         Editorial

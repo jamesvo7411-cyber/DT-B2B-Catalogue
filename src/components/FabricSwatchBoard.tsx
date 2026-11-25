@@ -444,6 +444,7 @@ export const FabricSwatchBoard: React.FC<FabricSwatchBoardProps> = ({
                       <FabricColorImageTile
                         color={color}
                         imageUrl={imageUrl}
+                        tightCrop
                         interactive={canEditColorImages}
                         onReplace={
                           onReplaceFabricColorImage

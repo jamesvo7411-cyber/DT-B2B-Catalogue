@@ -27,6 +27,7 @@ export type PrintScope = 'all' | 'category' | 'shortlist' | 'current';
 
 export interface MediaSlot {
   url: string;
+  fallbackUrl?: string;
   stage: AssetStage;
   caption: string;
   aspectLabel: string;
